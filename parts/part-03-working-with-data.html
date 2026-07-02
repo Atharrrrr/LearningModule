@@ -23,7 +23,9 @@
     <a class="nav-item" data-chapter-id="3-2" href="#chapter-3-2">
       <span class="nav-dot"></span>3.2 Cleaning Messy Data
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>3.3 Exploratory Data Analysis</div>
+    <a class="nav-item" data-chapter-id="3-3" href="#chapter-3-3">
+      <span class="nav-dot"></span>3.3 Exploratory Data Analysis
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>3.4 Feature Engineering</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>3.5 Imbalanced Data &amp; Why Accuracy Lies</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>3.6 Data Augmentation</div>
@@ -410,6 +412,186 @@
 
     </section>
 
+    <section id="chapter-3-3">
+      <div class="chapter-eyebrow">Part III · Chapter 3.3</div>
+      <h1 class="chapter-title">Exploratory Data Analysis</h1>
+
+      <p class="lede">
+        Chapter 3.2 got your ingredients clean. Before you start cooking, a
+        good chef tastes everything first — a pinch here, a sniff there —
+        to understand what they're actually working with. That's
+        exploratory data analysis.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">👃 Frame of reference</div>
+        <p>
+          You wouldn't start cooking a dish from a new box of ingredients
+          without tasting a few things first — checking how sweet the
+          tomatoes are, how sharp the cheese is, whether anything smells
+          off. Exploratory data analysis (EDA) is exactly that step for a
+          dataset: getting hands-on with it — its statistics, its shape,
+          its relationships — before building anything on top of it.
+        </p>
+      </div>
+
+      <h2>What EDA actually involves</h2>
+      <script>initJargonBox("exploratory data analysis (EDA)",
+        "The practice of investigating a cleaned dataset — its summary statistics, distributions, and relationships between features — before building a model, to build intuition and catch surprises early.");</script>
+      <p>
+        <span class="jargon-term">Exploratory data analysis</span>
+        typically means: checking summary statistics (min, max, average
+        per column), looking at distributions with histograms (Chapters
+        2.6 and 2.12), and checking relationships between features with
+        scatter plots (Chapters 2.2 and 2.12). The goal isn't to build
+        anything yet — it's to understand what you're holding before you
+        commit to a plan.
+      </p>
+
+      <h2>Correlation: a number for "how related"</h2>
+      <script>initJargonBox("correlation",
+        "A number from -1 to +1 measuring how strongly two features move together: +1 means they rise and fall perfectly in sync, -1 means they move perfectly opposite, and 0 means no clear linear relationship.");</script>
+      <p>
+        <span class="jargon-term">Correlation</span> puts a single number
+        on "how related are these two features," from -1 to +1. It's
+        closely related to the dot product idea from Chapter 2.4, just
+        standardized so it always lands between -1 and 1, regardless of
+        each feature's raw scale.
+      </p>
+
+      <h2>Worked example: hours studied vs. exam score, revisited</h2>
+      <p>
+        Running EDA on Chapter 1.3's exam-score data confirms what the
+        fitted line already suggested — hours and score move together
+        strongly, a correlation close to +1. But EDA can also surface
+        things a single fitted line hides: maybe one student studied 0
+        hours yet still scored a 60 — worth a second look, not something
+        the line alone would flag.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">Add noise to a relationship and watch the correlation number respond.</p>
+
+        <svg id="corr-chart" viewBox="0 0 500 350" overflow="hidden" role="img" aria-label="Scatter plot with adjustable noise, showing the computed correlation coefficient">
+          <line x1="50" y1="310" x2="460" y2="310" stroke="#30363d" stroke-width="1"></line>
+          <line x1="50" y1="310" x2="50" y2="30" stroke="#30363d" stroke-width="1"></line>
+          <g id="corr-points"></g>
+        </svg>
+
+        <div class="demo-controls">
+          <label class="demo-slider-label">Noise level: <span id="corr-noise-value">3</span>
+            <input type="range" id="corr-noise-slider" min="0" max="10" step="1" value="3">
+          </label>
+        </div>
+        <div class="demo-actions">
+          <div class="quiz-option" id="corr-regen-btn">🎲 Regenerate points</div>
+        </div>
+        <p id="corr-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var group = document.getElementById('corr-points');
+          var slider = document.getElementById('corr-noise-slider');
+          var noiseValue = document.getElementById('corr-noise-value');
+          var readout = document.getElementById('corr-readout');
+          var regenBtn = document.getElementById('corr-regen-btn');
+
+          var plotX0 = 50, plotX1 = 460, plotY0 = 310, plotY1 = 30;
+          function xPix(x) { return plotX0 + (x / 14) * (plotX1 - plotX0); }
+          function yPix(y) { return plotY0 - (y / 50) * (plotY0 - plotY1); }
+
+          function pearson(points) {
+            var n = points.length;
+            var sumX = 0, sumY = 0;
+            points.forEach(function (p) { sumX += p[0]; sumY += p[1]; });
+            var meanX = sumX / n, meanY = sumY / n;
+            var num = 0, denX = 0, denY = 0;
+            points.forEach(function (p) {
+              var dx = p[0] - meanX, dy = p[1] - meanY;
+              num += dx * dy; denX += dx * dx; denY += dy * dy;
+            });
+            return num / Math.sqrt(denX * denY);
+          }
+
+          function generateAndRender() {
+            var noise = parseInt(slider.value, 10);
+            noiseValue.textContent = noise;
+            var points = [];
+            for (var x = 0; x <= 14; x++) {
+              var y = 2 * x + 10 + (Math.random() - 0.5) * noise * 9;
+              y = Math.max(0, Math.min(50, y));
+              points.push([x, y]);
+            }
+
+            group.innerHTML = '';
+            points.forEach(function (p) {
+              var c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+              c.setAttribute('cx', xPix(p[0]));
+              c.setAttribute('cy', yPix(p[1]));
+              c.setAttribute('r', '5');
+              c.setAttribute('fill', '#bc8cff');
+              group.appendChild(c);
+            });
+
+            var r = pearson(points);
+            var strength = Math.abs(r) > 0.7 ? 'strong' : Math.abs(r) > 0.3 ? 'moderate' : 'weak';
+            readout.textContent = 'Correlation (r) = ' + r.toFixed(2) + ' — a ' + strength + ' relationship.';
+          }
+
+          slider.addEventListener('input', generateAndRender);
+          regenBtn.addEventListener('click', generateAndRender);
+          generateAndRender();
+        })();
+      </script>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>EDA means investigating a cleaned dataset — statistics, distributions, and relationships — before building a model.</li>
+          <li>The goal is to build intuition and catch surprises early, not to jump straight to modeling blind.</li>
+          <li>Correlation measures how strongly two features move together, from -1 to +1.</li>
+          <li>More noise in a relationship pushes correlation closer to 0; a tighter relationship pushes it closer to ±1.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-3-3">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What is the main goal of exploratory data analysis?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! EDA builds intuition and catches surprises before any modeling begins.">To understand a cleaned dataset — its statistics, distributions, and relationships — before building a model.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — EDA happens before modeling, specifically to avoid building blind.">To train the final model as quickly as possible, skipping inspection.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — unusual values get investigated (Chapter 3.2), not automatically deleted.">To permanently delete any feature that looks unusual.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. A correlation coefficient near 0 between two features suggests what?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! A correlation near 0 means no clear linear relationship was found.">The two features don't have a clear linear relationship with each other.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — identical features would have a correlation of +1, not 0.">The two features are identical.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — correlation measures a relationship between two features, not data quality.">The dataset has no missing values.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. In the demo, what happened to the correlation number as "noise" increased?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! More noise makes the relationship less consistent, pushing r toward 0.">It moved closer to 0, since the relationship between x and y became less consistent.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — try the slider yourself; the correlation number clearly shifts as noise changes.">It stayed exactly the same no matter what.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — more noise weakens a relationship, it doesn't strengthen it.">It always increased toward 1.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -417,6 +599,7 @@
   (function () {
     initQuiz(document.getElementById('quiz-3-1'));
     initQuiz(document.getElementById('quiz-3-2'));
+    initQuiz(document.getElementById('quiz-3-3'));
     initProgressTracking();
   })();
 </script>
