@@ -42,3 +42,5 @@ instead of repeating it.
 | chain rule | 2.9 The Chain Rule | A rule for finding the rate of change through a chain of dependencies: multiply each link's individual rate of change together. If y depends on u, and u depends on x, then dy/dx = dy/du × du/dx. |
 | string | 2.10 Your First Lines of Code (Python) | A piece of text data in code, written inside quotes — like "spam" or "Movie A" — as opposed to a number. |
 | loop | 2.10 Your First Lines of Code (Python) | An instruction that repeats a block of code once for each item in a list (or until some condition is met), instead of writing the same code out by hand for every item. |
+| NumPy array | 2.11 Arrays, Tables & Tensors (NumPy/pandas) | A fast, uniform grid of numbers — the real, working implementation of the vectors (Chapter 2.2) and matrices (Chapter 2.3) this Part has been building toward. |
+| tensor | 2.11 Arrays, Tables & Tensors (NumPy/pandas) | A generalization of vectors and matrices to any number of dimensions: a 0D tensor is a single number, 1D is a vector, 2D is a matrix, and 3D or higher is a stack of matrices. |

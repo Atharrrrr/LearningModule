@@ -47,7 +47,9 @@
     <a class="nav-item" data-chapter-id="2-10" href="#chapter-2-10">
       <span class="nav-dot"></span>2.10 Your First Lines of Code (Python)
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>2.11 Arrays, Tables &amp; Tensors (NumPy/pandas)</div>
+    <a class="nav-item" data-chapter-id="2-11" href="#chapter-2-11">
+      <span class="nav-dot"></span>2.11 Arrays, Tables &amp; Tensors (NumPy/pandas)
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>2.12 Plotting &amp; Seeing Your Data [D]</div>
   </nav>
 
@@ -1943,6 +1945,232 @@ movies_matrix = [
 
     </section>
 
+    <section id="chapter-2-11">
+      <div class="chapter-eyebrow">Part II · Chapter 2.11</div>
+      <h1 class="chapter-title">Arrays, Tables &amp; Tensors (NumPy/pandas)</h1>
+
+      <p class="lede">
+        Time to deliver on a promise made back in Chapter 2.1: the real
+        tools Python code actually uses for vectors, matrices, and data
+        tables.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">📦 Frame of reference</div>
+        <p>
+          A plain Python list is like a junk drawer — you can toss
+          anything in, in any order, any mix of types. A NumPy array is
+          more like a shipping container: every slot holds exactly the
+          same kind of item, arranged in a strict grid, which is exactly
+          what lets a crane move the whole container at once instead of
+          unloading it item by item. That uniformity is the whole reason
+          numerical code prefers arrays over plain lists — operations can
+          run on the entire grid at once, instead of looping through it
+          one item at a time.
+        </p>
+      </div>
+
+      <h2>NumPy arrays: the real vectors and matrices</h2>
+      <script>initJargonBox("NumPy array",
+        "A fast, uniform grid of numbers — the real, working implementation of the vectors (Chapter 2.2) and matrices (Chapter 2.3) this Part has been building toward.");</script>
+      <p>
+        A <span class="jargon-term">NumPy array</span> is Python's fast,
+        uniform grid of numbers — the actual thing a
+        <a href="#chapter-2-2">vector</a> or <a href="#chapter-2-3">matrix</a>
+        becomes in real code. Because every entry is guaranteed to be the
+        same type, NumPy can apply an operation to every entry
+        <em>at once</em> — add 1 to every score in a whole dataset with one
+        line, instead of writing a loop.
+      </p>
+
+      <h2>Tensors: vectors and matrices, generalized</h2>
+      <script>initJargonBox("tensor",
+        "A generalization of vectors and matrices to any number of dimensions: a 0D tensor is a single number, 1D is a vector, 2D is a matrix, and 3D or higher is a stack of matrices.");</script>
+      <p>
+        A <span class="jargon-term">tensor</span> is the general term for
+        all of this: a 0-dimensional tensor is just a single number, a 1D
+        tensor is a vector, a 2D tensor is a matrix, and a 3D+ tensor is a
+        stack of matrices. Deep learning libraries (Part VI onward) call
+        everything a "tensor" for exactly this reason — one word that
+        covers a single loss value, a full dataset, and everything in
+        between.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">Click through four real examples to build intuition for tensor shape.</p>
+
+        <div class="demo-actions" id="tensor-buttons">
+          <div class="quiz-option" data-dim="0">0D — a single number</div>
+          <div class="quiz-option" data-dim="1">1D — a vector</div>
+          <div class="quiz-option" data-dim="2">2D — a matrix</div>
+          <div class="quiz-option" data-dim="3">3D — a stack of matrices</div>
+        </div>
+
+        <div id="tensor-viz" style="margin-top:16px; min-height:120px;"></div>
+        <p id="tensor-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var buttons = document.querySelectorAll('#tensor-buttons .quiz-option');
+          var viz = document.getElementById('tensor-viz');
+          var readout = document.getElementById('tensor-readout');
+
+          var examples = {
+            0: {
+              shape: '()',
+              caption: 'A single number — like one loss value, or one pixel\'s brightness.',
+              render: function () {
+                viz.innerHTML = '';
+                var cell = document.createElement('div');
+                cell.className = 'tensor-cell';
+                viz.appendChild(cell);
+              }
+            },
+            1: {
+              shape: '(5,)',
+              caption: 'A list of 5 numbers — like one example\'s feature vector (Chapter 2.2).',
+              render: function () {
+                viz.innerHTML = '';
+                var row = document.createElement('div');
+                row.className = 'tensor-row';
+                for (var i = 0; i < 5; i++) {
+                  var cell = document.createElement('div');
+                  cell.className = 'tensor-cell';
+                  row.appendChild(cell);
+                }
+                viz.appendChild(row);
+              }
+            },
+            2: {
+              shape: '(4, 3)',
+              caption: 'A 4×3 grid — like a small dataset table (Chapter 2.3), or a tiny grayscale image.',
+              render: function () {
+                viz.innerHTML = '';
+                var grid = document.createElement('div');
+                grid.className = 'tensor-grid';
+                for (var r = 0; r < 4; r++) {
+                  var row = document.createElement('div');
+                  row.className = 'tensor-row';
+                  for (var c = 0; c < 3; c++) {
+                    var cell = document.createElement('div');
+                    cell.className = 'tensor-cell';
+                    row.appendChild(cell);
+                  }
+                  grid.appendChild(row);
+                }
+                viz.appendChild(grid);
+              }
+            },
+            3: {
+              shape: '(3, 4, 4)',
+              caption: 'Three 4×4 grids stacked — like a tiny color image with Red, Green, and Blue channels (you\'ll meet this properly in Part VII).',
+              render: function () {
+                viz.innerHTML = '';
+                var stack = document.createElement('div');
+                stack.className = 'tensor-stack';
+                ['R', 'G', 'B'].forEach(function (label) {
+                  var col = document.createElement('div');
+                  var labelDiv = document.createElement('div');
+                  labelDiv.className = 'tensor-stack-label';
+                  labelDiv.textContent = label + ' channel';
+                  col.appendChild(labelDiv);
+                  var grid = document.createElement('div');
+                  grid.className = 'tensor-grid';
+                  for (var r = 0; r < 4; r++) {
+                    var row = document.createElement('div');
+                    row.className = 'tensor-row';
+                    for (var c = 0; c < 4; c++) {
+                      var cell = document.createElement('div');
+                      cell.className = 'tensor-cell';
+                      row.appendChild(cell);
+                    }
+                    grid.appendChild(row);
+                  }
+                  col.appendChild(grid);
+                  stack.appendChild(col);
+                });
+                viz.appendChild(stack);
+              }
+            }
+          };
+
+          function select(dim) {
+            buttons.forEach(function (b) { b.classList.remove('correct'); });
+            document.querySelector('#tensor-buttons .quiz-option[data-dim="' + dim + '"]').classList.add('correct');
+            var ex = examples[dim];
+            ex.render();
+            readout.textContent = 'Shape ' + ex.shape + ' — ' + ex.caption;
+          }
+
+          buttons.forEach(function (btn) {
+            btn.addEventListener('click', function () { select(btn.getAttribute('data-dim')); });
+          });
+
+          select('1');
+        })();
+      </script>
+
+      <div class="panel">
+        <div class="panel-label python">▸ Python — run in your own environment</div>
+        <pre class="python-block"><span class="k">import</span> numpy <span class="k">as</span> np
+<span class="k">import</span> pandas <span class="k">as</span> pd
+
+movies = np.array([[<span class="n">8</span>, <span class="n">2</span>], [<span class="n">2</span>, <span class="n">9</span>], [<span class="n">6</span>, <span class="n">6</span>]])
+<span class="k">print</span>(movies.shape)        <span class="c"># (3, 2)</span>
+<span class="k">print</span>(movies + <span class="n">1</span>)          <span class="c"># adds 1 to every score at once — vectorized</span>
+
+df = pd.DataFrame(movies, columns=[<span class="s">"action"</span>, <span class="s">"romance"</span>], index=[<span class="s">"A"</span>, <span class="s">"B"</span>, <span class="s">"C"</span>])
+<span class="k">print</span>(df[<span class="s">"action"</span>])        <span class="c"># column access, like a spreadsheet</span></pre>
+      </div>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>A NumPy array is Python's fast, uniform implementation of the vectors and matrices from Chapters 2.2–2.3.</li>
+          <li>A tensor generalizes vector/matrix to any number of dimensions: 0D = single number, 1D = vector, 2D = matrix, 3D+ = stack of matrices.</li>
+          <li>A pandas DataFrame is Python's implementation of a labeled data table, like a spreadsheet.</li>
+          <li>Given a real-world example, you can identify roughly what shape of tensor it would be.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-2-11">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What is a tensor?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! 0D, 1D, 2D, and beyond are all tensors of different dimensionality.">A generalization of vectors and matrices to any number of dimensions.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a 2D matrix is just one specific case of a tensor, not the whole definition.">Another name specifically for a 2D matrix, nothing more.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a DataFrame is a separate, table-focused tool; tensor is the more general math term.">A type of pandas DataFrame.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. A color photo, with separate red/green/blue values for every pixel, is best described as what shape of tensor?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a single list can't capture height, width, AND three separate color channels at once.">1D — a single long list of numbers.</div>
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Three stacked 2D grids — one per color channel — exactly like the demo's example.">3D — a stack of three 2D grids, one per color channel.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a single number can't capture an entire image's worth of pixels.">0D — a single number.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. Why are NumPy arrays generally preferred over plain Python lists for numerical data?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that flexibility describes plain lists; arrays trade flexibility for speed and uniformity.">They can hold any mix of data types in any shape, without limitation.</div>
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Uniform grids let an operation apply to every entry at once, instead of looping.">They're a fast, uniform grid that supports vectorized operations, like applying a change to every entry at once.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — plain Python lists can absolutely store numbers; that's not the distinction here.">Plain Python lists cannot store numbers at all.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -1958,6 +2186,7 @@ movies_matrix = [
     initQuiz(document.getElementById('quiz-2-8'));
     initQuiz(document.getElementById('quiz-2-9'));
     initQuiz(document.getElementById('quiz-2-10'));
+    initQuiz(document.getElementById('quiz-2-11'));
     initProgressTracking();
   })();
 </script>
