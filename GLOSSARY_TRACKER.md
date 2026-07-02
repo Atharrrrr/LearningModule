@@ -44,3 +44,5 @@ instead of repeating it.
 | loop | 2.10 Your First Lines of Code (Python) | An instruction that repeats a block of code once for each item in a list (or until some condition is met), instead of writing the same code out by hand for every item. |
 | NumPy array | 2.11 Arrays, Tables & Tensors (NumPy/pandas) | A fast, uniform grid of numbers — the real, working implementation of the vectors (Chapter 2.2) and matrices (Chapter 2.3) this Part has been building toward. |
 | tensor | 2.11 Arrays, Tables & Tensors (NumPy/pandas) | A generalization of vectors and matrices to any number of dimensions: a 0D tensor is a single number, 1D is a vector, 2D is a matrix, and 3D or higher is a stack of matrices. |
+| scatter plot | 2.12 Plotting & Seeing Your Data | A chart that plots each data example as a point, using two features as its x and y position — directly visualizing the vectors from Chapter 2.2, and revealing relationships, clusters, and outliers. |
+| histogram | 2.12 Plotting & Seeing Your Data | A chart that bins one feature's values and counts how many examples fall into each bin — a direct visual picture of the distributions from Chapter 2.6. |

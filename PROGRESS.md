@@ -1,11 +1,11 @@
 # Progress
 
 ## Status
-In progress. 17 of 98 chapters written. Part I is complete.
+In progress. 18 of 98 chapters written. Part I and Part II are both complete.
 
 ## Next chapter due
-Part II, Chapter 2.12 — Plotting & Seeing Your Data [D]
-(parts/part-02-toolkit.html already exists — insert the new <section> before </main> and flip 2.12's sidebar entry from unwritten to live; this is the last chapter of Part II)
+Part III, Chapter 3.1 — Where Data Comes From
+(first chapter of parts/part-03-working-with-data.html — create the file with a full sidebar TOC for Part III's 7 chapters)
 
 ## Completed chapters
 - 0.1 How This Book Works — parts/part-00-before-we-begin.html
@@ -25,6 +25,7 @@ Part II, Chapter 2.12 — Plotting & Seeing Your Data [D]
 - 2.9 The Chain Rule — parts/part-02-toolkit.html
 - 2.10 Your First Lines of Code (Python) — parts/part-02-toolkit.html
 - 2.11 Arrays, Tables & Tensors (NumPy/pandas) — parts/part-02-toolkit.html
+- 2.12 Plotting & Seeing Your Data [D] — parts/part-02-toolkit.html
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in

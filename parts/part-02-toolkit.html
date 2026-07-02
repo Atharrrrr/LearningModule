@@ -50,7 +50,9 @@
     <a class="nav-item" data-chapter-id="2-11" href="#chapter-2-11">
       <span class="nav-dot"></span>2.11 Arrays, Tables &amp; Tensors (NumPy/pandas)
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>2.12 Plotting &amp; Seeing Your Data [D]</div>
+    <a class="nav-item" data-chapter-id="2-12" href="#chapter-2-12">
+      <span class="nav-dot"></span>2.12 Plotting &amp; Seeing Your Data [D]
+    </a>
   </nav>
 
   <main>
@@ -2171,6 +2173,183 @@ df = pd.DataFrame(movies, columns=[<span class="s">"action"</span>, <span class=
 
     </section>
 
+    <section id="chapter-2-12">
+      <div class="chapter-eyebrow">Part II · Chapter 2.12 · Deep-dive</div>
+      <h1 class="chapter-title">Plotting &amp; Seeing Your Data</h1>
+
+      <p class="lede">
+        This closes out Part II with maybe the single best argument for
+        why you should always look at your data, not just its summary
+        statistics.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">📊 Frame of reference</div>
+        <p>
+          A restaurant's star rating is a single summary number. Two
+          restaurants can both average 4.0 stars — one because every
+          review is a consistent 4, the other because half the reviews
+          are 5-star raves and half are 3-star disappointments. Same
+          number, completely different reality. In 1973, a statistician
+          named Francis Anscombe built four datasets that make exactly
+          this point with cold, hard numbers: identical statistics,
+          wildly different shapes.
+        </p>
+      </div>
+
+      <h2>Two basic chart types</h2>
+      <script>initJargonBox("scatter plot",
+        "A chart that plots each data example as a point, using two features as its x and y position — directly visualizing the vectors from Chapter 2.2, and revealing relationships, clusters, and outliers.");</script>
+      <script>initJargonBox("histogram",
+        "A chart that bins one feature's values and counts how many examples fall into each bin — a direct visual picture of the distributions from Chapter 2.6.");</script>
+      <p>
+        A <span class="jargon-term">scatter plot</span> puts each example
+        as a point using two features as x and y — you've already seen
+        several of these, back in Chapters 2.2 and 2.4. A
+        <span class="jargon-term">histogram</span> bins a single feature's
+        values and counts how many fall in each bin, directly picturing
+        the distributions from Chapter 2.6. Both exist for the same
+        reason: summary numbers (an average, a "best fit" line) can hide
+        far more than they reveal.
+      </p>
+
+      <h2>Worked example: Anscombe's Quartet</h2>
+      <p>
+        All four of Anscombe's datasets share the exact same mean x (9.0),
+        mean y (7.50), and the exact same fitted regression line
+        (y ≈ 3 + 0.5x from Chapter 1.3). By the numbers, they're
+        identical. Plotted, they're nothing alike:
+      </p>
+      <ul>
+        <li><strong>Dataset I</strong> — a well-behaved, roughly linear scatter. The line genuinely fits.</li>
+        <li><strong>Dataset II</strong> — a clear curve. A straight line is actually a poor description of this relationship.</li>
+        <li><strong>Dataset III</strong> — a nearly perfect line, thrown off by a single outlier.</li>
+        <li><strong>Dataset IV</strong> — every point shares the same x value except one extreme outlier, which is single-handedly responsible for the entire "trend."</li>
+      </ul>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">The same fitted line (y = 3 + 0.5x) is drawn on all four — click through and watch how different the actual data looks underneath it.</p>
+
+        <svg id="anscombe-chart" viewBox="0 0 500 400" overflow="hidden" role="img" aria-label="Scatter plot of one of Anscombe's Quartet datasets with a shared fitted regression line">
+          <line x1="50" y1="360" x2="470" y2="360" stroke="#30363d" stroke-width="1"></line>
+          <line x1="50" y1="360" x2="50" y2="40" stroke="#30363d" stroke-width="1"></line>
+          <text x="260" y="385" text-anchor="middle" fill="#6e7681" font-size="12">x →</text>
+          <line x1="50" y1="291" x2="470" y2="63" stroke="#ffa657" stroke-width="2" stroke-dasharray="6,4"></line>
+          <g id="anscombe-points"></g>
+        </svg>
+
+        <div class="demo-actions" id="anscombe-buttons">
+          <div class="quiz-option" data-set="I">Dataset I</div>
+          <div class="quiz-option" data-set="II">Dataset II</div>
+          <div class="quiz-option" data-set="III">Dataset III</div>
+          <div class="quiz-option" data-set="IV">Dataset IV</div>
+        </div>
+
+        <p id="anscombe-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var datasets = {
+            I: {
+              points: [[10, 8.04], [8, 6.95], [13, 7.58], [9, 8.81], [11, 8.33], [14, 9.96], [6, 7.24], [4, 4.26], [12, 10.84], [7, 4.82], [5, 5.68]],
+              desc: 'Roughly linear — a well-behaved scatter. The fitted line genuinely describes this data.'
+            },
+            II: {
+              points: [[10, 9.14], [8, 8.14], [13, 8.74], [9, 8.77], [11, 9.26], [14, 8.10], [6, 6.13], [4, 3.10], [12, 9.13], [7, 7.26], [5, 4.74]],
+              desc: 'A clear curve, not a line at all — despite matching stats, a straight line is a poor fit here.'
+            },
+            III: {
+              points: [[10, 7.46], [8, 6.77], [13, 12.74], [9, 7.11], [11, 7.81], [14, 8.84], [6, 6.08], [4, 5.39], [12, 8.15], [7, 6.42], [5, 5.73]],
+              desc: 'A tight, near-perfect line — thrown off by one big outlier at (13, 12.74).'
+            },
+            IV: {
+              points: [[8, 6.58], [8, 5.76], [8, 7.71], [8, 8.84], [8, 8.47], [8, 7.04], [8, 5.25], [19, 12.50], [8, 5.56], [8, 7.91], [8, 6.89]],
+              desc: 'All points share x = 8 except one extreme outlier at (19, 12.5) — a single point is entirely responsible for the "trend."'
+            }
+          };
+
+          var group = document.getElementById('anscombe-points');
+          var buttons = document.querySelectorAll('#anscombe-buttons .quiz-option');
+          var readout = document.getElementById('anscombe-readout');
+
+          var plotX0 = 50, plotX1 = 470, plotY0 = 360, plotY1 = 40;
+          function xPix(x) { return plotX0 + (x / 20) * (plotX1 - plotX0); }
+          function yPix(y) { return plotY0 - (y / 14) * (plotY0 - plotY1); }
+
+          function render(key) {
+            group.innerHTML = '';
+            datasets[key].points.forEach(function (p) {
+              var c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+              c.setAttribute('cx', xPix(p[0]));
+              c.setAttribute('cy', yPix(p[1]));
+              c.setAttribute('r', '5');
+              c.setAttribute('fill', '#bc8cff');
+              group.appendChild(c);
+            });
+            readout.textContent = 'Dataset ' + key + ' — ' + datasets[key].desc + ' (mean x = 9.0, mean y = 7.50, same fitted line, for all four.)';
+          }
+
+          buttons.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+              buttons.forEach(function (b) { b.classList.remove('correct'); });
+              btn.classList.add('correct');
+              render(btn.getAttribute('data-set'));
+            });
+          });
+
+          buttons[0].classList.add('correct');
+          render('I');
+        })();
+      </script>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>A scatter plot shows two features against each other, revealing relationships, clusters, and outliers.</li>
+          <li>A histogram shows the shape of one feature's distribution.</li>
+          <li>Anscombe's Quartet: four datasets with identical summary statistics but radically different shapes when actually plotted.</li>
+          <li>Visualizing data is a sanity check you run before trusting a model, not an optional nice-to-have.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-2-12">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What does a scatter plot show?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Two features become the x and y position of each point.">Each data example as a point, using two features as x and y.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that describes a histogram, which bins a single feature.">How many examples fall into each range of a single feature.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a scatter plot shows every point individually, not one summary number.">A single summary number for the whole dataset.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. What was surprising about Anscombe's Quartet?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Same mean, same fitted line, same correlation — but four totally different shapes.">Four datasets with identical summary statistics looked completely different once actually plotted.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the four datasets share identical stats, but their actual shapes are very different.">The four datasets were identical in every way, including shape.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — all four share the same fitted regression line; that's exactly what makes it surprising.">None of the four datasets had a valid regression line.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. What's the main lesson from this chapter?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Anscombe's Quartet is the classic proof of exactly this.">Summary statistics alone can hide a lot — always plot your data before trusting a model built on it.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — this chapter's whole point is that plotting reveals things statistics hide.">Plotting data is purely decorative and never reveals anything statistics don't already show.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a scatter plot and a histogram show very different things, as this chapter covered.">Histograms and scatter plots always show the exact same information.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -2187,6 +2366,7 @@ df = pd.DataFrame(movies, columns=[<span class="s">"action"</span>, <span class=
     initQuiz(document.getElementById('quiz-2-9'));
     initQuiz(document.getElementById('quiz-2-10'));
     initQuiz(document.getElementById('quiz-2-11'));
+    initQuiz(document.getElementById('quiz-2-12'));
     initProgressTracking();
   })();
 </script>
