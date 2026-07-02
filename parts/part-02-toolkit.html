@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Part II — The Toolkit: Math &amp; Code | AI/ML From Zero to Job-Ready</title>
+<link rel="stylesheet" href="../assets/styles.css">
+<script src="../assets/components.js"></script>
+</head>
+<body>
+<div class="book-shell">
+
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">AI/ML: Zero to Job-Ready</div>
+    </div>
+    <div class="progress-bar-track"><div class="progress-bar-fill"></div></div>
+
+    <div class="sidebar-part">Part II — The Toolkit: Math &amp; Code</div>
+    <a class="nav-item" data-chapter-id="2-1" href="#chapter-2-1">
+      <span class="nav-dot"></span>2.1 Numbers, Variables &amp; Functions
+    </a>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>2.2 Vectors — Data as Arrows in Space</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>2.3 Matrices — Tables That Transform Data</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>2.4 Dot Products &amp; Similarity</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>2.5 Probability, the Intuitive Way</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>2.6 Distributions &amp; Uncertainty</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>2.7 Bayes' Theorem, Explained With a Story</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>2.8 Slopes &amp; Change — Intuitive Calculus</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>2.9 The Chain Rule</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>2.10 Your First Lines of Code (Python)</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>2.11 Arrays, Tables &amp; Tensors (NumPy/pandas)</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>2.12 Plotting &amp; Seeing Your Data [D]</div>
+  </nav>
+
+  <main>
+
+    <section id="chapter-2-1">
+      <div class="chapter-eyebrow">Part II · Chapter 2.1</div>
+      <h1 class="chapter-title">Numbers, Variables &amp; Functions</h1>
+
+      <p class="lede">
+        Chapter 1.3 said a model is just a function with adjustable knobs.
+        This chapter makes "function" precise — the last piece of vocabulary
+        you need before the real math starts.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🥤 Frame of reference</div>
+        <p>
+          Think of a vending machine. You press a specific button, and it
+          always gives you the exact same snack for that button, every
+          single time — never something different on a whim. The button
+          you press is like an <strong>input</strong>. The snack that comes
+          out is the <strong>output</strong>. And the machine's fixed
+          wiring — which button leads to which snack — never changes
+          between uses. A <strong>function</strong> is that machine. A
+          <strong>variable</strong> is just the label on the button before
+          you've decided which one to press.
+        </p>
+      </div>
+
+      <h2>Variables: names that can change</h2>
+      <script>initJargonBox("variable",
+        "A name that stands in for a number that can change or be filled in later — like x, or hours, or score — rather than a fixed number itself.");</script>
+      <p>
+        A <span class="jargon-term">variable</span> is just a name — x,
+        hours, score — that stands in for a number. The whole point is that
+        the number it stands for can change: hours might be 3 for one
+        student and 7 for another, while the name "hours" stays the same.
+        You already used variables without the formal name back in Chapter
+        1.3, when the exam-score line used <span class="mono">m</span> and
+        <span class="mono">b</span> as the knobs you could turn.
+      </p>
+
+      <h2>Functions: a rule, applied consistently</h2>
+      <script>initJargonBox("function",
+        "A rule that takes one or more inputs and produces exactly one output, every single time you give it the same input — written f(x), meaning \"the function f applied to input x.\"");</script>
+      <p>
+        A <span class="jargon-term">function</span> is a rule that turns an
+        input into an output — always the same output for the same input,
+        like the vending machine. It's usually written
+        <span class="mono">f(x)</span>, read as "f of x": the function
+        named <span class="mono">f</span>, applied to the input
+        <span class="mono">x</span>. If <span class="mono">f(x) = 2x + 1</span>,
+        that's the whole rule — double the input, then add one. Plugging in
+        a specific number for x and working out the result is called
+        <em>evaluating</em> the function.
+      </p>
+      <p>
+        This is exactly what a model is, in Chapter 1.3's terms: a
+        function, with some of the numbers in its formula left as
+        adjustable parameters instead of fixed constants.
+      </p>
+
+      <h2>Worked example: evaluating a function by hand</h2>
+      <p>
+        Take the exam-score line from Chapter 1.3, written as a proper
+        function: <span class="mono">f(hours) = 6 × hours + 45</span>.
+      </p>
+      <ul>
+        <li><span class="mono">f(3) = 6 × 3 + 45 = 63</span> — a student who studied 3 hours.</li>
+        <li><span class="mono">f(5) = 6 × 5 + 45 = 75</span> — a student who studied 5 hours.</li>
+      </ul>
+      <p>Same rule both times — only the input changed. Try more values yourself below.</p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">Pick a function, then drag x and watch the machine work.</p>
+
+        <svg id="fn-machine" viewBox="0 0 640 180" overflow="hidden" role="img" aria-label="A function machine taking an input x and producing an output f(x)">
+          <rect x="30" y="60" width="120" height="60" rx="6" fill="#161b22" stroke="#30363d" stroke-width="1.5"></rect>
+          <text x="90" y="48" text-anchor="middle" fill="#6e7681" font-size="12">input x</text>
+          <text id="machine-input-text" x="90" y="96" text-anchor="middle" fill="#e6edf3" font-size="20" font-family="monospace">3</text>
+
+          <text x="185" y="96" text-anchor="middle" fill="#6e7681" font-size="26">→</text>
+
+          <rect x="220" y="40" width="200" height="100" rx="8" fill="rgba(188,140,255,0.10)" stroke="#bc8cff" stroke-width="2"></rect>
+          <text x="320" y="62" text-anchor="middle" fill="#bc8cff" font-size="13" font-family="monospace">f</text>
+          <text id="machine-formula-text" x="320" y="98" text-anchor="middle" fill="#e6edf3" font-size="15" font-family="monospace">f(x) = 2x + 1</text>
+
+          <text x="455" y="96" text-anchor="middle" fill="#6e7681" font-size="26">→</text>
+
+          <rect x="490" y="60" width="120" height="60" rx="6" fill="#161b22" stroke="#30363d" stroke-width="1.5"></rect>
+          <text x="550" y="48" text-anchor="middle" fill="#6e7681" font-size="12">output f(x)</text>
+          <text id="machine-output-text" x="550" y="96" text-anchor="middle" fill="#3fb950" font-size="20" font-family="monospace">7</text>
+        </svg>
+
+        <div class="demo-controls">
+          <label class="demo-slider-label">x: <span id="fn-x-value">3</span>
+            <input type="range" id="fn-x-slider" min="-5" max="10" step="1" value="3">
+          </label>
+        </div>
+
+        <div class="demo-actions" id="fn-buttons">
+          <div class="quiz-option" data-fn="a">f(x) = 2x + 1</div>
+          <div class="quiz-option" data-fn="b">f(x) = x²</div>
+          <div class="quiz-option" data-fn="c">f(hours) = 6·hours + 45</div>
+        </div>
+
+        <p id="fn-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var funcs = {
+            a: { formula: 'f(x) = 2x + 1', fn: function (x) { return 2 * x + 1; } },
+            b: { formula: 'f(x) = x²', fn: function (x) { return x * x; } },
+            c: { formula: 'f(hours) = 6·hours + 45', fn: function (x) { return 6 * x + 45; } }
+          };
+          var current = 'a';
+
+          var slider = document.getElementById('fn-x-slider');
+          var xValueLabel = document.getElementById('fn-x-value');
+          var inputText = document.getElementById('machine-input-text');
+          var formulaText = document.getElementById('machine-formula-text');
+          var outputText = document.getElementById('machine-output-text');
+          var readout = document.getElementById('fn-readout');
+          var buttons = document.querySelectorAll('#fn-buttons .quiz-option');
+
+          function update() {
+            var x = parseInt(slider.value, 10);
+            xValueLabel.textContent = x;
+            var f = funcs[current];
+            var y = f.fn(x);
+            inputText.textContent = x;
+            formulaText.textContent = f.formula;
+            outputText.textContent = y;
+            var note = current === 'c' ? ' (negative "hours" isn\'t meaningful, but the machine doesn\'t know that — it just applies the rule.)' : '';
+            readout.textContent = f.formula + ', with x = ' + x + ', gives ' + y + '.' + note;
+          }
+
+          slider.addEventListener('input', update);
+          buttons.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+              current = btn.getAttribute('data-fn');
+              buttons.forEach(function (b) { b.classList.remove('correct'); });
+              btn.classList.add('correct');
+              update();
+            });
+          });
+
+          buttons[0].classList.add('correct');
+          update();
+        })();
+      </script>
+
+      <div class="panel">
+        <div class="panel-label python">▸ Python — run in your own environment</div>
+        <pre class="python-block"><span class="k">def</span> <span class="f">f</span>(hours):
+    <span class="k">return</span> <span class="n">6</span> * hours + <span class="n">45</span>
+
+<span class="k">print</span>(f(<span class="n">3</span>))   <span class="c"># 63</span>
+<span class="k">print</span>(f(<span class="n">5</span>))   <span class="c"># 75</span></pre>
+      </div>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>A variable is a name that stands in for a number that can change.</li>
+          <li>A function is a rule that turns an input into exactly one output, every time — written f(x).</li>
+          <li>You can evaluate a simple function by hand, given a formula and an input value.</li>
+          <li>A model (Chapter 1.3) is just a function whose formula includes adjustable parameters.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-2-1">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What is a variable?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! A variable is a name standing in for a value that can change.">A name that stands in for a number that can change or be filled in later.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that describes a constant, which is the opposite of a variable.">A fixed number that never changes.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a variable is a name for a value, not a rule that transforms inputs.">Another word for a function.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. If f(x) = 2x + 1, what is f(4)?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that's 2×4, but don't forget to add the 1.">8</div>
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! 2×4 = 8, then 8 + 1 = 9.">9</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that overshoots; double-check 2×4 + 1 step by step.">10</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. Using this chapter's vocabulary, what is a "model" (from Chapter 1.3), restated?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a model does far more than store one fixed number.">A variable that stores a single fixed number.</div>
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! A model is a function whose formula includes adjustable parameters — the knobs training tunes.">A function whose formula includes adjustable numbers called parameters.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a useful model needs to output more than just zero.">A function that always outputs the number zero.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+</div>
+
+<script>
+  (function () {
+    initQuiz(document.getElementById('quiz-2-1'));
+    initProgressTracking();
+  })();
+</script>
+</body>
+</html>

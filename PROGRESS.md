@@ -1,11 +1,11 @@
 # Progress
 
 ## Status
-In progress. 6 of 98 chapters written. Part I is complete.
+In progress. 7 of 98 chapters written. Part I is complete.
 
 ## Next chapter due
-Part II, Chapter 2.1 — Numbers, Variables & Functions
-(first chapter of parts/part-02-toolkit.html — create the file with a full sidebar TOC for Part II's 12 chapters)
+Part II, Chapter 2.2 — Vectors — Data as Arrows in Space
+(parts/part-02-toolkit.html already exists — insert the new <section> before </main> and flip 2.2's sidebar entry from unwritten to live)
 
 ## Completed chapters
 - 0.1 How This Book Works — parts/part-00-before-we-begin.html
@@ -14,6 +14,7 @@ Part II, Chapter 2.1 — Numbers, Variables & Functions
 - 1.3 Machines Don't Think, They Fit Curves — parts/part-01-orientation.html
 - 1.4 A Short History of AI [D] — parts/part-01-orientation.html
 - 1.5 The Job Landscape — parts/part-01-orientation.html
+- 2.1 Numbers, Variables & Functions — parts/part-02-toolkit.html
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in

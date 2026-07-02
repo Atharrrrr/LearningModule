@@ -24,3 +24,5 @@ instead of repeating it.
 | ML Engineer | 1.5 The Job Landscape | An engineer who takes proven machine learning techniques and builds them into real, running software products — closer to software engineering than research. |
 | MLOps | 1.5 The Job Landscape | Short for "machine learning operations" — the discipline of keeping trained models running reliably in production: monitoring them, retraining them, and maintaining the infrastructure they depend on. |
 | Data Scientist | 1.5 The Job Landscape | Someone who analyzes data to answer business questions and build predictive models, often working earlier in the pipeline than an ML Engineer — exploring data and running experiments before or alongside a deployed system. |
+| variable | 2.1 Numbers, Variables & Functions | A name that stands in for a number that can change or be filled in later — like x, or hours, or score — rather than a fixed number itself. |
+| function | 2.1 Numbers, Variables & Functions | A rule that takes one or more inputs and produces exactly one output, every single time you give it the same input — written f(x), meaning "the function f applied to input x." |
