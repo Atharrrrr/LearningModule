@@ -20,7 +20,9 @@
     <a class="nav-item" data-chapter-id="1-1" href="#chapter-1-1">
       <span class="nav-dot"></span>1.1 AI vs. ML vs. Deep Learning vs. RL
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>1.2 The Three Ways Machines Learn</div>
+    <a class="nav-item" data-chapter-id="1-2" href="#chapter-1-2">
+      <span class="nav-dot"></span>1.2 The Three Ways Machines Learn
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>1.3 Machines Don't Think, They Fit Curves</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>1.4 A Short History of AI</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>1.5 The Job Landscape</div>
@@ -237,12 +239,251 @@
 
     </section>
 
+    <section id="chapter-1-2">
+      <div class="chapter-eyebrow">Part I · Chapter 1.2</div>
+      <h1 class="chapter-title">The Three Ways Machines Learn</h1>
+
+      <p class="lede">
+        Chapter 1.1 nested AI, ML, deep learning, and RL inside each other.
+        This chapter looks at ML from a different angle: not what it's
+        built from, but what kind of feedback it learns from. There are
+        exactly three answers.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🐦 Frame of reference</div>
+        <p>
+          Imagine three different ways to learn to identify birds. With a
+          <strong>guide</strong>, an expert walks beside you and names every
+          bird the moment you both see it — "that's a robin," "that's a
+          sparrow" — until, after enough examples, you can name them
+          yourself. Alone with <strong>no guide at all</strong>, you just
+          notice patterns on your own: "these grey ones always travel in
+          flocks," "that red-chested one is usually alone" — you never
+          learn their official names, but you learn to tell them apart.
+          With a <strong>friend who only says "yes" or "no"</strong> after
+          each guess you make out loud, you're never told a bird's name
+          either — you just get better through repeated right-or-wrong
+          feedback. Same skill, three completely different ways of
+          learning it.
+        </p>
+      </div>
+
+      <h2>Way one: learning from an answer key</h2>
+      <script>initJargonBox("label",
+        "The correct answer attached to a training example — like the word \"spam\" or \"not spam\" written next to an email — that the model is trying to learn to predict.");</script>
+      <script>initJargonBox("supervised learning",
+        "A way of training a model where every example comes paired with a label (the correct answer). The model guesses, compares its guess to the label, and adjusts.");</script>
+      <p>
+        In <span class="jargon-term">supervised learning</span>, every
+        piece of training data comes with a
+        <span class="jargon-term">label</span> attached — the correct
+        answer, decided in advance, usually by a human. An email is marked
+        "spam" or "not spam." A photo is marked "cat" or "dog." The model's
+        entire job is to guess the label, check itself against the real
+        one, and nudge itself toward being right more often. This is the
+        "guide who names every bird" from the analogy — it's learning from
+        an answer key.
+      </p>
+
+      <h2>Way two: learning with no answer key at all</h2>
+      <script>initJargonBox("unsupervised learning",
+        "A way of training a model on data that has no labels or correct answers attached at all. The model's only job is to find structure — which examples resemble each other — on its own.");</script>
+      <p>
+        In <span class="jargon-term">unsupervised learning</span>, there's
+        no answer key — the data has no labels at all. The model can't
+        check its guesses against anything, so instead it looks for
+        structure: which examples are similar to each other, which are
+        different, and how they naturally cluster into groups. It might
+        discover that a set of emails splits cleanly into two groups
+        without ever being told either group is "spam." This is the
+        "no guide at all" version — patterns found entirely on your own.
+      </p>
+
+      <h2>Way three: learning from reward and penalty</h2>
+      <p>
+        The third way is
+        <a href="#chapter-1-1"><span class="jargon-term">reinforcement learning</span></a>,
+        already introduced in Chapter 1.1 — no labels and no answer key,
+        just an action followed by a reward or a penalty. It's the "friend
+        who only says yes or no" version: you're never shown what the
+        right answer was, only whether what you just did worked out.
+      </p>
+
+      <h2>Worked example: one task, three ways</h2>
+      <p>Take the spam filter from the last chapter and build it three different ways:</p>
+      <ol>
+        <li>
+          <strong>Supervised:</strong> collect a pile of emails, each one
+          hand-labeled "spam" or "not spam." Train a model to predict that
+          label from the email's text.
+        </li>
+        <li>
+          <strong>Unsupervised:</strong> collect the same pile of emails,
+          but with no labels at all. The model finds that they naturally
+          split into two clusters — one full of urgent-sounding, link-heavy
+          messages, the other not — without ever using the word "spam."
+        </li>
+        <li>
+          <strong>Reinforcement:</strong> the filter guesses spam or not
+          spam for each incoming email, and gets a tiny reward when you
+          leave its guess alone, and a penalty when you correct it. Over
+          thousands of emails, it improves — without ever seeing a labeled
+          training set up front.
+        </li>
+      </ol>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">Click a paradigm to spotlight how its feedback signal flows.</p>
+
+        <div class="learn-rows" id="learn-rows">
+          <div class="learn-row" data-key="supervised">
+            <div class="learn-row-label">Supervised</div>
+            <div class="learn-row-flow">
+              <div class="learn-box">Labeled examples</div>
+              <div class="learn-arrow">→</div>
+              <div class="learn-box">Model</div>
+              <div class="learn-arrow">→</div>
+              <div class="learn-box">Prediction</div>
+            </div>
+            <div class="learn-feedback">↳ compared against the correct label — the error nudges the model</div>
+          </div>
+
+          <div class="learn-row" data-key="unsupervised">
+            <div class="learn-row-label">Unsupervised</div>
+            <div class="learn-row-flow">
+              <div class="learn-box">Unlabeled examples</div>
+              <div class="learn-arrow">→</div>
+              <div class="learn-box">Model</div>
+              <div class="learn-arrow">→</div>
+              <div class="learn-box">Discovered groups</div>
+            </div>
+            <div class="learn-feedback">↳ no correct answer to compare against — just structure the model finds itself</div>
+          </div>
+
+          <div class="learn-row" data-key="reinforcement">
+            <div class="learn-row-label">Reinforcement</div>
+            <div class="learn-row-flow">
+              <div class="learn-box">Agent</div>
+              <div class="learn-arrow">→</div>
+              <div class="learn-box">Action</div>
+              <div class="learn-arrow">→</div>
+              <div class="learn-box">Reward or penalty</div>
+              <div class="learn-arrow">↻</div>
+            </div>
+            <div class="learn-feedback">↳ loops back to the agent — no labels or examples, just consequences</div>
+          </div>
+        </div>
+
+        <div class="learn-buttons" id="learn-buttons">
+          <div class="quiz-option" data-target="supervised">Supervised</div>
+          <div class="quiz-option" data-target="unsupervised">Unsupervised</div>
+          <div class="quiz-option" data-target="reinforcement">Reinforcement</div>
+        </div>
+        <p id="learn-caption" style="margin-top:16px; color:#8b949e; font-size:14px;">
+          Click a paradigm above to spotlight it.
+        </p>
+      </div>
+
+      <script>
+        (function () {
+          var rows = document.querySelectorAll('#learn-rows .learn-row');
+          var buttons = document.querySelectorAll('#learn-buttons .quiz-option');
+          var caption = document.getElementById('learn-caption');
+          var descriptions = {
+            supervised: 'Supervised learning: every example comes with the correct answer already attached. The model predicts, compares itself to that answer, and adjusts.',
+            unsupervised: 'Unsupervised learning: no correct answers are given at all. The model just looks for structure — which examples resemble each other — and groups them on its own.',
+            reinforcement: 'Reinforcement learning: no examples or labels at all — an agent acts, and only finds out afterward whether that action earned a reward or a penalty.'
+          };
+          buttons.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+              var key = btn.getAttribute('data-target');
+              buttons.forEach(function (b) { b.classList.remove('correct'); });
+              btn.classList.add('correct');
+              rows.forEach(function (row) {
+                if (row.getAttribute('data-key') === key) {
+                  row.classList.add('active');
+                  row.classList.remove('dimmed');
+                } else {
+                  row.classList.remove('active');
+                  row.classList.add('dimmed');
+                }
+              });
+              caption.textContent = descriptions[key];
+            });
+          });
+        })();
+      </script>
+
+      <div class="panel">
+        <div class="panel-label python">▸ Python — run in your own environment</div>
+        <pre class="python-block"><span class="c"># Supervised: paired (input, correct_answer) examples</span>
+model.<span class="f">fit</span>(emails, labels=[<span class="s">"spam"</span>, <span class="s">"not spam"</span>, ...])
+
+<span class="c"># Unsupervised: only inputs — the model finds its own groups</span>
+groups = model.<span class="f">fit_predict</span>(emails)
+
+<span class="c"># Reinforcement: no dataset at all — act, then learn from reward</span>
+guess = agent.<span class="f">act</span>(email)
+reward = human_feedback(guess)  <span class="c"># +1 or -1</span>
+agent.<span class="f">learn</span>(reward)</pre>
+      </div>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>The three learning paradigms: supervised, unsupervised, and reinforcement.</li>
+          <li>Supervised learning needs a label — the correct answer — attached to every example.</li>
+          <li>Unsupervised learning has no labels at all; it only finds structure on its own.</li>
+          <li>Reinforcement learning (from 1.1) learns from reward and penalty, not from an answer key.</li>
+          <li>How the same task — spam filtering — would look under each of the three paradigms.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-1-2">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. Which paradigm requires every training example to come with the correct answer attached?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! That attached correct answer is exactly what a label is.">Supervised learning.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — unsupervised learning has no labels at all.">Unsupervised learning.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — reinforcement learning gets a reward signal, not a labeled correct answer.">Reinforcement learning.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. A model is given years of customer purchase histories with no labels of any kind, and it groups customers into segments based on similarity. Which paradigm is this?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — supervised learning needs labeled examples, and none were given here.">Supervised learning.</div>
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Finding structure in unlabeled data is exactly what unsupervised learning does.">Unsupervised learning.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — there's no agent taking actions or receiving rewards here.">Reinforcement learning.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. What's different about the feedback reinforcement learning gets, compared to supervised learning?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — RL does get feedback, just not a labeled correct answer.">RL never receives any feedback at all.</div>
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! RL gets a reward or penalty for an action, never the labeled correct answer itself.">RL gets a reward or penalty for an action, not the correct answer itself.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — RL specifically does not require labeled data; that's supervised learning.">RL requires labeled data, just like supervised learning.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
 <script>
   (function () {
     initQuiz(document.getElementById('quiz-1-1'));
+    initQuiz(document.getElementById('quiz-1-2'));
     initProgressTracking();
   })();
 </script>

@@ -1,15 +1,20 @@
 # Progress
 
 ## Status
-In progress. 2 of 98 chapters written.
+In progress. 3 of 98 chapters written.
 
 ## Next chapter due
-Part I, Chapter 1.2 — The Three Ways Machines Learn
-(parts/part-01-orientation.html already exists — insert the new <section> before </main> and flip 1.2's sidebar entry from unwritten to live)
+Part I, Chapter 1.3 — Machines Don't Think, They Fit Curves
+(parts/part-01-orientation.html already exists — insert the new <section> before </main> and flip 1.3's sidebar entry from unwritten to live)
 
 ## Completed chapters
 - 0.1 How This Book Works — parts/part-00-before-we-begin.html
 - 1.1 AI vs. ML vs. Deep Learning vs. RL — parts/part-01-orientation.html
+- 1.2 The Three Ways Machines Learn — parts/part-01-orientation.html
 
 ## Open issues / flags for review
-(none yet)
+- Reminder for future chapters: assets/components.js must be included in
+  <head> (not at the bottom of <body>), since inline jargon-box calls
+  inside <main> run before a bottom-of-body script would load. Fixed in
+  0.1 and 1.1 after a real browser check caught it; part-01's template
+  already has it right, so this only matters when starting a new Part file.

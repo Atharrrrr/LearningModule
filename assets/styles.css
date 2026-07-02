@@ -309,6 +309,71 @@ pre.python-block .n { color: var(--blue); } /* number */
 pre.python-block .f { color: var(--purple); } /* function */
 
 /* ---------------------------------------------------------------------- */
+/* Flow-diagram demo rows (reusable — click-to-spotlight comparisons)      */
+/* ---------------------------------------------------------------------- */
+
+.learn-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 20px 0;
+}
+
+.learn-row {
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-inset);
+  transition: opacity 0.2s ease, border-color 0.2s ease;
+}
+
+.learn-row.dimmed { opacity: 0.4; }
+.learn-row.active { border-color: var(--purple); }
+
+.learn-row-label {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--purple);
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+.learn-row-flow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.learn-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  font-size: 13.5px;
+}
+
+.learn-arrow {
+  color: var(--text-faint);
+  font-size: 16px;
+}
+
+.learn-feedback {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.learn-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+/* ---------------------------------------------------------------------- */
 /* Recap block                                                             */
 /* ---------------------------------------------------------------------- */
 
