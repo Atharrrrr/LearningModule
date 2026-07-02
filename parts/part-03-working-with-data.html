@@ -29,7 +29,9 @@
     <a class="nav-item" data-chapter-id="3-4" href="#chapter-3-4">
       <span class="nav-dot"></span>3.4 Feature Engineering
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>3.5 Imbalanced Data &amp; Why Accuracy Lies</div>
+    <a class="nav-item" data-chapter-id="3-5" href="#chapter-3-5">
+      <span class="nav-dot"></span>3.5 Imbalanced Data &amp; Why Accuracy Lies
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>3.6 Data Augmentation</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>3.7 Bias in Data, Bias in Models [D]</div>
   </nav>
@@ -768,6 +770,189 @@
 
     </section>
 
+    <section id="chapter-3-5">
+      <div class="chapter-eyebrow">Part III · Chapter 3.5</div>
+      <h1 class="chapter-title">Imbalanced Data &amp; Why Accuracy Lies</h1>
+
+      <p class="lede">
+        A model can be "99% accurate" and still be completely useless at
+        the one thing it was built to do. This chapter explains exactly
+        how that happens — and it happens constantly.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🏜️ Frame of reference</div>
+        <p>
+          Imagine a weather forecaster stationed in a desert town where it
+          almost never rains. A lazy forecaster who predicts "no rain"
+          every single day would be right well over 95% of the time —
+          genuinely, technically, "highly accurate." But the rare days it
+          does rain are exactly the days a forecast actually matters, and
+          this forecaster gets every single one of them wrong. High
+          accuracy, zero usefulness.
+        </p>
+      </div>
+
+      <h2>When one class dominates</h2>
+      <script>initJargonBox("imbalanced data",
+        "A dataset where one class vastly outnumbers another — like 99% legitimate transactions and 1% fraud. Common in fraud detection, rare disease detection, and defect detection.");</script>
+      <script>initJargonBox("accuracy",
+        "The percentage of a model's predictions that were correct overall. On imbalanced data, accuracy can look excellent while the model completely fails at the rare class that actually matters.");</script>
+      <p>
+        <span class="jargon-term">Imbalanced data</span> means one class
+        vastly outnumbers another — fraud detection, rare disease
+        screening, manufacturing defect detection all look like this by
+        nature. <span class="jargon-term">Accuracy</span> — the percentage
+        of predictions that were correct — sounds like the obvious way to
+        measure a model. On imbalanced data, it's deeply misleading,
+        exactly like the desert forecaster.
+      </p>
+
+      <h2>Worked example: a lazy fraud detector</h2>
+      <p>
+        A dataset of 1,000 transactions: 10 are fraud (1%), 990 are
+        legitimate. A "model" that predicts "not fraud" for every single
+        transaction, no matter what:
+      </p>
+      <ul>
+        <li>Accuracy = 990 / 1,000 = <strong>99%</strong></li>
+        <li>Fraud cases actually caught = <strong>0 out of 10</strong></li>
+      </ul>
+      <p>
+        A genuinely useful model might catch 9 of those 10 fraud cases,
+        but along the way flag a few legitimate transactions by mistake —
+        landing at, say, 96% accuracy. By the single accuracy number, the
+        useless model "wins." This is exactly why other metrics exist
+        (precision and recall, covered fully in Chapter 5.3) that look
+        specifically at performance on the rare class.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">Compare a lazy model to a genuinely useful one, out of 100 transactions.</p>
+
+        <div class="demo-controls">
+          <label class="demo-slider-label">Fraud rate: <span id="imb-rate-value">1</span>%
+            <input type="range" id="imb-rate-slider" min="1" max="10" step="1" value="1">
+          </label>
+        </div>
+        <div class="demo-actions" id="imb-buttons">
+          <div class="quiz-option" data-model="lazy">Lazy model (always says "not fraud")</div>
+          <div class="quiz-option" data-model="decent">Decent model (catches 90% of fraud)</div>
+        </div>
+
+        <div class="trial-grid" id="imb-grid"></div>
+        <p id="imb-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var rateSlider = document.getElementById('imb-rate-slider');
+          var rateValue = document.getElementById('imb-rate-value');
+          var buttons = document.querySelectorAll('#imb-buttons .quiz-option');
+          var grid = document.getElementById('imb-grid');
+          var readout = document.getElementById('imb-readout');
+
+          for (var i = 0; i < 100; i++) {
+            var sq = document.createElement('div');
+            sq.className = 'trial-square';
+            grid.appendChild(sq);
+          }
+          var squares = grid.querySelectorAll('.trial-square');
+          var currentModel = 'lazy';
+
+          function render() {
+            var rate = parseInt(rateSlider.value, 10);
+            rateValue.textContent = rate;
+            var fraud = rate;
+            var legit = 100 - fraud;
+
+            var tp, fn, fp, tn;
+            if (currentModel === 'lazy') {
+              tp = 0; fn = fraud; fp = 0; tn = legit;
+            } else {
+              tp = Math.round(fraud * 0.9);
+              fn = fraud - tp;
+              fp = Math.round(legit * 0.10);
+              tn = legit - fp;
+            }
+
+            var categories = [];
+            for (var i = 0; i < tp; i++) categories.push('tp');
+            for (var i = 0; i < fn; i++) categories.push('fn');
+            for (var i = 0; i < fp; i++) categories.push('fp');
+            for (var i = 0; i < tn; i++) categories.push('tn');
+            while (categories.length < 100) categories.push('tn');
+
+            squares.forEach(function (sq, i) { sq.className = 'trial-square ' + categories[i]; });
+
+            var accuracy = tp + tn;
+            var caughtPct = fraud > 0 ? Math.round((tp / fraud) * 100) : 0;
+            var label = currentModel === 'lazy' ? 'Lazy model' : 'Decent model';
+            readout.textContent = label + ': ' + accuracy + '% accuracy, but caught ' + caughtPct + '% of real fraud (' + tp + ' of ' + fraud + ' cases).';
+          }
+
+          buttons.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+              buttons.forEach(function (b) { b.classList.remove('correct'); });
+              btn.classList.add('correct');
+              currentModel = btn.getAttribute('data-model');
+              render();
+            });
+          });
+          rateSlider.addEventListener('input', render);
+
+          buttons[0].classList.add('correct');
+          render();
+        })();
+      </script>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Imbalanced data means one class vastly outnumbers another — common in fraud, disease, and defect detection.</li>
+          <li>Accuracy alone can be deeply misleading on imbalanced data — always predicting the majority class scores high accuracy while catching nothing.</li>
+          <li>A "worse" accuracy number can belong to a far more useful model, if it's the one catching the rare, important cases.</li>
+          <li>This is why metrics beyond accuracy exist — covered fully in Chapter 5.3.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-3-5">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. A dataset is 99% "not fraud" and 1% "fraud." A model that always predicts "not fraud" scores what accuracy?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! It's right on every legitimate transaction and wrong on every fraud case — 99% accuracy, 0 fraud caught.">About 99%, despite never catching a single fraud case.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the model always predicts the same thing, so accuracy just matches the majority class's share.">About 50%, since it's guessing randomly.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — 1% would be the accuracy of a model that was always WRONG, which isn't the case here.">About 1%, matching the fraud rate.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. Why can a high accuracy number be misleading on imbalanced data?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Favoring the majority class alone can produce a high score while being useless at the actual goal.">Because a model can score high accuracy just by favoring the majority class, without doing anything useful on the rare class that matters.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — accuracy is a perfectly real, computable number; the issue is what it hides on imbalanced data.">Accuracy is never a real, computable number.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — this chapter's whole point is that high accuracy does NOT guarantee usefulness on imbalanced data.">High accuracy always guarantees a genuinely useful model, no exceptions.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. In the demo, why did the "decent" model show LOWER accuracy than the "lazy" model, despite being more useful?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Catching real fraud meant accepting some false alarms, which cost a little accuracy while actually doing the job.">Catching real fraud required accepting some false alarms, which slightly lowered overall accuracy — while actually doing the job.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the decent model was deliberately modeled as catching 90% of real fraud, not acting randomly.">The decent model was actually broken and performing randomly.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — this exact scenario is the chapter's central example of why lower accuracy can still mean a better model.">Lower accuracy always means a worse model, with no exceptions.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -777,6 +962,7 @@
     initQuiz(document.getElementById('quiz-3-2'));
     initQuiz(document.getElementById('quiz-3-3'));
     initQuiz(document.getElementById('quiz-3-4'));
+    initQuiz(document.getElementById('quiz-3-5'));
     initProgressTracking();
   })();
 </script>
