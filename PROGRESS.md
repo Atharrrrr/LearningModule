@@ -1,11 +1,11 @@
 # Progress
 
 ## Status
-In progress. 21 of 98 chapters written. Part I and Part II are both complete.
+In progress. 22 of 98 chapters written. Part I and Part II are both complete.
 
 ## Next chapter due
-Part III, Chapter 3.4 — Feature Engineering
-(parts/part-03-working-with-data.html already exists — insert the new <section> before </main> and flip 3.4's sidebar entry from unwritten to live)
+Part III, Chapter 3.5 — Imbalanced Data & Why Accuracy Lies
+(parts/part-03-working-with-data.html already exists — insert the new <section> before </main> and flip 3.5's sidebar entry from unwritten to live)
 
 ## Completed chapters
 - 0.1 How This Book Works — parts/part-00-before-we-begin.html
@@ -29,6 +29,7 @@ Part III, Chapter 3.4 — Feature Engineering
 - 3.1 Where Data Comes From — parts/part-03-working-with-data.html
 - 3.2 Cleaning Messy Data — parts/part-03-working-with-data.html
 - 3.3 Exploratory Data Analysis — parts/part-03-working-with-data.html
+- 3.4 Feature Engineering — parts/part-03-working-with-data.html
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in

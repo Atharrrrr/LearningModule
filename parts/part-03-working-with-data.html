@@ -26,7 +26,9 @@
     <a class="nav-item" data-chapter-id="3-3" href="#chapter-3-3">
       <span class="nav-dot"></span>3.3 Exploratory Data Analysis
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>3.4 Feature Engineering</div>
+    <a class="nav-item" data-chapter-id="3-4" href="#chapter-3-4">
+      <span class="nav-dot"></span>3.4 Feature Engineering
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>3.5 Imbalanced Data &amp; Why Accuracy Lies</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>3.6 Data Augmentation</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>3.7 Bias in Data, Bias in Models [D]</div>
@@ -592,6 +594,180 @@
 
     </section>
 
+    <section id="chapter-3-4">
+      <div class="chapter-eyebrow">Part III · Chapter 3.4</div>
+      <h1 class="chapter-title">Feature Engineering</h1>
+
+      <p class="lede">
+        Sometimes the most useful number in your dataset isn't one that
+        was ever recorded directly — it's one you build yourself, out of
+        the ones that were.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🏠 Frame of reference</div>
+        <p>
+          A house listing gives you raw facts: square footage, year
+          built, price. An experienced buyer doesn't just look at those
+          numbers as-is — they compute "price per square foot" to compare
+          listings fairly, or "house age" from the year built, because
+          those derived numbers are often more useful for deciding than
+          the raw facts alone. That's feature engineering: building new,
+          more useful numbers out of the ones you already have.
+        </p>
+      </div>
+
+      <h2>Combining and extracting</h2>
+      <script>initJargonBox("feature engineering",
+        "The practice of creating new, more useful features from raw data — by combining existing features, extracting parts of them, encoding categories as numbers, or scaling them to comparable ranges.");</script>
+      <p>
+        <span class="jargon-term">Feature engineering</span> covers a few
+        common moves: <strong>combining</strong> features (price ÷ square
+        footage = price per square foot), and <strong>extracting</strong>
+        parts of a feature (pulling "day of week" or "is it a weekend?"
+        out of a raw timestamp — a model can't use
+        <span class="mono">"2024-03-15T14:30:00"</span> directly as one
+        meaningful number, but "is it a weekend?" might matter a lot).
+      </p>
+
+      <h2>Encoding categories as numbers</h2>
+      <script>initJargonBox("one-hot encoding",
+        "A way of turning a category into numbers: create one new column per possible category, and put a 1 in the column that matches, 0 in all the others.");</script>
+      <p>
+        Chapter 2.2 established that a model needs numbers to work with.
+        But a raw category like "neighborhood: A, B, or C" isn't a
+        number. <span class="jargon-term">One-hot encoding</span> fixes
+        this: create one column per category, and put a 1 in whichever
+        column matches, 0 in the rest. "Neighborhood B" becomes the
+        vector <span class="mono">[0, 1, 0]</span>.
+      </p>
+
+      <h2>Worked example: a tiny housing table</h2>
+      <table class="data-table">
+        <tr><th>House</th><th>Price</th><th>Sqft</th><th>Price/Sqft</th><th>Year Built</th><th>Age (2025)</th></tr>
+        <tr><td>1</td><td>$400,000</td><td>2,000</td><td>$200</td><td>1995</td><td>30</td></tr>
+        <tr><td>2</td><td>$650,000</td><td>2,500</td><td>$260</td><td>2015</td><td>10</td></tr>
+        <tr><td>3</td><td>$300,000</td><td>1,800</td><td>$167</td><td>1970</td><td>55</td></tr>
+      </table>
+      <p>None of the last two columns were in the original listing — both are engineered from raw facts that were.</p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+
+        <p style="margin-top:0; font-size:13px; color:#6e7681; text-transform:uppercase; letter-spacing:0.04em;">Encoding a category as numbers</p>
+        <div class="demo-actions" id="onehot-buttons">
+          <div class="quiz-option" data-hood="A">Neighborhood A</div>
+          <div class="quiz-option" data-hood="B">Neighborhood B</div>
+          <div class="quiz-option" data-hood="C">Neighborhood C</div>
+        </div>
+        <div class="tensor-row" id="onehot-cells" style="margin-top:12px;"></div>
+        <p id="onehot-readout" class="demo-readout"></p>
+
+        <p style="margin-top:24px; font-size:13px; color:#6e7681; text-transform:uppercase; letter-spacing:0.04em;">Combining features</p>
+        <div class="demo-controls">
+          <label class="demo-slider-label">Price: $<span id="price-value">400,000</span>
+            <input type="range" id="price-slider" min="100000" max="800000" step="10000" value="400000">
+          </label>
+          <label class="demo-slider-label">Square footage: <span id="sqft-value">2,000</span>
+            <input type="range" id="sqft-slider" min="500" max="4000" step="50" value="2000">
+          </label>
+        </div>
+        <p id="combine-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var hoodButtons = document.querySelectorAll('#onehot-buttons .quiz-option');
+          var cellsContainer = document.getElementById('onehot-cells');
+          var onehotReadout = document.getElementById('onehot-readout');
+          var hoods = ['A', 'B', 'C'];
+          var cells = hoods.map(function () {
+            var c = document.createElement('div');
+            c.className = 'tensor-cell';
+            cellsContainer.appendChild(c);
+            return c;
+          });
+
+          function selectHood(hood) {
+            hoodButtons.forEach(function (b) { b.classList.remove('correct'); });
+            document.querySelector('#onehot-buttons .quiz-option[data-hood="' + hood + '"]').classList.add('correct');
+            var vec = hoods.map(function (h) { return h === hood ? 1 : 0; });
+            cells.forEach(function (c, i) { c.style.background = vec[i] ? 'rgba(63,185,80,0.6)' : 'rgba(188,140,255,0.15)'; c.style.borderColor = vec[i] ? '#3fb950' : '#bc8cff'; });
+            onehotReadout.textContent = 'Neighborhood = ' + hood + ' → one-hot vector: [' + vec.join(', ') + ']';
+          }
+
+          hoodButtons.forEach(function (btn) {
+            btn.addEventListener('click', function () { selectHood(btn.getAttribute('data-hood')); });
+          });
+          selectHood('B');
+
+          var priceSlider = document.getElementById('price-slider');
+          var sqftSlider = document.getElementById('sqft-slider');
+          var priceValue = document.getElementById('price-value');
+          var sqftValue = document.getElementById('sqft-value');
+          var combineReadout = document.getElementById('combine-readout');
+
+          function updateCombine() {
+            var price = parseInt(priceSlider.value, 10);
+            var sqft = parseInt(sqftSlider.value, 10);
+            priceValue.textContent = price.toLocaleString();
+            sqftValue.textContent = sqft.toLocaleString();
+            var perSqft = Math.round(price / sqft);
+            combineReadout.textContent = 'Price per sqft = $' + price.toLocaleString() + ' / ' + sqft.toLocaleString() + ' = $' + perSqft + '/sqft';
+          }
+
+          priceSlider.addEventListener('input', updateCombine);
+          sqftSlider.addEventListener('input', updateCombine);
+          updateCombine();
+        })();
+      </script>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Feature engineering creates new, more useful features from raw data — by combining, extracting, encoding, or scaling.</li>
+          <li>Combining features (like price ÷ square footage) can be more predictive than either raw feature alone.</li>
+          <li>Categories have to be encoded as numbers before a model can use them — one-hot encoding is a common way.</li>
+          <li>This reuses Chapter 2.2's core idea: everything a model sees has to become numbers first.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-3-4">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What is feature engineering?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! It's about building better inputs, not just using raw ones as-is.">Creating new, more useful features from raw data.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — feature engineering usually adds useful derived features, it doesn't strip everything down to one.">Deleting every feature except one.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that's Chapter 3.2's topic; feature engineering is about building new features, not fixing broken ones.">A synonym for cleaning missing values.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. A raw category like "neighborhood: A, B, or C" needs to become numbers before a model can use it. What's a common way to do that?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a model is a mathematical function (Chapters 1.3/2.1); it needs numbers, not raw text.">Leave it as text; models can read text categories directly.</div>
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! One column per category, with a 1 marking the match.">One-hot encoding — separate 0/1 columns, one per category.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — categories can absolutely be used, once encoded as numbers.">Delete the feature, since categories can never be used.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. Why might "price per square foot" be a more useful feature than "price" and "square footage" kept separate?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! It combines two raw numbers into a single, more directly comparable measure.">It combines two raw numbers into a single, more directly comparable and often more predictive measure.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — price per square foot is a genuinely different, derived quantity, not the same as price alone.">It's mathematically identical to price alone.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — combined, engineered features are extremely common in real datasets.">Combined features are never allowed in real datasets.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -600,6 +776,7 @@
     initQuiz(document.getElementById('quiz-3-1'));
     initQuiz(document.getElementById('quiz-3-2'));
     initQuiz(document.getElementById('quiz-3-3'));
+    initQuiz(document.getElementById('quiz-3-4'));
     initProgressTracking();
   })();
 </script>
