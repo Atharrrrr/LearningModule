@@ -23,7 +23,9 @@
     <a class="nav-item" data-chapter-id="1-2" href="#chapter-1-2">
       <span class="nav-dot"></span>1.2 The Three Ways Machines Learn
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>1.3 Machines Don't Think, They Fit Curves</div>
+    <a class="nav-item" data-chapter-id="1-3" href="#chapter-1-3">
+      <span class="nav-dot"></span>1.3 Machines Don't Think, They Fit Curves
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>1.4 A Short History of AI</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>1.5 The Job Landscape</div>
   </nav>
@@ -477,6 +479,242 @@ agent.<span class="f">learn</span>(reward)</pre>
 
     </section>
 
+    <section id="chapter-1-3">
+      <div class="chapter-eyebrow">Part I · Chapter 1.3</div>
+      <h1 class="chapter-title">Machines Don't Think, They Fit Curves</h1>
+
+      <p class="lede">
+        "The model learned that..." makes it sound like something is
+        understanding. Underneath, something much simpler — and much more
+        mechanical — is happening.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">📏 Frame of reference</div>
+        <p>
+          Tailors and drafters use a tool called a French curve — or
+          sometimes just a bendy strip of flexible plastic — to draw a
+          smooth line through a set of pinned points on paper. You don't
+          calculate the curve; you just bend the strip until it passes as
+          close as possible to every pin, then trace it. The strip doesn't
+          understand the shape it's making. It's just bending until it
+          fits. That bending-until-it-fits process — done with numbers
+          instead of plastic — is, mechanically, most of what "a machine
+          learned something" actually means.
+        </p>
+      </div>
+
+      <h2>What a "model" actually is</h2>
+      <script>initJargonBox("model",
+        "A mathematical function that turns an input into an output; exactly how it behaves is controlled by a set of adjustable numbers called its parameters.");</script>
+      <script>initJargonBox("parameters",
+        "The adjustable numbers inside a model that control exactly how it turns an input into an output — the \"knobs\" that training tunes.");</script>
+      <p>
+        A <span class="jargon-term">model</span> is just a
+        function — take some input, do some math to it, get an output.
+        What makes it a <em>model</em> rather than a fixed formula is that
+        the math has knobs on it: adjustable numbers called
+        <span class="jargon-term">parameters</span>. Change the knobs and
+        the exact same function produces different outputs for the same
+        input. A very simple model might be as plain as
+        <span class="mono">score = m × hours + b</span> — a straight
+        line, where <span class="mono">m</span> and
+        <span class="mono">b</span> are the two parameters, the knobs you
+        can turn.
+      </p>
+
+      <h2>What "training" and "prediction" actually mean</h2>
+      <script>initJargonBox("training",
+        "The process of searching for parameter values that make a model's outputs match real examples as closely as possible.");</script>
+      <script>initJargonBox("prediction",
+        "The output a trained model produces when given a new input it hasn't seen labeled before.");</script>
+      <p>
+        <span class="jargon-term">Training</span> is nothing more than
+        searching for the knob settings — the parameter values — that make
+        the model's curve pass as close as possible to a pile of real
+        examples. Once those knobs are set, running the model on a brand
+        new input — one it's never seen — to get an output is called
+        making a <span class="jargon-term">prediction</span>. The model
+        never had to understand what "hours studied" or "exam score" mean
+        as concepts. It only ever had to find numbers that made a curve
+        match a pattern.
+      </p>
+
+      <h2>Worked example: fit a line to real-ish data</h2>
+      <p>
+        Say you have seven students, and for each one you know hours
+        studied and their exam score. Try two different knob settings for
+        <span class="mono">score = m × hours + b</span>:
+      </p>
+      <ul>
+        <li>
+          <strong>m = 1, b = 10</strong> — for a student who studied 7
+          hours, this predicts a score of 17. Every real student in the
+          data scored way higher than that. A bad fit — the line is too
+          flat and starts too low.
+        </li>
+        <li>
+          <strong>m = 6, b = 45</strong> — for that same 7-hour student,
+          this predicts 87. The real students' scores land close to this
+          line all the way across. A good fit.
+        </li>
+      </ul>
+      <p>Try it yourself below — the same seven students are plotted as dots.</p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          Drag the sliders to bend the line until it fits the dots, or
+          snap straight to the best fit and see what training would find.
+        </p>
+
+        <svg id="fit-chart" viewBox="0 0 640 320" overflow="hidden" role="img" aria-label="Scatter plot of hours studied vs. exam score with an adjustable line">
+          <line x1="60" y1="280" x2="600" y2="280" stroke="#30363d" stroke-width="1"></line>
+          <line x1="60" y1="20" x2="60" y2="280" stroke="#30363d" stroke-width="1"></line>
+          <text x="330" y="308" text-anchor="middle" fill="#6e7681" font-size="12">Hours studied →</text>
+          <text x="22" y="150" text-anchor="middle" fill="#6e7681" font-size="12" transform="rotate(-90 22 150)">Exam score →</text>
+          <line id="fit-line" x1="60" y1="270" x2="600" y2="192" stroke="#3fb950" stroke-width="3"></line>
+        </svg>
+
+        <div class="demo-controls">
+          <label class="demo-slider-label">Slope (steepness): <span id="slope-value">1.0</span>
+            <input type="range" id="slope-slider" min="0" max="10" step="0.5" value="1">
+          </label>
+          <label class="demo-slider-label">Intercept (starting point): <span id="intercept-value">10</span>
+            <input type="range" id="intercept-slider" min="0" max="90" step="1" value="10">
+          </label>
+        </div>
+
+        <p id="fit-readout" class="demo-readout"></p>
+
+        <div class="demo-actions">
+          <div class="quiz-option" id="best-fit-btn">✓ Snap to best fit</div>
+          <div class="quiz-option" id="reset-fit-btn">↺ Reset</div>
+        </div>
+      </div>
+
+      <script>
+        (function () {
+          var points = [[1, 52], [2, 58], [3, 60], [4, 68], [5, 74], [6, 82], [7, 88]];
+          var svg = document.getElementById('fit-chart');
+          var fitLine = document.getElementById('fit-line');
+          var slopeSlider = document.getElementById('slope-slider');
+          var interceptSlider = document.getElementById('intercept-slider');
+          var slopeValue = document.getElementById('slope-value');
+          var interceptValue = document.getElementById('intercept-value');
+          var readout = document.getElementById('fit-readout');
+          var bestBtn = document.getElementById('best-fit-btn');
+          var resetBtn = document.getElementById('reset-fit-btn');
+
+          var xMin = 0, xMax = 8, yMin = 0, yMax = 100;
+          var plotX0 = 60, plotX1 = 600, plotY0 = 280, plotY1 = 20;
+
+          function xPix(x) { return plotX0 + (x - xMin) / (xMax - xMin) * (plotX1 - plotX0); }
+          function yPix(y) { return plotY0 + (y - yMin) / (yMax - yMin) * (plotY1 - plotY0); }
+
+          points.forEach(function (p) {
+            var c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            c.setAttribute('cx', xPix(p[0]));
+            c.setAttribute('cy', yPix(p[1]));
+            c.setAttribute('r', '5');
+            c.setAttribute('fill', '#bc8cff');
+            svg.appendChild(c);
+          });
+
+          function avgGap(m, b) {
+            var total = 0;
+            points.forEach(function (p) { total += Math.abs(p[1] - (m * p[0] + b)); });
+            return total / points.length;
+          }
+
+          function update() {
+            var m = parseFloat(slopeSlider.value);
+            var b = parseFloat(interceptSlider.value);
+            slopeValue.textContent = m.toFixed(1);
+            interceptValue.textContent = b.toFixed(0);
+            fitLine.setAttribute('x1', xPix(xMin));
+            fitLine.setAttribute('y1', yPix(b + m * xMin));
+            fitLine.setAttribute('x2', xPix(xMax));
+            fitLine.setAttribute('y2', yPix(b + m * xMax));
+            var gap = avgGap(m, b);
+            var quality = gap < 4 ? 'tight fit' : gap < 10 ? 'okay fit' : 'loose fit';
+            readout.textContent = 'score ≈ ' + m.toFixed(1) + ' × hours + ' + b.toFixed(0) +
+              '  —  average gap from the dots: ' + gap.toFixed(1) + ' points (' + quality + ')';
+          }
+
+          slopeSlider.addEventListener('input', update);
+          interceptSlider.addEventListener('input', update);
+          bestBtn.addEventListener('click', function () {
+            slopeSlider.value = '6';
+            interceptSlider.value = '45';
+            update();
+          });
+          resetBtn.addEventListener('click', function () {
+            slopeSlider.value = '1';
+            interceptSlider.value = '10';
+            update();
+          });
+
+          update();
+        })();
+      </script>
+
+      <p>
+        That "average gap from the dots" number is a rough, friendly stand-in
+        for something with a formal name — a <strong>loss</strong> — that
+        you'll meet properly in Part V. For now, the intuition is all that
+        matters: smaller gap, better fit, and training is just an automatic,
+        much faster way of finding the knob settings that shrink that gap —
+        which you just did by hand.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>A model is a mathematical function with adjustable numbers called parameters — not something that "understands."</li>
+          <li>Training means searching for parameter values that make the model's outputs match real examples as closely as possible.</li>
+          <li>A prediction is just the model's output for a new, unlabeled input.</li>
+          <li>"Learning" in ML is curve-fitting to a pattern in data, not comprehension of meaning.</li>
+          <li>Given a line's slope and intercept, you can judge roughly how well it fits a set of points.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-1-3">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. In this chapter's framing, what is a "model," fundamentally?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — nothing here requires understanding in the human sense.">A conscious system that understands what it's looking at.</div>
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! A model is a function whose behavior is controlled by adjustable parameters.">A mathematical function with adjustable parameters that turns inputs into outputs.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that describes rule-based AI from Chapter 1.1, which never adjusts itself from data.">A fixed list of hand-written if/then rules.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. What does "training" a model mean?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — nothing about training involves human-style understanding.">Teaching it to understand meaning the way a person does.</div>
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Training searches for the parameter values that best match the model's outputs to real examples.">Searching for parameter values that make its outputs match real examples as closely as possible.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — training isn't about deleting data.">Deleting incorrect data from its memory.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. In the demo, why did a bigger "average gap" number mean a worse-fitting line?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! It's the average distance between the line's prediction and each real dot.">It measures how far the line's prediction was from each real dot, on average.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — it has nothing to do with how many hours the line covers.">It counts how many hours the line covers on the chart.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a steep line can still fit well or badly; steepness alone isn't the gap.">It measures how steep the line's slope is.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -484,6 +722,7 @@ agent.<span class="f">learn</span>(reward)</pre>
   (function () {
     initQuiz(document.getElementById('quiz-1-1'));
     initQuiz(document.getElementById('quiz-1-2'));
+    initQuiz(document.getElementById('quiz-1-3'));
     initProgressTracking();
   })();
 </script>

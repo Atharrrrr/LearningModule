@@ -374,6 +374,43 @@ pre.python-block .f { color: var(--purple); } /* function */
 }
 
 /* ---------------------------------------------------------------------- */
+/* Slider-controlled demo charts (reusable)                                */
+/* ---------------------------------------------------------------------- */
+
+.demo-controls {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.demo-slider-label {
+  font-size: 13px;
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.demo-slider-label input[type="range"] {
+  accent-color: var(--purple);
+  width: 220px;
+}
+
+.demo-readout {
+  margin-top: 12px;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.demo-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+/* ---------------------------------------------------------------------- */
 /* Recap block                                                             */
 /* ---------------------------------------------------------------------- */
 
