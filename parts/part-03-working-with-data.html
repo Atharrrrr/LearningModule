@@ -35,7 +35,9 @@
     <a class="nav-item" data-chapter-id="3-6" href="#chapter-3-6">
       <span class="nav-dot"></span>3.6 Data Augmentation
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>3.7 Bias in Data, Bias in Models [D]</div>
+    <a class="nav-item" data-chapter-id="3-7" href="#chapter-3-7">
+      <span class="nav-dot"></span>3.7 Bias in Data, Bias in Models [D]
+    </a>
   </nav>
 
   <main>
@@ -1114,6 +1116,154 @@
 
     </section>
 
+    <section id="chapter-3-7">
+      <div class="chapter-eyebrow">Part III · Chapter 3.7 · Deep-dive</div>
+      <h1 class="chapter-title">Bias in Data, Bias in Models</h1>
+
+      <p class="lede">
+        This closes out Part III by tying its threads together into the
+        single most important warning in the whole Part: a model has no
+        concept of fairness. It only has whatever pattern was in its data.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🪞 Frame of reference</div>
+        <p>
+          Imagine training a model to recognize "what a great leader
+          looks like," shown only photographs of historical leaders from
+          one narrow demographic. The model would confidently learn that
+          narrow appearance <em>is</em> "what a leader looks like" — not
+          out of malice, and not because it's true, but because that's
+          literally all it ever saw. Chapter 1.3 already established that
+          a model doesn't understand meaning — it fits patterns in data.
+          Bias is the direct, unavoidable consequence of that same fact.
+        </p>
+      </div>
+
+      <h2>Where bias actually comes from</h2>
+      <script>initJargonBox("bias (in data and models)",
+        "A systematic skew in a dataset — or in a model trained on it — that doesn't fairly represent the population or situations the model will actually be used on. A distinct idea from the statistical \"bias\" in bias-variance (Chapter 5.1), which is about a different kind of error.");</script>
+      <p>
+        <span class="jargon-term">Bias</span> usually traces back to
+        threads already covered in this Part: who happened to be included
+        during data collection (Chapter 3.1's sources are never neutral),
+        historical decisions baked directly into labels, or imbalanced
+        representation (Chapter 3.5) where one group dominates the
+        training set. None of this requires anyone to act in bad faith —
+        it's a natural, near-inevitable outcome of how data gets
+        collected, which is exactly why it has to be actively looked for
+        rather than assumed away.
+      </p>
+
+      <h2>Worked example: a resume-screening tool</h2>
+      <p>
+        Imagine a company builds a resume-screening tool trained on ten
+        years of past hiring decisions. If those historical decisions
+        leaned toward hiring one group for a role — for whatever
+        historical reason — the tool learns that lean as "what a good
+        candidate looks like," and can down-rank equally qualified
+        candidates who don't fit the pattern. This isn't hypothetical:
+        several real companies have run into versions of exactly this
+        problem and had to scrap the resulting tools.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          A simplified illustration: train a toy "is this a cat?" model on photos that are mostly orange cats, then test it on a gray cat.
+        </p>
+
+        <div class="demo-controls">
+          <label class="demo-slider-label">% of training photos that are orange cats: <span id="bias-pct-value">90</span>%
+            <input type="range" id="bias-pct-slider" min="50" max="100" step="5" value="90">
+          </label>
+        </div>
+
+        <div class="trial-grid" id="bias-grid"></div>
+        <p id="bias-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var slider = document.getElementById('bias-pct-slider');
+          var pctValue = document.getElementById('bias-pct-value');
+          var grid = document.getElementById('bias-grid');
+          var readout = document.getElementById('bias-readout');
+
+          for (var i = 0; i < 20; i++) {
+            var sq = document.createElement('div');
+            sq.className = 'trial-square';
+            grid.appendChild(sq);
+          }
+          var squares = grid.querySelectorAll('.trial-square');
+
+          function update() {
+            var pct = parseInt(slider.value, 10);
+            pctValue.textContent = pct;
+            var orangeCount = Math.round(20 * pct / 100);
+            squares.forEach(function (sq, i) {
+              sq.className = 'trial-square ' + (i < orangeCount ? 'orange' : 'gray');
+            });
+
+            var grayAccuracy = Math.max(0, Math.round(100 - (pct - 50) * 2));
+            var explanation = grayAccuracy >= 90
+              ? 'a balanced training set taught it to recognize both well.'
+              : 'it never saw enough gray cats in training to learn what one looks like.';
+            readout.textContent = 'Training set: ' + pct + '% orange cats. Illustrative accuracy recognizing a gray cat at test time: ' +
+              grayAccuracy + '% — ' + explanation;
+          }
+
+          slider.addEventListener('input', update);
+          update();
+        })();
+      </script>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>A model reproduces whatever pattern exists in its training data — including any unfair skew — with no built-in concept of fairness.</li>
+          <li>Bias in data usually comes from who/what was included during collection, or from historical decisions baked into labels.</li>
+          <li>A skewed training set produces a model with real blind spots on whatever it rarely or never saw.</li>
+          <li>This is why deliberate checks for representation matter, alongside — not instead of — accuracy.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-3-7">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. Why can a trained model end up biased, even if no one intended it to be?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! A model fits whatever pattern is in the data, fair or not — it has no separate concept of fairness.">Because a model just fits patterns in its training data, including any unfair skew, with no built-in concept of fairness.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — bias usually comes from the data, not from explicit rules a programmer wrote on purpose.">Because all models are programmed with explicit biased rules by their creators.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — model bias is a well-documented, real phenomenon, not a misconception.">Models are never actually biased; this is a misconception.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. A hiring tool trained on ten years of past hiring decisions that favored one group is an example of what kind of bias source?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Past decisions became the 'correct answers' the model learned to imitate.">Historical decisions baked into the training labels.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — this scenario is about what the data represents, not a coding defect.">A bug in the model's code that has nothing to do with the data.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — this pattern has a clear, identifiable, and well-documented cause.">Random chance with no identifiable cause.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. In the demo, why did illustrative accuracy on gray cats drop as training became more heavily orange-cat-only?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! A model can't learn a pattern it was never shown.">Because the model never saw enough (or any) examples of gray cats to learn what they look like.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — there's no such mathematical incompatibility; it's purely about what the training data contained.">Because orange cats and gray cats are mathematically incompatible.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo shows the opposite: heavier orange-only training hurt gray-cat performance.">Accuracy on gray cats actually improved as training became more orange-heavy.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -1125,6 +1275,7 @@
     initQuiz(document.getElementById('quiz-3-4'));
     initQuiz(document.getElementById('quiz-3-5'));
     initQuiz(document.getElementById('quiz-3-6'));
+    initQuiz(document.getElementById('quiz-3-7'));
     initProgressTracking();
   })();
 </script>

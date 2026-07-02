@@ -1,11 +1,11 @@
 # Progress
 
 ## Status
-In progress. 24 of 98 chapters written. Part I and Part II are both complete.
+In progress. 25 of 98 chapters written. Parts I, II, and III are all complete.
 
 ## Next chapter due
-Part III, Chapter 3.7 — Bias in Data, Bias in Models [D]
-(parts/part-03-working-with-data.html already exists — insert the new <section> before </main> and flip 3.7's sidebar entry from unwritten to live; this is the last chapter of Part III)
+Part IV, Chapter 4.1 — Linear Regression
+(first chapter of parts/part-04-classical-ml.html — create the file with a full sidebar TOC for Part IV's 9 chapters)
 
 ## Completed chapters
 - 0.1 How This Book Works — parts/part-00-before-we-begin.html
@@ -32,6 +32,7 @@ Part III, Chapter 3.7 — Bias in Data, Bias in Models [D]
 - 3.4 Feature Engineering — parts/part-03-working-with-data.html
 - 3.5 Imbalanced Data & Why Accuracy Lies — parts/part-03-working-with-data.html
 - 3.6 Data Augmentation — parts/part-03-working-with-data.html
+- 3.7 Bias in Data, Bias in Models [D] — parts/part-03-working-with-data.html
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in
