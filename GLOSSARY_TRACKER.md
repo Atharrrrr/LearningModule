@@ -26,3 +26,5 @@ instead of repeating it.
 | Data Scientist | 1.5 The Job Landscape | Someone who analyzes data to answer business questions and build predictive models, often working earlier in the pipeline than an ML Engineer — exploring data and running experiments before or alongside a deployed system. |
 | variable | 2.1 Numbers, Variables & Functions | A name that stands in for a number that can change or be filled in later — like x, or hours, or score — rather than a fixed number itself. |
 | function | 2.1 Numbers, Variables & Functions | A rule that takes one or more inputs and produces exactly one output, every single time you give it the same input — written f(x), meaning "the function f applied to input x." |
+| vector | 2.2 Vectors — Data as Arrows in Space | An ordered list of numbers describing something, which can be pictured as an arrow from an origin point to a specific location in space — one axis per number in the list. |
+| feature | 2.2 Vectors — Data as Arrows in Space | One measured property used to describe something numerically — like a movie's "action score" or a house's square footage. A vector is built out of features, one per number. |

@@ -20,7 +20,9 @@
     <a class="nav-item" data-chapter-id="2-1" href="#chapter-2-1">
       <span class="nav-dot"></span>2.1 Numbers, Variables &amp; Functions
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>2.2 Vectors — Data as Arrows in Space</div>
+    <a class="nav-item" data-chapter-id="2-2" href="#chapter-2-2">
+      <span class="nav-dot"></span>2.2 Vectors — Data as Arrows in Space
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>2.3 Matrices — Tables That Transform Data</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>2.4 Dot Products &amp; Similarity</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>2.5 Probability, the Intuitive Way</div>
@@ -240,12 +242,194 @@
 
     </section>
 
+    <section id="chapter-2-2">
+      <div class="chapter-eyebrow">Part II · Chapter 2.2</div>
+      <h1 class="chapter-title">Vectors — Data as Arrows in Space</h1>
+
+      <p class="lede">
+        Before a model can do anything with a photo, a word, or a movie, it
+        has to first become a list of numbers. That list has a name, and a
+        shape you can actually picture.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🧭 Frame of reference</div>
+        <p>
+          Giving someone directions — "walk 3 blocks east, then 2 blocks
+          north" — is really just two numbers: 3 and 2. Those two numbers
+          do double duty: they're an instruction (how to move), and they're
+          also a destination (an arrow from where you're standing to
+          exactly one point on the map). Any ordered list of numbers can be
+          read the same way — as an arrow from a starting point to a
+          specific location in space.
+        </p>
+      </div>
+
+      <h2>A vector is a list of numbers, and also an arrow</h2>
+      <script>initJargonBox("vector",
+        "An ordered list of numbers describing something, which can be pictured as an arrow from an origin point to a specific location in space — one axis per number in the list.");</script>
+      <script>initJargonBox("feature",
+        "One measured property used to describe something numerically — like a movie's \"action score\" or a house's square footage. A vector is built out of features, one per number.");</script>
+      <p>
+        A <span class="jargon-term">vector</span> is just an ordered list
+        of numbers. With two numbers, you can draw it as an arrow on a flat
+        page — one number for how far along the x-axis, one for how far up
+        the y-axis. Each number in that list describes one
+        <span class="jargon-term">feature</span> — one measured property of
+        whatever you're describing. A vector with 3 features is an arrow in
+        3D space; one with 300 features is still a perfectly valid vector,
+        it's just impossible to draw — the arrow idea is a mental picture
+        that happens to run out at 3 dimensions, not a hard limit on how
+        many numbers a vector can hold.
+      </p>
+
+      <h2>Worked example: a movie as a vector</h2>
+      <p>
+        Rate a movie's "action-ness" and "romance-ness," each from 0 to 10.
+        <strong>Movie A</strong>, a loud summer blockbuster, might score
+        <span class="mono">(8, 2)</span> — high action, low romance.
+        <strong>Movie B</strong>, a slow-burn love story, might score
+        <span class="mono">(2, 9)</span> — the opposite. Both are
+        2-dimensional vectors: two numbers, two features, one arrow each.
+        Try building your own below.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">Drag the sliders to build your own vector, and compare it to the two movies.</p>
+
+        <svg id="vector-plot" viewBox="0 0 500 480" overflow="hidden" role="img" aria-label="2D plot of vectors as arrows, comparing a user-controlled vector to two example movie vectors">
+          <defs>
+            <marker id="arrow-user" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="#bc8cff"></path>
+            </marker>
+            <marker id="arrow-a" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="#3fb950"></path>
+            </marker>
+            <marker id="arrow-b" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="#58a6ff"></path>
+            </marker>
+          </defs>
+
+          <line x1="60" y1="440" x2="460" y2="440" stroke="#30363d" stroke-width="1"></line>
+          <line x1="60" y1="440" x2="60" y2="40" stroke="#30363d" stroke-width="1"></line>
+          <text x="260" y="465" text-anchor="middle" fill="#6e7681" font-size="12">Action score →</text>
+          <text x="30" y="240" text-anchor="middle" fill="#6e7681" font-size="12" transform="rotate(-90 30 240)">Romance score →</text>
+
+          <line x1="60" y1="440" x2="380" y2="360" stroke="#3fb950" stroke-width="2.5" marker-end="url(#arrow-a)"></line>
+          <text x="388" y="358" fill="#3fb950" font-size="12" font-family="monospace">Movie A (8,2)</text>
+
+          <line x1="60" y1="440" x2="140" y2="80" stroke="#58a6ff" stroke-width="2.5" marker-end="url(#arrow-b)"></line>
+          <text x="100" y="72" fill="#58a6ff" font-size="12" font-family="monospace">Movie B (2,9)</text>
+
+          <line id="user-arrow" x1="60" y1="440" x2="260" y2="240" stroke="#bc8cff" stroke-width="3" marker-end="url(#arrow-user)"></line>
+        </svg>
+
+        <div class="demo-controls">
+          <label class="demo-slider-label">Action score: <span id="vec-x-value">5</span>
+            <input type="range" id="vec-x-slider" min="0" max="10" step="1" value="5">
+          </label>
+          <label class="demo-slider-label">Romance score: <span id="vec-y-value">5</span>
+            <input type="range" id="vec-y-slider" min="0" max="10" step="1" value="5">
+          </label>
+        </div>
+
+        <p id="vec-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var xSlider = document.getElementById('vec-x-slider');
+          var ySlider = document.getElementById('vec-y-slider');
+          var xValue = document.getElementById('vec-x-value');
+          var yValue = document.getElementById('vec-y-value');
+          var userArrow = document.getElementById('user-arrow');
+          var readout = document.getElementById('vec-readout');
+
+          var plotX0 = 60, plotX1 = 460, plotY0 = 440, plotY1 = 40;
+
+          function xPix(v) { return plotX0 + (v / 10) * (plotX1 - plotX0); }
+          function yPix(v) { return plotY0 + (v / 10) * (plotY1 - plotY0); }
+
+          function update() {
+            var x = parseInt(xSlider.value, 10);
+            var y = parseInt(ySlider.value, 10);
+            xValue.textContent = x;
+            yValue.textContent = y;
+            userArrow.setAttribute('x2', xPix(x));
+            userArrow.setAttribute('y2', yPix(y));
+            readout.textContent = 'Your vector: (' + x + ', ' + y + ') — described by 2 numbers, so it lives in 2 dimensions.';
+          }
+
+          xSlider.addEventListener('input', update);
+          ySlider.addEventListener('input', update);
+          update();
+        })();
+      </script>
+
+      <div class="panel">
+        <div class="panel-label python">▸ Python — run in your own environment</div>
+        <pre class="python-block"><span class="c"># A vector is just a list of numbers — one per feature</span>
+movie_a = [<span class="n">8</span>, <span class="n">2</span>]   <span class="c"># action, romance</span>
+movie_b = [<span class="n">2</span>, <span class="n">9</span>]
+
+<span class="c"># Chapter 2.11 introduces NumPy arrays, the tool ML code</span>
+<span class="c"># actually uses for vectors — but a plain list works the same way</span></pre>
+      </div>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>A vector is an ordered list of numbers, picturable as an arrow from an origin to a point.</li>
+          <li>Each number in a vector describes one feature.</li>
+          <li>The number of features in a vector is its number of dimensions.</li>
+          <li>ML represents everything — images, words, customers, movies — as vectors before a model can process it.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-2-2">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What is a vector?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! And that ordered list can be pictured as an arrow.">An ordered list of numbers describing something.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a vector is specifically an ordered list with direction, not just a single value.">A single number with no direction.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a function is a rule that transforms inputs; a vector is a data value.">Another word for a function.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. A movie is represented as the vector (8, 2) — action score 8, romance score 2. How many dimensions is this vector?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — 8 is one of the values in the vector, not the dimension count.">8</div>
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Two numbers means two features, which means two dimensions.">2</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — there's no 10 anywhere in this vector.">10</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. Why does ML represent things like images, words, or movies as vectors before feeding them to a model?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! A model is a mathematical function (Chapter 1.3/2.1), and functions operate on numbers.">Because a model is a mathematical function, and functions need numbers to operate on.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — this isn't about appearance, it's a functional requirement.">Because vectors are easier to look at than raw data.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — there's no such legal requirement; it's a practical necessity for the math to work.">Because it's legally required for AI systems.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
 <script>
   (function () {
     initQuiz(document.getElementById('quiz-2-1'));
+    initQuiz(document.getElementById('quiz-2-2'));
     initProgressTracking();
   })();
 </script>
