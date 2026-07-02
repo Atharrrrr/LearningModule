@@ -18,3 +18,5 @@ instead of repeating it.
 | parameters | 1.3 Machines Don't Think, They Fit Curves | The adjustable numbers inside a model that control exactly how it turns an input into an output — the "knobs" that training tunes. |
 | training | 1.3 Machines Don't Think, They Fit Curves | The process of searching for parameter values that make a model's outputs match real examples as closely as possible. |
 | prediction | 1.3 Machines Don't Think, They Fit Curves | The output a trained model produces when given a new input it hasn't seen labeled before. |
+| Turing Test | 1.4 A Short History of AI | A thought experiment proposed by Alan Turing in 1950: if a human judge, chatting blind with both a machine and a real person, can't reliably tell which is which, the machine is said to have passed. |
+| AI winter | 1.4 A Short History of AI | A recurring period in AI's history when hype outpaces real progress, funding and interest collapse, and research slows sharply — until the next breakthrough starts a new "summer." |

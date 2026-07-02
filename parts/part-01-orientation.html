@@ -26,7 +26,9 @@
     <a class="nav-item" data-chapter-id="1-3" href="#chapter-1-3">
       <span class="nav-dot"></span>1.3 Machines Don't Think, They Fit Curves
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>1.4 A Short History of AI</div>
+    <a class="nav-item" data-chapter-id="1-4" href="#chapter-1-4">
+      <span class="nav-dot"></span>1.4 A Short History of AI [D]
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>1.5 The Job Landscape</div>
   </nav>
 
@@ -715,6 +717,194 @@ agent.<span class="f">learn</span>(reward)</pre>
 
     </section>
 
+    <section id="chapter-1-4">
+      <div class="chapter-eyebrow">Part I · Chapter 1.4 · Deep-dive</div>
+      <h1 class="chapter-title">A Short History of AI</h1>
+
+      <p class="lede">
+        AI hasn't been one smooth climb since the 1950s. It's been a
+        repeating cycle of blazing summers and bitter winters — and
+        knowing the pattern helps explain why today's boom feels different
+        to the people who lived through the earlier ones.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🌦️ Frame of reference</div>
+        <p>
+          Picture a field that's had several "seasons" over seventy years.
+          In a <strong>summer</strong>, money pours in, headlines promise
+          machines that think like people, and progress feels unstoppable.
+          Eventually the promises outrun what the technology can actually
+          deliver, funding dries up, researchers quietly move on to other
+          work, and the field goes cold for years — a <strong>winter</strong>.
+          Then some new idea thaws it out, and a new summer begins. AI has
+          been through this cycle at least twice already, and arguably is
+          in the middle of its biggest summer yet right now.
+        </p>
+      </div>
+
+      <h2>1950: a question, not an answer</h2>
+      <script>initJargonBox("Turing Test",
+        "A thought experiment proposed by Alan Turing in 1950: if a human judge, chatting blind with both a machine and a real person, can't reliably tell which is which, the machine is said to have passed.");</script>
+      <p>
+        Long before "AI" was even a phrase, mathematician Alan Turing asked
+        a simpler question: can a machine think? He didn't try to answer
+        it philosophically — he proposed a practical test instead, now
+        called the <span class="jargon-term">Turing Test</span>. It's still
+        referenced constantly today, even though the field has mostly moved
+        past it as a real benchmark.
+      </p>
+
+      <h2>1956: the field gets its name</h2>
+      <p>
+        Six years later, a group of researchers gathered for a summer
+        workshop at Dartmouth College and coined the term "artificial
+        intelligence" to describe what they were attempting to build. Their
+        proposal was famously optimistic — some believed a machine as smart
+        as a human was decades, not generations, away. That optimism is
+        what kicked off the field's first summer.
+      </p>
+
+      <h2>Winters: when the hype outran the results</h2>
+      <script>initJargonBox("AI winter",
+        "A recurring period in AI's history when hype outpaces real progress, funding and interest collapse, and research slows sharply — until the next breakthrough starts a new \"summer.\"");</script>
+      <p>
+        Early optimism ran into hard limits: computers were slow, data was
+        scarce, and the techniques of the day couldn't scale to real-world
+        problems. By the mid-1970s, funding agencies had lost patience, and
+        research money collapsed — the first
+        <span class="jargon-term">AI winter</span>. A second wave of
+        excitement in the 1980s, built around hand-coded "expert systems"
+        that encoded human knowledge as rules, produced a brief commercial
+        boom — followed by a second winter in the late 1980s when those
+        systems turned out to be brittle and expensive to maintain.
+      </p>
+
+      <h2>The quiet decades, then the boom</h2>
+      <p>
+        Through the 1990s and 2000s, progress continued — just without the
+        hype. Statistical machine learning matured steadily, out of the
+        spotlight. Then in 2012, a deep neural network called AlexNet
+        crushed a major image-recognition competition by a huge margin,
+        using GPUs to train a network far larger than anything before it.
+        That result is widely seen as the spark for the deep learning boom
+        that's still going. A 2017 architecture called the Transformer
+        (you'll meet it properly in Part VIII) made language models
+        dramatically more capable, setting up the large language models
+        that went mainstream in the early 2020s — the summer this book is
+        being written in.
+      </p>
+
+      <h2>Worked example: trace the hype curve</h2>
+      <p>Click through the timeline below to see the swings for yourself.</p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <svg id="ai-timeline" viewBox="0 0 900 300" overflow="hidden" role="img" aria-label="Timeline of AI hype and progress from 1950 to today, showing two AI winters and the current boom">
+          <rect x="316" y="40" width="64" height="220" fill="rgba(88,166,255,0.10)"></rect>
+          <text x="348" y="30" text-anchor="middle" fill="#58a6ff" font-size="11" font-family="monospace">AI WINTER</text>
+          <rect x="455" y="40" width="64" height="220" fill="rgba(88,166,255,0.10)"></rect>
+          <text x="487" y="30" text-anchor="middle" fill="#58a6ff" font-size="11" font-family="monospace">AI WINTER</text>
+
+          <line x1="60" y1="260" x2="860" y2="260" stroke="#30363d" stroke-width="1"></line>
+          <text x="60" y="280" fill="#6e7681" font-size="11">1950</text>
+          <text x="486" y="280" fill="#6e7681" font-size="11">1987</text>
+          <text x="820" y="280" fill="#6e7681" font-size="11">2023</text>
+
+          <polyline points="60,216 124,128 220,84 316,238 380,150 423,128 455,238 519,194 561,161 657,150 721,95 775,62 807,55 839,40"
+            fill="none" stroke="#bc8cff" stroke-width="2.5"></polyline>
+
+          <g class="map-node" data-label="1956 — Dartmouth Workshop" data-desc="The term &quot;artificial intelligence&quot; is coined at a summer workshop — the field's founding moment, and the start of its first summer.">
+            <circle cx="124" cy="128" r="8" fill="#161b22" stroke="#3fb950" stroke-width="2"></circle>
+          </g>
+          <g class="map-node" data-label="1974 — First AI Winter begins" data-desc="Early symbolic AI fails to deliver on its big promises. Government funding dries up for most of a decade.">
+            <circle cx="316" cy="238" r="8" fill="#161b22" stroke="#58a6ff" stroke-width="2"></circle>
+          </g>
+          <g class="map-node" data-label="1980 — Expert systems boom" data-desc="Hand-coded rule-based &quot;expert systems&quot; encoding human knowledge become commercially popular, sparking a mini-boom.">
+            <circle cx="380" cy="150" r="8" fill="#161b22" stroke="#3fb950" stroke-width="2"></circle>
+          </g>
+          <g class="map-node" data-label="1987 — Second AI Winter begins" data-desc="Expert systems turn out to be brittle and expensive to maintain. Funding collapses again.">
+            <circle cx="455" cy="238" r="8" fill="#161b22" stroke="#58a6ff" stroke-width="2"></circle>
+          </g>
+          <g class="map-node" data-label="1997 — Deep Blue beats Kasparov" data-desc="IBM's Deep Blue defeats world chess champion Garry Kasparov — a landmark for search-based AI, though still far from general intelligence.">
+            <circle cx="561" cy="161" r="8" fill="#161b22" stroke="#3fb950" stroke-width="2"></circle>
+          </g>
+          <g class="map-node" data-label="2012 — AlexNet wins ImageNet" data-desc="A deep neural network trained on GPUs crushes the ImageNet image-recognition competition, kicking off the deep learning boom that's still going.">
+            <circle cx="721" cy="95" r="8" fill="#161b22" stroke="#3fb950" stroke-width="2"></circle>
+          </g>
+          <g class="map-node" data-label="2017 — The Transformer is introduced" data-desc="A new architecture called the Transformer (Part VIII) makes it far easier to train models on language, setting up everything that follows.">
+            <circle cx="775" cy="62" r="8" fill="#161b22" stroke="#3fb950" stroke-width="2"></circle>
+          </g>
+          <g class="map-node" data-label="2023 — LLMs go mainstream" data-desc="Large language models become broadly available to the public, and generative AI enters everyday use — the summer this book is being written in.">
+            <circle cx="839" cy="40" r="8" fill="#161b22" stroke="#3fb950" stroke-width="2"></circle>
+          </g>
+        </svg>
+        <p id="timeline-caption" style="margin-top:16px; color:#8b949e; font-size:14px;">
+          Click a dot on the timeline to read about that moment.
+        </p>
+      </div>
+
+      <script>
+        (function () {
+          var caption = document.getElementById('timeline-caption');
+          var nodes = document.querySelectorAll('#ai-timeline .map-node');
+          nodes.forEach(function (node) {
+            node.style.cursor = 'pointer';
+            node.addEventListener('click', function () {
+              nodes.forEach(function (n) { n.querySelector('circle').setAttribute('r', '8'); });
+              node.querySelector('circle').setAttribute('r', '11');
+              caption.textContent = node.getAttribute('data-label') + ' — ' + node.getAttribute('data-desc');
+            });
+          });
+        })();
+      </script>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>What an "AI winter" is, and that the field has been through at least two of them.</li>
+          <li>That "artificial intelligence" as a term dates back to the 1956 Dartmouth workshop.</li>
+          <li>That 2012's AlexNet result is widely credited with starting the current deep learning boom.</li>
+          <li>That AI's history is a repeating cycle of hype and disappointment, not one steady march of progress.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-1-4">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What is an "AI winter"?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! It's a recurring boom-bust pattern, not a literal season.">A period when AI hype outpaces real progress, and funding and interest collapse as a result.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — it's a figure of speech, not a literal season.">A specific season each year when AI conferences are traditionally held.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — it refers to a funding collapse, not a literal weather event tied to one workshop.">The literal winter during which the 1956 Dartmouth workshop took place.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. Which event is widely credited with kicking off the current, still-ongoing deep learning boom?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — Dartmouth started the field's very first summer, decades before this boom.">The 1956 Dartmouth workshop.</div>
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! AlexNet's 2012 ImageNet win is the widely cited spark for today's boom.">AlexNet's 2012 ImageNet win using a deep neural network trained on GPUs.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that was a notable landmark in 1997, but it didn't start the current boom.">Deep Blue defeating Garry Kasparov at chess.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. What does the shape of AI's history — summers and winters — suggest about how the field has actually progressed?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the winters were real slowdowns, not just a smooth climb.">It's been one uninterrupted upward climb since 1950.</div>
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Hype has repeatedly outrun results, cooled off, then rebuilt around a new breakthrough.">It's been a repeating cycle of hype and disappointment, not one steady march of progress.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the pattern of summers and winters is fairly recognizable, not random.">Progress has been random, with no discernible pattern at all.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -723,6 +913,7 @@ agent.<span class="f">learn</span>(reward)</pre>
     initQuiz(document.getElementById('quiz-1-1'));
     initQuiz(document.getElementById('quiz-1-2'));
     initQuiz(document.getElementById('quiz-1-3'));
+    initQuiz(document.getElementById('quiz-1-4'));
     initProgressTracking();
   })();
 </script>
