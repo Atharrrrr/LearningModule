@@ -4,11 +4,21 @@ A 98-chapter interactive book teaching AI/ML from zero prerequisites to
 job-ready, ending with the reader able to explain YOLO, SuperPoint,
 SuperGlue, LLMs, VLMs, and diffusion models, and build a portfolio.
 
-## The one hard rule
-Write exactly ONE chapter per turn, then stop completely and wait for
-explicit approval before starting the next. Never draft a second chapter
-in the same turn, even if you have remaining capacity. Read PROGRESS.md
-first, every time, to find what's next.
+## The chapter-batching rule
+Default: write 2-3 chapters per turn (count given in the "Continue"
+message), verifying and committing each chapter individually as you
+finish it — not all at once at the end. Stop after the requested count
+and report all of them together.
+
+Exception — these are "anchor" chapters and must be written ALONE, one
+per turn, no matter what batch size was requested: 6.4 (Backpropagation),
+7.7 (Meet YOLO), 7.8 (Meet SuperPoint), 8.4 (Attention), 8.5 (The
+Transformer), 8.6 (Meet SuperGlue), 9.2 (Meet the LLM), 9.4 (Instruction
+Tuning & RLHF), 11.4 (Diffusion Models), 12.4 (Deep RL & RLHF Revisited).
+If a requested batch would reach one of these, stop the batch right
+before it and write only up through the chapter immediately prior.
+
+Read PROGRESS.md first, every time, to find what's next.
 
 ## Where things live
 - CURRICULUM.md — full 98-chapter list with [C]ore/[D]eep-dive tags. Only
