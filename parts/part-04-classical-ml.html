@@ -20,7 +20,9 @@
     <a class="nav-item" data-chapter-id="4-1" href="#chapter-4-1">
       <span class="nav-dot"></span>4.1 Linear Regression
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>4.2 Logistic Regression</div>
+    <a class="nav-item" data-chapter-id="4-2" href="#chapter-4-2">
+      <span class="nav-dot"></span>4.2 Logistic Regression
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>4.3 How Learning Actually Happens</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>4.4 k-Nearest Neighbors</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>4.5 Decision Trees</div>
@@ -192,12 +194,170 @@
 
     </section>
 
+    <section id="chapter-4-2">
+      <div class="chapter-eyebrow">Part IV · Chapter 4.2</div>
+      <h1 class="chapter-title">Logistic Regression</h1>
+
+      <p class="lede">
+        Despite the name, this isn't for predicting a number — it's for
+        predicting a category, by squashing Chapter 4.1's weighted sum
+        into a probability that can never leave 0 to 1.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🎚️ Frame of reference</div>
+        <p>
+          Picture a confidence dial that physically cannot turn past its
+          end stops — no matter how hard you push it, it curves and
+          flattens out near 0% and 100% instead of shooting past them.
+          Linear regression's raw weighted sum can output any number at
+          all — even far below 0 or above 1, which makes no sense as a
+          probability. Logistic regression bolts that confidence dial
+          onto the end of the calculation, guaranteeing a sensible answer
+          every time.
+        </p>
+      </div>
+
+      <h2>Squashing a number into a probability</h2>
+      <script>initJargonBox("classification",
+        "Predicting a category (like \"spam\" or \"not spam\") rather than a continuous number — the counterpart to Chapter 4.1's regression, which predicts numbers.");</script>
+      <script>initJargonBox("sigmoid function",
+        "A function that squashes any real number into a value between 0 and 1, shaped like a flattened S-curve — used to turn a raw weighted sum into a valid probability.");</script>
+      <script>initJargonBox("logistic regression",
+        "A classification technique that computes the same weighted sum as linear regression, then passes it through the sigmoid function to produce a probability between 0 and 1.");</script>
+      <p>
+        <span class="jargon-term">Logistic regression</span> is for
+        <span class="jargon-term">classification</span> — predicting a
+        category, not a number. It computes the exact same weighted sum
+        as Chapter 4.1's linear regression, then passes that raw score
+        through the <span class="jargon-term">sigmoid function</span>,
+        which squashes any real number into a value between 0 and 1. That
+        output is read as a probability: "92% chance this is spam." A
+        threshold — commonly 0.5 — turns the probability into a final
+        yes/no decision.
+      </p>
+
+      <h2>Worked example: scoring an email</h2>
+      <p>
+        Say a spam filter's weighted sum for one email comes out to
+        <span class="mono">2.5</span> (positive score = spam-leaning).
+        The sigmoid function turns that into
+        <span class="mono">sigmoid(2.5) ≈ 0.92</span> — a 92% chance of
+        spam, comfortably over the 0.5 threshold, so it's classified
+        spam. A different email scoring <span class="mono">-1.5</span>
+        gives <span class="mono">sigmoid(-1.5) ≈ 0.18</span> — 18%,
+        classified not spam.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">Drag the raw score and watch it squash through the sigmoid curve into a classification.</p>
+
+        <svg id="sigmoid-chart" viewBox="0 0 500 300" overflow="hidden" role="img" aria-label="Sigmoid curve mapping a raw score to a probability between 0 and 1">
+          <line x1="50" y1="260" x2="470" y2="260" stroke="#30363d" stroke-width="1"></line>
+          <line x1="50" y1="260" x2="50" y2="40" stroke="#30363d" stroke-width="1"></line>
+          <line x1="50" y1="150" x2="470" y2="150" stroke="#ffa657" stroke-width="1.5" stroke-dasharray="5,4"></line>
+          <text x="475" y="154" fill="#ffa657" font-size="11">0.5 threshold</text>
+          <path id="sigmoid-path" fill="none" stroke="#58a6ff" stroke-width="2.5"></path>
+          <circle id="sigmoid-point" r="6" fill="#bc8cff"></circle>
+        </svg>
+
+        <div class="demo-controls">
+          <label class="demo-slider-label">Raw score: <span id="sig-x-value">0.0</span>
+            <input type="range" id="sig-x-slider" min="-6" max="6" step="0.1" value="0">
+          </label>
+        </div>
+        <p id="sig-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var path = document.getElementById('sigmoid-path');
+          var point = document.getElementById('sigmoid-point');
+          var slider = document.getElementById('sig-x-slider');
+          var xValue = document.getElementById('sig-x-value');
+          var readout = document.getElementById('sig-readout');
+
+          function xPix(x) { return 50 + ((x + 6) / 12) * 420; }
+          function yPix(y) { return 260 - y * 220; }
+          function sigmoid(x) { return 1 / (1 + Math.exp(-x)); }
+
+          var pts = [];
+          for (var i = 0; i <= 60; i++) {
+            var x = -6 + (12 * i / 60);
+            pts.push(xPix(x).toFixed(1) + ',' + yPix(sigmoid(x)).toFixed(1));
+          }
+          path.setAttribute('d', 'M' + pts.join(' L'));
+
+          function update() {
+            var x = parseFloat(slider.value);
+            xValue.textContent = x.toFixed(1);
+            var p = sigmoid(x);
+            point.setAttribute('cx', xPix(x));
+            point.setAttribute('cy', yPix(p));
+            var pct = Math.round(p * 100);
+            var label = p >= 0.5 ? 'SPAM' : 'NOT SPAM';
+            readout.textContent = 'Raw score = ' + x.toFixed(1) + ' → sigmoid = ' + p.toFixed(2) + ' (' + pct + '%) → classified as ' + label + '.';
+          }
+
+          slider.addEventListener('input', update);
+          update();
+        })();
+      </script>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Logistic regression takes linear regression's weighted sum and squashes it through the sigmoid function into a 0-1 probability.</li>
+          <li>Despite its name, it's used for classification, not predicting a continuous number.</li>
+          <li>A threshold (commonly 0.5) turns the probability into a final decision.</li>
+          <li>The sigmoid function guarantees the output can never go below 0 or above 1, no matter how extreme the raw score.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-4-2">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. Despite its name, what is logistic regression actually used for?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! It's a classification tool wearing a misleading name.">Classification — predicting a category, like spam or not spam.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — predicting a continuous number is Chapter 4.1's linear regression.">Predicting a continuous number, exactly like linear regression.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that's Chapter 3.2's topic, unrelated to logistic regression.">Cleaning missing values in a dataset.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. What does the sigmoid function do to a raw weighted-sum score?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! No matter how extreme the input, the output always lands between 0 and 1.">Squashes it into a value between 0 and 1, interpreted as a probability.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — sigmoid outputs a smooth probability, not a rounded whole number.">Rounds it to the nearest whole number.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — sigmoid is a fixed squashing function; it doesn't scale by feature count.">Multiplies it by the number of features.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. A logistic regression model outputs a probability of 0.82 for "spam," with a standard 0.5 threshold. What's the final classification?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! 0.82 clears the 0.5 threshold, so it's classified as spam.">Spam, since 0.82 is above the 0.5 threshold.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the threshold compares against 0.5, not 1.">Not spam, since 0.82 is less than 1.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a probability plus a threshold is exactly enough to make a classification.">No classification can be made from a probability alone.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
 <script>
   (function () {
     initQuiz(document.getElementById('quiz-4-1'));
+    initQuiz(document.getElementById('quiz-4-2'));
     initProgressTracking();
   })();
 </script>
