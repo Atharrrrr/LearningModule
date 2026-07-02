@@ -69,3 +69,6 @@ instead of repeating it.
 | k-Nearest Neighbors (kNN) | 4.4 k-Nearest Neighbors | A technique that predicts a new point's label by finding its k closest points in the training data (by distance) and taking a majority vote — or an average, for a continuous prediction. There's no real training step; all the work happens at prediction time. |
 | decision tree | 4.5 Decision Trees | A model that predicts by asking a sequence of yes/no (or threshold) questions about features, branching at each answer, until reaching a leaf with a final prediction. |
 | leaf node | 4.5 Decision Trees | A final node in a decision tree with no further questions — where the tree actually gives its prediction, at the end of one specific branch. |
+| ensemble | 4.6 Random Forests & Boosting | A combination of many simple models into one stronger model — the general idea behind both Random Forests and boosting. |
+| random forest | 4.6 Random Forests & Boosting | An ensemble of many decision trees, each trained independently on a random subset of the data and features, with predictions combined by averaging or majority vote. |
+| boosting | 4.6 Random Forests & Boosting | An ensemble technique that trains trees sequentially, where each new tree is trained specifically to correct the mistakes of the trees before it. |

@@ -1,11 +1,11 @@
 # Progress
 
 ## Status
-In progress. 30 of 98 chapters written. Parts I, II, and III are all complete.
+In progress. 31 of 98 chapters written. Parts I, II, and III are all complete.
 
 ## Next chapter due
-Part IV, Chapter 4.6 — Random Forests & Boosting
-(parts/part-04-classical-ml.html already exists — insert the new <section> before </main> and flip 4.6's sidebar entry from unwritten to live)
+Part IV, Chapter 4.7 — SVM & Naive Bayes [D]
+(parts/part-04-classical-ml.html already exists — insert the new <section> before </main> and flip 4.7's sidebar entry from unwritten to live)
 
 ## Completed chapters
 - 0.1 How This Book Works — parts/part-00-before-we-begin.html
@@ -38,6 +38,7 @@ Part IV, Chapter 4.6 — Random Forests & Boosting
 - 4.3 How Learning Actually Happens (loss, gradient descent) — parts/part-04-classical-ml.html
 - 4.4 k-Nearest Neighbors — parts/part-04-classical-ml.html
 - 4.5 Decision Trees — parts/part-04-classical-ml.html
+- 4.6 Random Forests & Boosting — parts/part-04-classical-ml.html
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in

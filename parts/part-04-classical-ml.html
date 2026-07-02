@@ -32,7 +32,9 @@
     <a class="nav-item" data-chapter-id="4-5" href="#chapter-4-5">
       <span class="nav-dot"></span>4.5 Decision Trees
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>4.6 Random Forests &amp; Boosting</div>
+    <a class="nav-item" data-chapter-id="4-6" href="#chapter-4-6">
+      <span class="nav-dot"></span>4.6 Random Forests &amp; Boosting
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>4.7 SVM &amp; Naive Bayes [D]</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>4.8 Clustering (K-means)</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>4.9 Dimensionality Reduction (PCA/t-SNE)</div>
@@ -956,6 +958,157 @@
 
     </section>
 
+    <section id="chapter-4-6">
+      <div class="chapter-eyebrow">Part IV · Chapter 4.6</div>
+      <h1 class="chapter-title">Random Forests &amp; Boosting</h1>
+
+      <p class="lede">
+        A single decision tree is easy to read but easy to fool. Combine
+        many of them, and the combination usually beats any one tree
+        alone — in two very different ways.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🍬 Frame of reference</div>
+        <p>
+          Ask one person to guess how many jellybeans are in a jar, and
+          they might be way off. Ask fifty people independently and
+          average their guesses, and the average is usually remarkably
+          close to the true count — individual errors cancel out. That's
+          the "wisdom of crowds," and it's exactly how a
+          <strong>Random Forest</strong> works. <strong>Boosting</strong>
+          is a different crowd strategy: instead of independent guessers,
+          imagine a chain of students, each one specifically studying and
+          fixing what the previous student got wrong.
+        </p>
+      </div>
+
+      <h2>Two ways to combine many trees</h2>
+      <script>initJargonBox("ensemble",
+        "A combination of many simple models into one stronger model — the general idea behind both Random Forests and boosting.");</script>
+      <script>initJargonBox("random forest",
+        "An ensemble of many decision trees, each trained independently on a random subset of the data and features, with predictions combined by averaging or majority vote.");</script>
+      <script>initJargonBox("boosting",
+        "An ensemble technique that trains trees sequentially, where each new tree is trained specifically to correct the mistakes of the trees before it.");</script>
+      <p>
+        An <span class="jargon-term">ensemble</span> combines many simple
+        models into one stronger one. A
+        <span class="jargon-term">random forest</span> trains many
+        decision trees independently, each on a random slice of the data
+        and features, then averages or votes their predictions —
+        independent guessers, wisdom of the crowd.
+        <span class="jargon-term">Boosting</span> instead trains trees
+        <em>sequentially</em>: tree one predicts decently but misses a
+        cluster of cases; tree two is trained specifically to fix that
+        gap; tree three fixes whatever's still wrong after the first two.
+        Add them together for the final prediction.
+      </p>
+
+      <h2>Worked example: fifty jellybean guesses</h2>
+      <p>
+        A jar actually holds 320 jellybeans. Five people guess:
+        280, 350, 300, 400, 310. Average = 1,640 ÷ 5 =
+        <strong>328</strong> — far closer to 320 than several of the
+        individual guesses were, even though nobody knew the real answer.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">Add more independent guessers and watch the average close in on the true count.</p>
+
+        <div class="demo-controls">
+          <label class="demo-slider-label">Number of independent guessers: <span id="jb-n-value">5</span>
+            <input type="range" id="jb-n-slider" min="1" max="50" step="1" value="5">
+          </label>
+        </div>
+        <div class="demo-actions">
+          <div class="quiz-option" id="jb-regen-btn">🎲 New random guesses</div>
+        </div>
+        <p id="jb-list" style="font-size:13px; color:#8b949e; margin:12px 0;"></p>
+        <p id="jb-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var TRUE_COUNT = 320;
+          var slider = document.getElementById('jb-n-slider');
+          var nValue = document.getElementById('jb-n-value');
+          var regenBtn = document.getElementById('jb-regen-btn');
+          var listEl = document.getElementById('jb-list');
+          var readout = document.getElementById('jb-readout');
+
+          function update() {
+            var n = parseInt(slider.value, 10);
+            nValue.textContent = n;
+
+            var guesses = [];
+            for (var i = 0; i < n; i++) {
+              guesses.push(Math.round(TRUE_COUNT + (Math.random() - 0.5) * 200));
+            }
+            var avg = Math.round(guesses.reduce(function (a, b) { return a + b; }, 0) / n);
+            var off = Math.abs(avg - TRUE_COUNT);
+
+            if (n <= 15) {
+              listEl.textContent = 'Guesses: ' + guesses.join(', ');
+            } else {
+              listEl.textContent = 'Guesses: ' + guesses.slice(0, 10).join(', ') + ', ...and ' + (n - 10) + ' more.';
+            }
+
+            readout.textContent = 'Average of ' + n + ' guesses = ' + avg + ' (true count: ' + TRUE_COUNT + ', off by ' + off + ').';
+          }
+
+          slider.addEventListener('input', update);
+          regenBtn.addEventListener('click', update);
+          update();
+        })();
+      </script>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>An ensemble combines many simple models into one stronger model.</li>
+          <li>Random Forest trains many trees independently on random subsets of data/features, then averages or votes — wisdom of the crowd.</li>
+          <li>Boosting trains trees sequentially, each one specifically fixing the previous ones' mistakes.</li>
+          <li>Both typically outperform a single decision tree, and are common, effective tools in real practical ML work.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-4-6">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What is an ensemble, in ML terms?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Many simple models, combined, usually beat any one of them alone.">A combination of many simple models into one stronger model.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — an ensemble is specifically about combining multiple models, not growing one huge tree.">A single very large, deep decision tree.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that describes a dataset's shape (Chapter 2.3), not an ensemble technique.">A dataset with a large number of features.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. How does Random Forest combine its trees?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Independent trees on random subsets, combined by averaging or voting.">Trains many trees independently on random subsets of data/features, then averages or votes their predictions.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — identical copies of one tree would just repeat the same mistakes, gaining nothing.">Trains one tree, then copies it many times exactly.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — training trees sequentially to fix each other's mistakes describes boosting, not Random Forest.">Trains trees sequentially, each one fixing the last one's mistakes.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. What's the key difference between Random Forest and Boosting?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Independent guessers vs. a sequential chain of corrections.">Random Forest trains trees independently; boosting trains them sequentially, each correcting the previous ones' errors.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — both techniques typically use many trees, not just one vs. hundreds.">Random Forest uses one tree; boosting uses hundreds.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — they combine trees in genuinely different ways, as this chapter covered.">There is no real difference; they're two names for the same technique.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -966,6 +1119,7 @@
     initQuiz(document.getElementById('quiz-4-3'));
     initQuiz(document.getElementById('quiz-4-4'));
     initQuiz(document.getElementById('quiz-4-5'));
+    initQuiz(document.getElementById('quiz-4-6'));
     initProgressTracking();
   })();
 </script>
