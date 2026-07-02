@@ -1,11 +1,11 @@
 # Progress
 
 ## Status
-In progress. 25 of 98 chapters written. Parts I, II, and III are all complete.
+In progress. 26 of 98 chapters written. Parts I, II, and III are all complete.
 
 ## Next chapter due
-Part IV, Chapter 4.1 — Linear Regression
-(first chapter of parts/part-04-classical-ml.html — create the file with a full sidebar TOC for Part IV's 9 chapters)
+Part IV, Chapter 4.2 — Logistic Regression
+(parts/part-04-classical-ml.html already exists — insert the new <section> before </main> and flip 4.2's sidebar entry from unwritten to live)
 
 ## Completed chapters
 - 0.1 How This Book Works — parts/part-00-before-we-begin.html
@@ -33,6 +33,7 @@ Part IV, Chapter 4.1 — Linear Regression
 - 3.5 Imbalanced Data & Why Accuracy Lies — parts/part-03-working-with-data.html
 - 3.6 Data Augmentation — parts/part-03-working-with-data.html
 - 3.7 Bias in Data, Bias in Models [D] — parts/part-03-working-with-data.html
+- 4.1 Linear Regression — parts/part-04-classical-ml.html
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Part IV — Classical Machine Learning | AI/ML From Zero to Job-Ready</title>
+<link rel="stylesheet" href="../assets/styles.css">
+<script src="../assets/components.js"></script>
+</head>
+<body>
+<div class="book-shell">
+
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">AI/ML: Zero to Job-Ready</div>
+    </div>
+    <div class="progress-bar-track"><div class="progress-bar-fill"></div></div>
+
+    <div class="sidebar-part">Part IV — Classical Machine Learning</div>
+    <a class="nav-item" data-chapter-id="4-1" href="#chapter-4-1">
+      <span class="nav-dot"></span>4.1 Linear Regression
+    </a>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>4.2 Logistic Regression</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>4.3 How Learning Actually Happens</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>4.4 k-Nearest Neighbors</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>4.5 Decision Trees</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>4.6 Random Forests &amp; Boosting</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>4.7 SVM &amp; Naive Bayes [D]</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>4.8 Clustering (K-means)</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>4.9 Dimensionality Reduction (PCA/t-SNE)</div>
+  </nav>
+
+  <main>
+
+    <section id="chapter-4-1">
+      <div class="chapter-eyebrow">Part IV · Chapter 4.1</div>
+      <h1 class="chapter-title">Linear Regression</h1>
+
+      <p class="lede">
+        Chapter 1.3 fit a line through exam scores and called it "curve
+        fitting." That technique has a real, official name — and this
+        chapter extends it to combine several clues at once.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🏘️ Frame of reference</div>
+        <p>
+          A real estate appraiser doesn't estimate a house's value from
+          just one clue. They weigh square footage, number of bedrooms,
+          and age together — each contributing its own share to the final
+          number. Chapter 1.3's line only ever used one clue (hours
+          studied). This chapter's whole upgrade is combining several
+          clues into a single weighted prediction — otherwise, it's the
+          exact same idea.
+        </p>
+      </div>
+
+      <h2>The technique already has a name</h2>
+      <script>initJargonBox("linear regression",
+        "A technique for predicting a continuous number as a weighted combination of features, plus a bias term — the same line-fitting idea from Chapter 1.3, extended to any number of features.");</script>
+      <p>
+        <span class="jargon-term">Linear regression</span> is exactly
+        Chapter 1.3's <span class="mono">score = m × hours + b</span>,
+        officially named. With more than one feature, it becomes:
+      </p>
+      <p class="mono" style="font-size:16px;">prediction = w₁×feature₁ + w₂×feature₂ + ... + bias</p>
+
+      <h2>Weights: one knob per feature</h2>
+      <script>initJargonBox("weight",
+        "A parameter that multiplies one specific feature in a model — how much that feature contributes to the final prediction. The general term for what Chapter 1.3 called \"m\" when there's more than one feature.");</script>
+      <p>
+        Each feature gets its own <span class="jargon-term">weight</span> —
+        the general name for what Chapter 1.3 called
+        <span class="mono">m</span>, now that there's more than one to
+        keep track of. A larger-magnitude weight means that feature swings
+        the prediction more; a weight near zero means it barely matters.
+      </p>
+
+      <h2>Worked example: pricing a house with two clues</h2>
+      <p>
+        Reusing Chapter 3.4's housing features, suppose
+        <span class="mono">price = 150 × sqft − 2000 × age + 50000</span>.
+        For a 2,000 sqft house that's 10 years old:
+      </p>
+      <p class="mono">price = 150×2000 − 2000×10 + 50000 = 300,000 − 20,000 + 50,000 = $330,000</p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">Fixed house: 2,000 sqft, 10 years old. Adjust the weights and watch the predicted price change.</p>
+
+        <div class="demo-controls">
+          <label class="demo-slider-label">Weight on sqft: <span id="lr-wsqft-value">50</span>
+            <input type="range" id="lr-wsqft-slider" min="0" max="300" step="10" value="50">
+          </label>
+          <label class="demo-slider-label">Weight on age: <span id="lr-wage-value">0</span>
+            <input type="range" id="lr-wage-slider" min="-3000" max="0" step="100" value="0">
+          </label>
+          <label class="demo-slider-label">Bias: $<span id="lr-bias-value">0</span>
+            <input type="range" id="lr-bias-slider" min="0" max="100000" step="5000" value="0">
+          </label>
+        </div>
+
+        <p id="lr-readout" class="demo-readout"></p>
+        <div class="demo-actions">
+          <div class="quiz-option" id="lr-best-btn">✓ Snap to realistic weights</div>
+        </div>
+      </div>
+
+      <script>
+        (function () {
+          var wsqftSlider = document.getElementById('lr-wsqft-slider');
+          var wageSlider = document.getElementById('lr-wage-slider');
+          var biasSlider = document.getElementById('lr-bias-slider');
+          var wsqftValue = document.getElementById('lr-wsqft-value');
+          var wageValue = document.getElementById('lr-wage-value');
+          var biasValue = document.getElementById('lr-bias-value');
+          var readout = document.getElementById('lr-readout');
+          var bestBtn = document.getElementById('lr-best-btn');
+
+          var sqft = 2000, age = 10;
+
+          function update() {
+            var wsqft = parseInt(wsqftSlider.value, 10);
+            var wage = parseInt(wageSlider.value, 10);
+            var bias = parseInt(biasSlider.value, 10);
+            wsqftValue.textContent = wsqft;
+            wageValue.textContent = wage;
+            biasValue.textContent = bias.toLocaleString();
+
+            var price = wsqft * sqft + wage * age + bias;
+            readout.textContent = 'Predicted price = ' + wsqft + '×2000 + (' + wage + ')×10 + ' + bias.toLocaleString() +
+              ' = $' + price.toLocaleString();
+          }
+
+          wsqftSlider.addEventListener('input', update);
+          wageSlider.addEventListener('input', update);
+          biasSlider.addEventListener('input', update);
+          bestBtn.addEventListener('click', function () {
+            wsqftSlider.value = '150';
+            wageSlider.value = '-2000';
+            biasSlider.value = '50000';
+            update();
+          });
+
+          update();
+        })();
+      </script>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Linear regression predicts a continuous number as a weighted combination of features, plus a bias.</li>
+          <li>Chapter 1.3's score = m×hours+b was already linear regression, with a single feature.</li>
+          <li>A weight reflects how much a specific feature contributes to the prediction.</li>
+          <li>Training a linear regression model means searching for the weight and bias values that fit real data best.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-4-1">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What does linear regression predict?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! A weighted combination of features plus a bias, producing a continuous number.">A continuous number, as a weighted combination of features plus a bias.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — predicting a category is Chapter 4.2's logistic regression.">A category, like "spam" or "not spam."</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — linear regression is specifically a prediction technique.">Nothing — it only describes data, it doesn't predict.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. In price = 150×sqft − 2000×age + 50000, what does the −2000 weight on age suggest?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Each extra year of age subtracts about $2,000 from the predicted price.">Each additional year of age is associated with about $2,000 less predicted price.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a nonzero weight means the feature does affect the prediction.">Age has no effect on the predicted price at all.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the weight is negative, but a house's actual age is still a normal positive number.">The house's age must always be negative.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. How does Chapter 1.3's exam-score line relate to linear regression?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! One feature is just a special case of the general technique.">It was already linear regression, just with a single feature (hours) instead of several.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — they're the same underlying technique, at different feature counts.">It's a completely unrelated technique.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — linear regression applies to any continuous prediction problem, not just exam scores.">Linear regression can only be used for predicting exam scores, nothing else.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+</div>
+
+<script>
+  (function () {
+    initQuiz(document.getElementById('quiz-4-1'));
+    initProgressTracking();
+  })();
+</script>
+</body>
+</html>
