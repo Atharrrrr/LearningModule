@@ -411,6 +411,54 @@ pre.python-block .f { color: var(--purple); } /* function */
 }
 
 /* ---------------------------------------------------------------------- */
+/* Click-to-expand role/topic cards (reusable)                             */
+/* ---------------------------------------------------------------------- */
+
+.role-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 20px 0;
+}
+
+.role-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.role-card:hover { border-color: var(--purple); }
+.role-card.expanded { border-color: var(--purple); }
+
+.role-card-title {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.role-card-blurb {
+  color: var(--text-muted);
+  font-size: 13.5px;
+}
+
+.role-card-detail {
+  display: none;
+  margin-top: 10px;
+  padding-left: 18px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.role-card.expanded .role-card-detail { display: block; }
+
+@media (max-width: 640px) {
+  .role-grid { grid-template-columns: 1fr; }
+}
+
+/* ---------------------------------------------------------------------- */
 /* Recap block                                                             */
 /* ---------------------------------------------------------------------- */
 

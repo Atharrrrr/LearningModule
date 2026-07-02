@@ -29,7 +29,9 @@
     <a class="nav-item" data-chapter-id="1-4" href="#chapter-1-4">
       <span class="nav-dot"></span>1.4 A Short History of AI [D]
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>1.5 The Job Landscape</div>
+    <a class="nav-item" data-chapter-id="1-5" href="#chapter-1-5">
+      <span class="nav-dot"></span>1.5 The Job Landscape
+    </a>
   </nav>
 
   <main>
@@ -905,6 +907,186 @@ agent.<span class="f">learn</span>(reward)</pre>
 
     </section>
 
+    <section id="chapter-1-5">
+      <div class="chapter-eyebrow">Part I · Chapter 1.5</div>
+      <h1 class="chapter-title">The Job Landscape</h1>
+
+      <p class="lede">
+        "AI job" isn't one job. Four common titles show up constantly in
+        postings, and they're genuinely different roles with different
+        day-to-day work — here's how to tell them apart.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🍳 Frame of reference</div>
+        <p>
+          Picture a restaurant kitchen. One person — the head chef —
+          spends their time inventing new dishes, testing combinations
+          nobody's tried, and publishing the recipe once it works. A line
+          cook doesn't invent anything; they take a proven recipe and
+          execute it fast, reliably, night after night, for real customers.
+          Someone else makes sure the ovens, fridges, and ticket system
+          never go down mid-dinner-rush, and gets paged the moment
+          something breaks. And someone out front is reading customer
+          feedback cards, figuring out which dishes are actually working
+          and why. Four different jobs, one kitchen. AI/ML has the same
+          split.
+        </p>
+      </div>
+
+      <h2>The four roles</h2>
+      <script>initJargonBox("Research Scientist (ML)",
+        "A researcher who invents new model architectures, training techniques, or algorithms, and typically publishes results — pushing the field's frontier rather than shipping a specific product.");</script>
+      <script>initJargonBox("ML Engineer",
+        "An engineer who takes proven machine learning techniques and builds them into real, running software products — closer to software engineering than research.");</script>
+      <script>initJargonBox("MLOps",
+        "Short for \"machine learning operations\" — the discipline of keeping trained models running reliably in production: monitoring them, retraining them, and maintaining the infrastructure they depend on.");</script>
+      <script>initJargonBox("Data Scientist",
+        "Someone who analyzes data to answer business questions and build predictive models, often working earlier in the pipeline than an ML Engineer — exploring data and running experiments before or alongside a deployed system.");</script>
+      <p>
+        A <span class="jargon-term">Research Scientist</span> is the head
+        chef: inventing new techniques, running experiments, often
+        publishing papers. An <span class="jargon-term">ML Engineer</span>
+        is the line cook: taking a proven technique and turning it into a
+        real, working product that ships. An
+        <span class="jargon-term">MLOps</span> engineer keeps the kitchen
+        running: monitoring deployed models, catching problems, automating
+        retraining, maintaining the infrastructure everything depends on.
+        And a <span class="jargon-term">Data Scientist</span> is out front
+        reading the feedback: digging through data to answer business
+        questions and often building the first prototype of a model before
+        anyone thinks about shipping it.
+      </p>
+
+      <h2>Worked example: whose job is it?</h2>
+      <p>Four real scenarios — match each one to the role that would primarily own it.</p>
+      <ol>
+        <li>
+          <strong>Inventing a smaller, faster version of a transformer
+          architecture and publishing the results.</strong> →
+          <strong>Research Scientist</strong> — new technique, published.
+        </li>
+        <li>
+          <strong>Taking that published architecture and building a
+          working search-ranking feature that ships in the app.</strong> →
+          <strong>ML Engineer</strong> — proven technique, shipped product.
+        </li>
+        <li>
+          <strong>Noticing a deployed model's accuracy has quietly dropped
+          8% over the last month, and setting up an alert plus an automatic
+          retraining pipeline.</strong> → <strong>MLOps</strong> —
+          monitoring and infrastructure for something already in
+          production.
+        </li>
+        <li>
+          <strong>Digging through six months of user behavior data to
+          figure out why signups dropped last quarter.</strong> →
+          <strong>Data Scientist</strong> — data analysis to answer a
+          business question.
+        </li>
+      </ol>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">Click a role to see what a typical day actually involves.</p>
+
+        <div class="role-grid" id="role-grid">
+          <div class="role-card" data-role="research">
+            <div class="role-card-title">🔬 Research Scientist</div>
+            <div class="role-card-blurb">Pushes the frontier — invents new techniques.</div>
+            <ul class="role-card-detail">
+              <li>Reads and writes research papers</li>
+              <li>Runs experiments comparing new ideas against existing ones</li>
+              <li>Often holds a PhD; publishes results publicly</li>
+            </ul>
+          </div>
+          <div class="role-card" data-role="engineer">
+            <div class="role-card-title">⚙️ ML Engineer</div>
+            <div class="role-card-blurb">Ships proven techniques as real products.</div>
+            <ul class="role-card-detail">
+              <li>Writes production software, not just notebooks</li>
+              <li>Integrates a trained model into an app or service</li>
+              <li>Closer to a software engineer than a researcher</li>
+            </ul>
+          </div>
+          <div class="role-card" data-role="mlops">
+            <div class="role-card-title">🛠️ MLOps</div>
+            <div class="role-card-blurb">Keeps deployed models running reliably.</div>
+            <ul class="role-card-detail">
+              <li>Builds monitoring and alerting for live models</li>
+              <li>Automates retraining and deployment pipelines</li>
+              <li>Gets paged when something in production breaks</li>
+            </ul>
+          </div>
+          <div class="role-card" data-role="datasci">
+            <div class="role-card-title">📊 Data Scientist</div>
+            <div class="role-card-blurb">Answers business questions with data.</div>
+            <ul class="role-card-detail">
+              <li>Explores and analyzes raw data</li>
+              <li>Runs statistical experiments (like A/B tests)</li>
+              <li>Often prototypes a model before anyone ships it</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <script>
+        (function () {
+          var cards = document.querySelectorAll('#role-grid .role-card');
+          cards.forEach(function (card) {
+            card.addEventListener('click', function () {
+              card.classList.toggle('expanded');
+            });
+          });
+        })();
+      </script>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>The four common ML job titles: Research Scientist, ML Engineer, MLOps, and Data Scientist.</li>
+          <li>What distinguishes each: invent vs. ship vs. maintain vs. analyze.</li>
+          <li>Given a real scenario, which role would primarily own it.</li>
+          <li>That this book aims to prepare you broadly — Part XV helps you pick a specialization once you've seen more of the field.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-1-5">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. Which role is most focused on inventing new model architectures and publishing results, rather than shipping a specific product?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Inventing and publishing new techniques is the Research Scientist's core job.">Research Scientist.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — ML Engineers ship proven techniques rather than inventing new ones.">ML Engineer.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — MLOps focuses on keeping deployed models running, not inventing new ones.">MLOps.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. A company's deployed fraud-detection model has been quietly getting worse for weeks before anyone notices. Whose job is it to build monitoring and automatic retraining to catch this?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — Research Scientists focus on inventing new techniques, not maintaining production systems.">Research Scientist.</div>
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Monitoring and maintaining production models is exactly what MLOps does.">MLOps.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a Data Scientist is more focused on analysis than on production monitoring infrastructure.">Data Scientist.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. Someone spends most of their time exploring datasets and running statistical analysis to answer "why did signups drop last quarter?" Which role does this best describe?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — ML Engineers focus on shipping working systems, not open-ended data analysis.">ML Engineer.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — Research Scientists focus on new techniques, not business-question data analysis.">Research Scientist.</div>
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Answering business questions through data analysis is the Data Scientist's core job.">Data Scientist.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -914,6 +1096,7 @@ agent.<span class="f">learn</span>(reward)</pre>
     initQuiz(document.getElementById('quiz-1-2'));
     initQuiz(document.getElementById('quiz-1-3'));
     initQuiz(document.getElementById('quiz-1-4'));
+    initQuiz(document.getElementById('quiz-1-5'));
     initProgressTracking();
   })();
 </script>
