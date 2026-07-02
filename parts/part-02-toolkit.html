@@ -44,7 +44,9 @@
     <a class="nav-item" data-chapter-id="2-9" href="#chapter-2-9">
       <span class="nav-dot"></span>2.9 The Chain Rule
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>2.10 Your First Lines of Code (Python)</div>
+    <a class="nav-item" data-chapter-id="2-10" href="#chapter-2-10">
+      <span class="nav-dot"></span>2.10 Your First Lines of Code (Python)
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>2.11 Arrays, Tables &amp; Tensors (NumPy/pandas)</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>2.12 Plotting &amp; Seeing Your Data [D]</div>
   </nav>
@@ -1755,6 +1757,192 @@ movies_matrix = [
 
     </section>
 
+    <section id="chapter-2-10">
+      <div class="chapter-eyebrow">Part II · Chapter 2.10</div>
+      <h1 class="chapter-title">Your First Lines of Code (Python)</h1>
+
+      <p class="lede">
+        Every math idea in this Part has a direct twin in code. This
+        chapter shows you exactly where — and lets you step through real
+        code running, one line at a time.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">📖 Frame of reference</div>
+        <p>
+          Chapter 0.1 defined an <a href="part-00-before-we-begin.html#chapter-0-1">algorithm</a>
+          as a precise, step-by-step set of instructions — a recipe a
+          computer can follow exactly, every time. Python code is just
+          that recipe, written in a language the computer can actually
+          run. Like a recipe, it's read top to bottom, one instruction at
+          a time, in order — unless a step explicitly says "repeat this
+          part" or "do this only if a condition holds."
+        </p>
+      </div>
+
+      <h2>Variables and functions, now in code</h2>
+      <p>
+        Chapter 2.1 defined a <a href="#chapter-2-1">variable</a> as a
+        name standing in for a value, and a
+        <a href="#chapter-2-1">function</a> as a rule that turns an input
+        into an output. In Python, that's not a metaphor — it's literally
+        the syntax:
+      </p>
+      <ul>
+        <li><span class="mono">hours = 3</span> creates a variable named <span class="mono">hours</span> holding the value 3.</li>
+        <li><span class="mono">def f(x): return ...</span> defines a function named <span class="mono">f</span>.</li>
+        <li><span class="mono">print(...)</span> displays a value so you can see it.</li>
+      </ul>
+
+      <h2>Two new pieces: strings and loops</h2>
+      <script>initJargonBox("string",
+        "A piece of text data in code, written inside quotes — like \"spam\" or \"Movie A\" — as opposed to a number.");</script>
+      <script>initJargonBox("loop",
+        "An instruction that repeats a block of code once for each item in a list (or until some condition is met), instead of writing the same code out by hand for every item.");</script>
+      <p>
+        A <span class="jargon-term">string</span> is text data, written
+        inside quotes: <span class="mono">"spam"</span> or
+        <span class="mono">"Movie A"</span>, as opposed to a plain number.
+        A <span class="jargon-term">loop</span> repeats a block of code
+        once for each item in a list, instead of writing the same line out
+        by hand for every single item.
+      </p>
+
+      <h2>Worked example: everything together</h2>
+      <p>
+        This reuses the exam-score function from Chapters 1.3 and 2.1,
+        now applied to four different students in one loop:
+      </p>
+
+      <div class="panel">
+        <div class="panel-label python">▸ Python — run in your own environment</div>
+        <pre class="python-block" id="stepper-code"><span class="code-line" data-line="1">hours_studied = [<span class="n">1</span>, <span class="n">3</span>, <span class="n">5</span>, <span class="n">7</span>]</span>
+<span class="code-line" data-line="2"></span>
+<span class="code-line" data-line="3"><span class="k">def</span> <span class="f">predict_score</span>(hours):</span>
+<span class="code-line" data-line="4">    <span class="k">return</span> <span class="n">6</span> * hours + <span class="n">45</span></span>
+<span class="code-line" data-line="5"></span>
+<span class="code-line" data-line="6"><span class="k">for</span> h <span class="k">in</span> hours_studied:</span>
+<span class="code-line" data-line="7">    <span class="k">print</span>(predict_score(h))</span></pre>
+      </div>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          Python isn't executed inside this page (Chapter 0.1) — but you can step through exactly what it would do, one line at a time.
+        </p>
+
+        <div class="demo-actions">
+          <div class="quiz-option" id="step-next-btn">▶ Next step</div>
+          <div class="quiz-option" id="step-reset-btn">↺ Restart</div>
+        </div>
+
+        <div class="python-console" id="step-console">Click "Next step" to begin.</div>
+      </div>
+
+      <script>
+        (function () {
+          var codeLines = document.querySelectorAll('#stepper-code .code-line');
+          var consoleDiv = document.getElementById('step-console');
+          var nextBtn = document.getElementById('step-next-btn');
+          var resetBtn = document.getElementById('step-reset-btn');
+
+          var steps = [
+            { line: 1, output: '>>> hours_studied = [1, 3, 5, 7]' },
+            { line: 3, output: '>>> predict_score is now defined (the code inside doesn\'t run yet)' },
+            { line: 6, output: '>>> loop starts: h = 1' },
+            { line: 4, output: '    predict_score(1) -> 6*1 + 45 = 51' },
+            { line: 7, output: '51' },
+            { line: 6, output: '>>> next iteration: h = 3' },
+            { line: 4, output: '    predict_score(3) -> 6*3 + 45 = 63' },
+            { line: 7, output: '63' },
+            { line: 6, output: '>>> next iteration: h = 5' },
+            { line: 4, output: '    predict_score(5) -> 6*5 + 45 = 75' },
+            { line: 7, output: '75' },
+            { line: 6, output: '>>> next iteration: h = 7' },
+            { line: 4, output: '    predict_score(7) -> 6*7 + 45 = 87' },
+            { line: 7, output: '87' },
+            { line: 0, output: '>>> loop finished. Done!' }
+          ];
+          var idx = 0;
+
+          function highlightLine(n) {
+            codeLines.forEach(function (el) {
+              el.classList.toggle('active', parseInt(el.getAttribute('data-line'), 10) === n);
+            });
+          }
+
+          function next() {
+            if (idx >= steps.length) return;
+            var step = steps[idx];
+            highlightLine(step.line);
+            if (idx === 0) consoleDiv.textContent = step.output;
+            else consoleDiv.textContent += '\n' + step.output;
+            idx++;
+            if (idx >= steps.length) {
+              nextBtn.textContent = '✓ Finished';
+              nextBtn.classList.add('disabled');
+            }
+          }
+
+          function reset() {
+            idx = 0;
+            highlightLine(-1);
+            consoleDiv.textContent = 'Click "Next step" to begin.';
+            nextBtn.textContent = '▶ Next step';
+            nextBtn.classList.remove('disabled');
+          }
+
+          nextBtn.addEventListener('click', next);
+          resetBtn.addEventListener('click', reset);
+        })();
+      </script>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Python code runs top to bottom, one line at a time, like a recipe (Chapter 0.1's "algorithm").</li>
+          <li>A variable in code (hours = 3) is the same concept as Chapter 2.1's variable.</li>
+          <li>A function in code (def f(x): return ...) is the same concept as Chapter 2.1's function.</li>
+          <li>A for loop repeats a block of code once for each item in a list.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-2-10">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What does a variable in Python code correspond to, using this book's vocabulary?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Chapter 2.1's variable definition applies directly to code.">The same thing Chapter 2.1 called a variable — a name standing in for a value.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — it's the exact same idea, just written in a language a computer can run.">A completely different concept from the math version.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a loop repeats code; a variable just names a value.">A type of loop.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. What does this loop do: for h in hours_studied: print(predict_score(h))?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! That's exactly what the step-through demo showed, four times in a row.">Runs predict_score once for each value in hours_studied, printing each result.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a for loop over a list runs once per item, not just once.">Runs predict_score exactly once, using only the first value.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — hours_studied was already defined on the line above the loop.">Defines a new variable called hours_studied.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. In the demo, why didn't the code inside predict_score run immediately when it was defined?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Defining a function just sets up the rule — it only runs later, when called.">Defining a function only sets up the rule — the code inside only runs later, when the function is actually called.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo showed the function definition being read as a step, just not executed yet.">Python skips function definitions entirely.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the step-through demo showed the function's body only running once it was called inside the loop.">It did run immediately, before anything else.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -1769,6 +1957,7 @@ movies_matrix = [
     initQuiz(document.getElementById('quiz-2-7'));
     initQuiz(document.getElementById('quiz-2-8'));
     initQuiz(document.getElementById('quiz-2-9'));
+    initQuiz(document.getElementById('quiz-2-10'));
     initProgressTracking();
   })();
 </script>
