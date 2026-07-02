@@ -46,3 +46,5 @@ instead of repeating it.
 | tensor | 2.11 Arrays, Tables & Tensors (NumPy/pandas) | A generalization of vectors and matrices to any number of dimensions: a 0D tensor is a single number, 1D is a vector, 2D is a matrix, and 3D or higher is a stack of matrices. |
 | scatter plot | 2.12 Plotting & Seeing Your Data | A chart that plots each data example as a point, using two features as its x and y position — directly visualizing the vectors from Chapter 2.2, and revealing relationships, clusters, and outliers. |
 | histogram | 2.12 Plotting & Seeing Your Data | A chart that bins one feature's values and counts how many examples fall into each bin — a direct visual picture of the distributions from Chapter 2.6. |
+| dataset | 3.1 Where Data Comes From | A collection of examples — rows of data, each one a vector or set of features — used to train or evaluate a model. |
+| synthetic data | 3.1 Where Data Comes From | Artificially generated data — created by a simulator or another model — used when real examples of a situation are too rare, expensive, or sensitive to collect directly. |

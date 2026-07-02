@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Part III — Working With Data | AI/ML From Zero to Job-Ready</title>
+<link rel="stylesheet" href="../assets/styles.css">
+<script src="../assets/components.js"></script>
+</head>
+<body>
+<div class="book-shell">
+
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">AI/ML: Zero to Job-Ready</div>
+    </div>
+    <div class="progress-bar-track"><div class="progress-bar-fill"></div></div>
+
+    <div class="sidebar-part">Part III — Working With Data</div>
+    <a class="nav-item" data-chapter-id="3-1" href="#chapter-3-1">
+      <span class="nav-dot"></span>3.1 Where Data Comes From
+    </a>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>3.2 Cleaning Messy Data</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>3.3 Exploratory Data Analysis</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>3.4 Feature Engineering</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>3.5 Imbalanced Data &amp; Why Accuracy Lies</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>3.6 Data Augmentation</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>3.7 Bias in Data, Bias in Models [D]</div>
+  </nav>
+
+  <main>
+
+    <section id="chapter-3-1">
+      <div class="chapter-eyebrow">Part III · Chapter 3.1</div>
+      <h1 class="chapter-title">Where Data Comes From</h1>
+
+      <p class="lede">
+        Part II built the math and code toolkit assuming a dataset already
+        existed. It doesn't, yet — and where you get it from shapes
+        everything that follows.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🧑‍🍳 Frame of reference</div>
+        <p>
+          Where does a chef's ingredients come from? Some are grown in a
+          garden out back — cared for personally, exactly what's needed.
+          Some come from the supermarket — pre-packaged, convenient,
+          consistent, but generic. Some come from a farmers market — fresh
+          and specific, but whatever happens to be in season. And some get
+          pulled from behind the restaurant at closing time — free, but
+          you'd better wash it carefully before it goes anywhere near a
+          pot. A dataset is exactly the same: it always comes from
+          <em>somewhere</em>, and that somewhere shapes its quality, cost,
+          and how well it fits what you actually need.
+        </p>
+      </div>
+
+      <h2>Six common sources</h2>
+      <script>initJargonBox("dataset",
+        "A collection of examples — rows of data, each one a vector or set of features — used to train or evaluate a model.");</script>
+      <p>
+        A <span class="jargon-term">dataset</span> can come from several
+        genuinely different places, each with its own tradeoffs:
+      </p>
+      <ul>
+        <li><strong>Public datasets</strong> — pre-built and ready to use (ImageNet, Kaggle, Common Crawl). Fast to start with, but may not match your exact problem.</li>
+        <li><strong>Logs &amp; transactions</strong> — data your own product already generates as a byproduct, like purchase history or app usage.</li>
+        <li><strong>Sensors</strong> — cameras, microphones, and other devices measuring the physical world directly.</li>
+        <li><strong>Web scraping / APIs</strong> — pulled from the internet, often large but messy, and needing real cleanup (Chapter 3.2).</li>
+        <li><strong>Human labeling</strong> — people creating data specifically for your task. Expensive, but the closest match to exactly what you need.</li>
+        <li><strong>Synthetic data</strong> — artificially generated, for when real examples are too rare, expensive, or sensitive to collect directly.</li>
+      </ul>
+      <script>initJargonBox("synthetic data",
+        "Artificially generated data — created by a simulator or another model — used when real examples of a situation are too rare, expensive, or sensitive to collect directly.");</script>
+      <p>
+        <span class="jargon-term">Synthetic data</span> is worth calling
+        out specifically: it's not "fake" in a dishonest sense — it's a
+        deliberate substitute used when real-world examples of something
+        (a rare accident, a sensitive medical scenario) simply aren't
+        available in enough quantity.
+      </p>
+
+      <h2>Worked example: detecting potholes</h2>
+      <p>
+        Say a city wants to build a model that spots potholes in road
+        photos. Every source above is actually on the table:
+      </p>
+      <ol>
+        <li>Search for an existing open pothole-detection dataset first — fastest start, but it was photographed in someone else's city, on someone else's roads.</li>
+        <li>Check the city's own citizen complaint logs — photos already submitted, but inconsistent quality and coverage.</li>
+        <li>Mount cameras on garbage trucks that already drive every street daily — comprehensive, real sensor data.</li>
+        <li>Scrape public traffic-camera feeds — free, but messy and raising real privacy questions.</li>
+        <li>Pay a team to drive around and photograph potholes directly — expensive, but an exact match to the need.</li>
+        <li>Generate simulated pothole images with a 3D renderer, if real examples of rare pothole types are too scarce.</li>
+      </ol>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">Click a source to see its tradeoffs.</p>
+
+        <div class="role-grid" id="source-grid">
+          <div class="role-card" data-source="public">
+            <div class="role-card-title">📚 Public datasets</div>
+            <div class="role-card-blurb">Ready to use, fast to start.</div>
+            <ul class="role-card-detail">
+              <li>Free and immediately available</li>
+              <li>Well-studied, often high quality</li>
+              <li>May not match your specific problem or population</li>
+            </ul>
+          </div>
+          <div class="role-card" data-source="logs">
+            <div class="role-card-title">🧾 Logs &amp; transactions</div>
+            <div class="role-card-blurb">A byproduct of normal operation.</div>
+            <ul class="role-card-detail">
+              <li>Already being collected — no extra effort to gather</li>
+              <li>Directly reflects your real users and product</li>
+              <li>Was never designed for ML — often messy (Chapter 3.2)</li>
+            </ul>
+          </div>
+          <div class="role-card" data-source="sensors">
+            <div class="role-card-title">📷 Sensors</div>
+            <div class="role-card-blurb">Direct physical-world measurement.</div>
+            <ul class="role-card-detail">
+              <li>Captures raw reality, continuously</li>
+              <li>Can require real hardware investment</li>
+              <li>Often produces huge volumes of raw, unlabeled data</li>
+            </ul>
+          </div>
+          <div class="role-card" data-source="scraping">
+            <div class="role-card-title">🌐 Web scraping / APIs</div>
+            <div class="role-card-blurb">Pulled from the internet.</div>
+            <ul class="role-card-detail">
+              <li>Can be enormous in scale</li>
+              <li>Often inconsistent, messy, or duplicated</li>
+              <li>Raises real legal and privacy questions</li>
+            </ul>
+          </div>
+          <div class="role-card" data-source="labeling">
+            <div class="role-card-title">🏷️ Human labeling</div>
+            <div class="role-card-blurb">Built specifically for your task.</div>
+            <ul class="role-card-detail">
+              <li>Closest possible match to your exact need</li>
+              <li>Typically the most expensive option</li>
+              <li>Quality depends heavily on labeler training</li>
+            </ul>
+          </div>
+          <div class="role-card" data-source="synthetic">
+            <div class="role-card-title">🧪 Synthetic data</div>
+            <div class="role-card-blurb">Artificially generated.</div>
+            <ul class="role-card-detail">
+              <li>Can cover rare or sensitive cases real data can't</li>
+              <li>Cheap to generate in large volume</li>
+              <li>May not capture every quirk of the real world</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <script>
+        (function () {
+          var cards = document.querySelectorAll('#source-grid .role-card');
+          cards.forEach(function (card) {
+            card.addEventListener('click', function () {
+              card.classList.toggle('expanded');
+            });
+          });
+        })();
+      </script>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Data comes from many different sources: public datasets, logs, sensors, scraping, human labeling, and synthetic generation.</li>
+          <li>Each source trades off speed, cost, quality, and how well it matches your specific problem.</li>
+          <li>Where your data comes from shapes what your model can learn — a source is never neutral.</li>
+          <li>Chapter 3.7 goes deeper into how a data source's blind spots become a model's blind spots.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-3-1">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. Which data source is typically fastest to get started with, but might not perfectly match your specific problem?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Public datasets are ready immediately, but were built for someone else's exact problem.">A public, pre-existing dataset.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — this is usually the slowest, most expensive option, precisely because it's built to match your exact need.">Hiring people to manually label data for your exact task.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — building sensor infrastructure from scratch takes real time and investment.">Building a custom sensor network from scratch.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. Your company already logs every purchase customers make. Training a recommendation model on that data is an example of which data source?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — synthetic data is artificially generated; this is real data your product already produces.">Synthetic data.</div>
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! It's a byproduct of your product's normal operation.">Logs &amp; transactions.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — nothing here was pulled from the public internet.">Web scraping.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. Why might a team choose synthetic (artificially generated) data instead of real data?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Synthetic data fills in where real examples are hard or impossible to collect in bulk.">When real examples of the situation are too rare, expensive, or sensitive to collect directly.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — synthetic data is a useful substitute, not a guaranteed upgrade over real data.">Because synthetic data is always more accurate than real data.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — there's no such blanket restriction on using real data.">Because it's illegal to use real data for ML.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+</div>
+
+<script>
+  (function () {
+    initQuiz(document.getElementById('quiz-3-1'));
+    initProgressTracking();
+  })();
+</script>
+</body>
+</html>

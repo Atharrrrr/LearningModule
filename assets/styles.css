@@ -617,6 +617,12 @@ pre.python-block .f { color: var(--purple); } /* function */
 
 .data-table td { color: var(--text); }
 
+.data-table td.cell-missing { background: rgba(255, 166, 87, 0.15); border-color: var(--orange); font-style: italic; color: var(--text-faint); }
+.data-table td.cell-duplicate, .data-table tr.row-duplicate td { background: rgba(248, 81, 73, 0.12); border-color: var(--red); text-decoration: line-through; opacity: 0.6; }
+.data-table td.cell-outlier { background: rgba(248, 81, 73, 0.12); border-color: var(--red); font-weight: 700; color: var(--red); }
+.data-table td.cell-fixed { background: rgba(63, 185, 80, 0.12); border-color: var(--green); color: var(--green); }
+.data-table td.cell-removed { display: none; }
+
 /* ---------------------------------------------------------------------- */
 /* Recap block                                                             */
 /* ---------------------------------------------------------------------- */
