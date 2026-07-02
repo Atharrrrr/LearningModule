@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Part I — Orientation | AI/ML From Zero to Job-Ready</title>
+<link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+<div class="book-shell">
+
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">AI/ML: Zero to Job-Ready</div>
+    </div>
+    <div class="progress-bar-track"><div class="progress-bar-fill"></div></div>
+
+    <div class="sidebar-part">Part I — Orientation</div>
+    <a class="nav-item" data-chapter-id="1-1" href="#chapter-1-1">
+      <span class="nav-dot"></span>1.1 AI vs. ML vs. Deep Learning vs. RL
+    </a>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>1.2 The Three Ways Machines Learn</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>1.3 Machines Don't Think, They Fit Curves</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>1.4 A Short History of AI</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>1.5 The Job Landscape</div>
+  </nav>
+
+  <main>
+
+    <section id="chapter-1-1">
+      <div class="chapter-eyebrow">Part I · Chapter 1.1</div>
+      <h1 class="chapter-title">AI vs. ML vs. Deep Learning vs. RL</h1>
+
+      <p class="lede">
+        Four terms that get used almost interchangeably in headlines, but
+        mean four different — and nested — things. Here's how they fit
+        together.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🚗 Frame of reference</div>
+        <p>
+          Imagine four different ways a car could be "smart" behind the
+          wheel. One: a GPS follows a rule a programmer wrote once —
+          "if the next turn is in 200 feet, announce it." Two: a system
+          watches thousands of hours of real driving and learns, from
+          that data, what good driving looks like. Three: a system learns
+          directly from raw camera footage, automatically figuring out on
+          its own which pixels mean "pedestrian" or "stop sign," without
+          a human ever pointing those features out. Four: a system just
+          drives — badly at first — and gets better only because it's
+          penalized every time it drifts out of its lane and rewarded
+          every time it doesn't, with no examples of "correct" driving
+          shown to it at all. All four are trying to be smart. Only some
+          of them are <em>learning</em>. And they nest inside each other,
+          which is what this chapter is really about.
+        </p>
+      </div>
+
+      <h2>The outermost circle: AI</h2>
+      <script>initJargonBox("artificial intelligence (AI)",
+        "Any technique that makes a computer perform a task that normally seems to require human intelligence — whether it follows a hand-written rule or learns one from data.");</script>
+      <p>
+        <span class="jargon-term">Artificial intelligence</span> is the
+        biggest, oldest, and vaguest of the four terms. It just means
+        "getting a computer to do something that looks intelligent." That
+        GPS following a rule someone typed in by hand? Still AI — it's
+        old-school, rule-based AI, but it counts. AI is the goal; the other
+        three terms below are all <em>strategies</em> for reaching it.
+      </p>
+
+      <h2>A strategy for AI: ML</h2>
+      <script>initJargonBox("machine learning (ML)",
+        "A way of building AI where the system improves at a task by learning patterns from data, instead of being given an explicit, hand-written rule for every situation.");</script>
+      <p>
+        <span class="jargon-term">Machine learning</span> is a specific way
+        of getting to AI: instead of a programmer writing out every rule by
+        hand, the system is shown data — examples — and figures out its
+        own rules from patterns in that data. The spam filter that learns
+        which emails you flag is doing ML. The rule-based GPS from the
+        analogy is not; it never looks at data to improve itself. Every ML
+        system is AI, but not every AI system is ML.
+      </p>
+
+      <h2>A specific kind of ML: deep learning</h2>
+      <script>initJargonBox("neural network",
+        "A model loosely inspired by neurons in the brain: many simple, connected units arranged in layers, each passing a signal to the next, that together turn an input into an output.");</script>
+      <script>initJargonBox("deep learning",
+        "Machine learning that uses a neural network with many stacked layers, so the system can automatically discover which patterns in the raw data matter, instead of a person hand-picking them.");</script>
+      <p>
+        Most modern ML systems are built out of a
+        <span class="jargon-term">neural network</span>. When that network
+        is stacked into many layers — deep, layer upon layer — the field
+        calls it <span class="jargon-term">deep learning</span>. The payoff
+        of "deep" is that the system can work from raw, messy input
+        (a photo's raw pixels, say) and discover on its own which patterns
+        matter, layer by layer, rather than a human deciding in advance
+        that "edges matter" or "round shapes matter." Deep learning is a
+        subset of ML, which is a subset of AI.
+      </p>
+
+      <h2>A different axis entirely: RL</h2>
+      <script>initJargonBox("reinforcement learning (RL)",
+        "Machine learning where a system (an \"agent\") learns by taking actions and receiving rewards or penalties for the results, gradually improving its behavior through trial and error — without ever being shown a labeled correct answer.");</script>
+      <p>
+        <span class="jargon-term">Reinforcement learning</span> is also a
+        subset of ML, but it answers a different question than deep
+        learning does. Deep learning is about <em>how</em> a system finds
+        patterns (many layers, automatically). Reinforcement learning is
+        about <em>what it's learning from</em>: not a pile of labeled
+        examples, but its own trial and error, steered by reward and
+        penalty. The two aren't opposites — an RL system can absolutely use
+        a deep neural network internally. When it does, people call it
+        "deep RL," and you'll meet it properly in Part XII.
+      </p>
+
+      <h2>Worked example: sort four real systems into their circle</h2>
+      <p>Here's the test — for each system below, is it AI? Is it ML? Deep learning? RL?</p>
+      <ol>
+        <li>
+          <strong>A thermostat</strong> that turns on the AC whenever a
+          sensor reads above 78°F. A programmer wrote that rule once, and
+          it never changes. → <strong>AI, but not ML</strong> — no data
+          ever adjusted the rule.
+        </li>
+        <li>
+          <strong>A spam filter</strong> that studies thousands of emails
+          you've marked "spam" and learns which words and patterns predict
+          it, updating as you flag more. → <strong>AI and ML</strong> — it
+          improves from data.
+        </li>
+        <li>
+          <strong>A dog-breed app</strong> that learns directly from
+          millions of raw photos, automatically discovering which pixel
+          patterns distinguish a beagle from a bulldog through many stacked
+          layers. → <strong>AI, ML, and deep learning</strong> — a
+          many-layered neural network finding its own features.
+        </li>
+        <li>
+          <strong>A robot vacuum</strong> that bumps a wall, takes a small
+          penalty, and gradually learns a cleaner path purely through trial
+          and reward, with no example paths ever shown to it. →
+          <strong>AI, ML, and reinforcement learning</strong> — learning
+          from consequences, not labeled examples.
+        </li>
+      </ol>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">Click a label to see how each field nests inside the others.</p>
+        <svg id="nesting-diagram" viewBox="0 0 640 350" role="img" aria-label="Nested circles showing AI containing ML, which contains Deep Learning and Reinforcement Learning">
+          <circle id="circle-ai" cx="320" cy="170" r="160" fill="rgba(188,140,255,0.10)" stroke="#bc8cff" stroke-width="2"></circle>
+          <circle id="circle-ml" cx="320" cy="195" r="115" fill="rgba(88,166,255,0.12)" stroke="#58a6ff" stroke-width="2"></circle>
+          <circle id="circle-dl" cx="280" cy="225" r="55" fill="rgba(63,185,80,0.18)" stroke="#3fb950" stroke-width="2"></circle>
+          <circle id="circle-rl" cx="375" cy="225" r="45" fill="rgba(255,166,87,0.18)" stroke="#ffa657" stroke-width="2"></circle>
+
+          <text x="320" y="35" text-anchor="middle" fill="#bc8cff" font-size="15" font-family="monospace">AI</text>
+          <text x="320" y="115" text-anchor="middle" fill="#58a6ff" font-size="14" font-family="monospace">ML</text>
+          <text x="280" y="220" text-anchor="middle" fill="#3fb950" font-size="12" font-family="monospace">DL</text>
+          <text x="378" y="220" text-anchor="middle" fill="#ffa657" font-size="12" font-family="monospace">RL</text>
+        </svg>
+
+        <div class="quiz-options" id="nesting-buttons" style="flex-direction:row; flex-wrap:wrap;">
+          <div class="quiz-option" data-target="circle-ai" data-desc="AI — the outer circle. Any technique that makes a computer act intelligent, learned or not.">AI</div>
+          <div class="quiz-option" data-target="circle-ml" data-desc="ML — a subset of AI. Systems that improve at a task by learning from data instead of hand-written rules.">Machine Learning</div>
+          <div class="quiz-option" data-target="circle-dl" data-desc="Deep Learning — a subset of ML. Uses many-layered neural networks to find its own patterns in raw data.">Deep Learning</div>
+          <div class="quiz-option" data-target="circle-rl" data-desc="RL — a subset of ML. Learns through trial and error, guided by rewards and penalties instead of labeled examples.">Reinforcement Learning</div>
+        </div>
+        <p id="nesting-caption" style="margin-top:16px; color:#8b949e; font-size:14px;">
+          Click a label above to see its description.
+        </p>
+      </div>
+
+      <script>
+        (function () {
+          var caption = document.getElementById('nesting-caption');
+          var buttons = document.querySelectorAll('#nesting-buttons .quiz-option');
+          var circles = document.querySelectorAll('#nesting-diagram circle');
+          buttons.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+              buttons.forEach(function (b) { b.classList.remove('correct'); });
+              circles.forEach(function (c) { c.setAttribute('stroke-width', '2'); });
+              btn.classList.add('correct');
+              var target = document.getElementById(btn.getAttribute('data-target'));
+              if (target) target.setAttribute('stroke-width', '4');
+              caption.textContent = btn.getAttribute('data-desc');
+            });
+          });
+        })();
+      </script>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>AI is the broad goal — any technique that makes a computer act intelligently.</li>
+          <li>ML is a strategy for reaching AI: learning patterns from data instead of following hand-written rules.</li>
+          <li>Deep learning is ML built on many-layered neural networks that find their own features in raw data.</li>
+          <li>Reinforcement learning is ML that learns from trial-and-error rewards and penalties, not labeled examples.</li>
+          <li>Given a real system, you can place it correctly among these four nested circles.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-1-1">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. Which statement correctly describes how AI, ML, and deep learning relate to each other?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — they're nested, not separate.">They're three totally separate, non-overlapping fields.</div>
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! ML sits inside AI, and deep learning sits inside ML.">ML is a subset of AI, and deep learning is a subset of ML.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that's backwards. AI is the outermost circle, not the innermost.">AI is a subset of ML, which is a subset of deep learning.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. A rule like "if temperature &gt; 78°F, turn on the AC" was written once by a programmer and never changes based on data. Is this machine learning?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — looking intelligent isn't enough to make something ML.">Yes, because it makes an intelligent-seeming decision.</div>
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! It's AI, but not ML, since nothing about it improves from data.">No — it's AI, but not ML, because it never improves from data.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — it does still count as AI, just not ML.">No, because it's not AI either.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. What's the defining trait that separates reinforcement learning from the other categories in this chapter?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — learning from labeled examples describes typical ML/deep learning, not RL.">It learns from millions of labeled examples.</div>
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! RL learns from its own trial and error, guided by rewards and penalties, not labeled examples.">It learns through trial and error, guided by rewards and penalties instead of labeled examples.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — RL doesn't require a deep neural network; it can use much simpler methods too.">It always requires a neural network with many layers.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+</div>
+
+<script src="../assets/components.js"></script>
+<script>
+  (function () {
+    initQuiz(document.getElementById('quiz-1-1'));
+    initProgressTracking();
+  })();
+</script>
+</body>
+</html>
