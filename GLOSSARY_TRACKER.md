@@ -39,3 +39,4 @@ instead of repeating it.
 | posterior | 2.7 Bayes' Theorem, Explained With a Story | Your updated probability estimate after seeing new evidence — in the story above, the roughly 50% chance of actually having the condition given a positive test. |
 | slope | 2.8 Slopes & Change — Intuitive Calculus | How much a line's output (y) changes for each unit its input (x) changes — rise over run. For a straight line, it's the same number everywhere. |
 | derivative | 2.8 Slopes & Change — Intuitive Calculus | The slope of a curve at one specific point — found by zooming in close enough that the curve looks like a straight line right there. Different points on a curve can have different derivatives. |
+| chain rule | 2.9 The Chain Rule | A rule for finding the rate of change through a chain of dependencies: multiply each link's individual rate of change together. If y depends on u, and u depends on x, then dy/dx = dy/du × du/dx. |

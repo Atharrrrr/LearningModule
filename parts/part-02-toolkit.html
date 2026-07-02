@@ -41,7 +41,9 @@
     <a class="nav-item" data-chapter-id="2-8" href="#chapter-2-8">
       <span class="nav-dot"></span>2.8 Slopes &amp; Change — Intuitive Calculus
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>2.9 The Chain Rule</div>
+    <a class="nav-item" data-chapter-id="2-9" href="#chapter-2-9">
+      <span class="nav-dot"></span>2.9 The Chain Rule
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>2.10 Your First Lines of Code (Python)</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>2.11 Arrays, Tables &amp; Tensors (NumPy/pandas)</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>2.12 Plotting &amp; Seeing Your Data [D]</div>
@@ -1586,6 +1588,173 @@ movies_matrix = [
 
     </section>
 
+    <section id="chapter-2-9">
+      <div class="chapter-eyebrow">Part II · Chapter 2.9</div>
+      <h1 class="chapter-title">The Chain Rule</h1>
+
+      <p class="lede">
+        This is the single most important idea in this entire Part —
+        quietly, it's the mathematical trick that makes training a neural
+        network possible at all.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">⚙️ Frame of reference</div>
+        <p>
+          Picture three gears connected in a row. Turn gear A, and it
+          spins gear B twice as fast. Gear B, in turn, spins gear C three
+          times as fast as it spins itself. How much faster does gear C
+          spin compared to gear A? Not 2 + 3 = 5 times. It's
+          2 × 3 = <strong>6 times</strong> as fast — you multiply the
+          ratios along the chain. That's the entire chain rule, no
+          calculus notation required yet.
+        </p>
+      </div>
+
+      <h2>Multiply the links in the chain</h2>
+      <script>initJargonBox("chain rule",
+        "A rule for finding the rate of change through a chain of dependencies: multiply each link's individual rate of change together. If y depends on u, and u depends on x, then dy/dx = dy/du × du/dx.");</script>
+      <p>
+        The <span class="jargon-term">chain rule</span> says: when one
+        quantity depends on another, which depends on another, the overall
+        rate of change from start to end is the <em>product</em> of every
+        link's individual rate of change — exactly like the gears. In
+        derivative notation, if y depends on u, and u depends on x, then
+        <span class="mono">dy/dx = dy/du × du/dx</span>. Each
+        <span class="mono">d(something)/d(something)</span> is just a
+        slope (Chapter 2.8) — a local rate of change for one link in the
+        chain.
+      </p>
+
+      <h2>Worked example: a composed function</h2>
+      <p>
+        Let <span class="mono">u = 2x</span> and
+        <span class="mono">y = u²</span> — so y depends on u, and u
+        depends on x. At x = 3: <span class="mono">u = 2×3 = 6</span>.
+      </p>
+      <ul>
+        <li>du/dx = 2 (constant — u always changes twice as fast as x)</li>
+        <li>dy/du = 2u (from Chapter 2.8's rule for x², applied to u); at u = 6, that's 2×6 = 12</li>
+        <li>Chain rule: dy/dx = dy/du × du/dx = 12 × 2 = <strong>24</strong></li>
+      </ul>
+      <p>
+        Check it directly: y = (2x)² = 4x², whose slope is 8x (four times
+        the slope of x², since the coefficient 4 comes along for the
+        ride). At x = 3: 8 × 3 = <strong>24</strong>. Same answer, two
+        different routes.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">Set each stage's own rate. This is exactly the shape of a neural network's layers — a chain of dependencies (Chapter 6.4).</p>
+
+        <svg id="chain-diagram" viewBox="0 0 640 140" role="img" aria-label="A chain of three stages, each with its own rate, connected by arrows">
+          <rect x="20" y="40" width="110" height="60" rx="6" fill="#161b22" stroke="#30363d" stroke-width="1.5"></rect>
+          <text x="75" y="75" text-anchor="middle" fill="#e6edf3" font-size="13" font-family="monospace">Stage 1</text>
+
+          <text x="165" y="75" text-anchor="middle" fill="#6e7681" font-size="22">→</text>
+
+          <rect x="200" y="40" width="110" height="60" rx="6" fill="#161b22" stroke="#30363d" stroke-width="1.5"></rect>
+          <text x="255" y="75" text-anchor="middle" fill="#e6edf3" font-size="13" font-family="monospace">Stage 2</text>
+
+          <text x="345" y="75" text-anchor="middle" fill="#6e7681" font-size="22">→</text>
+
+          <rect x="380" y="40" width="110" height="60" rx="6" fill="#161b22" stroke="#30363d" stroke-width="1.5"></rect>
+          <text x="435" y="75" text-anchor="middle" fill="#e6edf3" font-size="13" font-family="monospace">Stage 3</text>
+
+          <text x="525" y="75" text-anchor="middle" fill="#6e7681" font-size="22">→</text>
+
+          <rect x="555" y="40" width="65" height="60" rx="6" fill="rgba(188,140,255,0.10)" stroke="#bc8cff" stroke-width="2"></rect>
+          <text x="587" y="75" text-anchor="middle" fill="#bc8cff" font-size="12" font-family="monospace">Output</text>
+        </svg>
+
+        <div class="demo-controls">
+          <label class="demo-slider-label">Stage 1 rate: <span id="chain-r1-value">2.0</span>
+            <input type="range" id="chain-r1-slider" min="0.5" max="3" step="0.1" value="2">
+          </label>
+          <label class="demo-slider-label">Stage 2 rate: <span id="chain-r2-value">2.0</span>
+            <input type="range" id="chain-r2-slider" min="0.5" max="3" step="0.1" value="2">
+          </label>
+          <label class="demo-slider-label">Stage 3 rate: <span id="chain-r3-value">2.0</span>
+            <input type="range" id="chain-r3-slider" min="0.5" max="3" step="0.1" value="2">
+          </label>
+        </div>
+
+        <p id="chain-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var r1 = document.getElementById('chain-r1-slider');
+          var r2 = document.getElementById('chain-r2-slider');
+          var r3 = document.getElementById('chain-r3-slider');
+          var v1 = document.getElementById('chain-r1-value');
+          var v2 = document.getElementById('chain-r2-value');
+          var v3 = document.getElementById('chain-r3-value');
+          var readout = document.getElementById('chain-readout');
+
+          function update() {
+            var a = parseFloat(r1.value), b = parseFloat(r2.value), c = parseFloat(r3.value);
+            v1.textContent = a.toFixed(1);
+            v2.textContent = b.toFixed(1);
+            v3.textContent = c.toFixed(1);
+            var total = a * b * c;
+            readout.textContent = 'Overall rate of change = ' + a.toFixed(1) + ' × ' + b.toFixed(1) + ' × ' + c.toFixed(1) + ' = ' + total.toFixed(2) + '.';
+          }
+
+          r1.addEventListener('input', update);
+          r2.addEventListener('input', update);
+          r3.addEventListener('input', update);
+          update();
+        })();
+      </script>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>The chain rule finds the rate of change through a chain of dependencies by multiplying each link's rate.</li>
+          <li>dy/dx = dy/du × du/dx when y depends on u and u depends on x.</li>
+          <li>Given simple stage-by-stage rates, you can compute an overall combined rate by multiplying them.</li>
+          <li>A neural network is a chain of layers — backpropagation (Chapter 6.4) is the chain rule applied to that whole stack.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-2-9">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. Gear A turns gear B 2× as fast, and gear B turns gear C 4× as fast. How much faster does C turn compared to A?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that adds the ratios instead of multiplying them.">6× (2 + 4)</div>
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Chain the ratios by multiplying: 2 × 4 = 8.">8× (2 × 4)</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that only counts the first stage, ignoring the second link in the chain.">2×, since only the first gear matters</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. If y depends on u, and u depends on x, how do you find dy/dx using the chain rule?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Multiply the two local rates together.">Multiply dy/du by du/dx.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the chain rule multiplies the links, it doesn't add them.">Add dy/du and du/dx.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — ignoring du/dx would miss how x affects u in the first place.">Just use dy/du and ignore du/dx entirely.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. Why does the chain rule matter so much for training neural networks?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — it's not just a speed optimization, it's the core mechanism that makes training possible at all.">It's only used to speed up training, not to compute anything essential.</div>
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Backpropagation (Chapter 6.4) is the chain rule applied across every layer of the network.">A network is a chain of layers, each depending on the last, so the chain rule is how an early parameter's effect on the final error gets computed.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the chain rule is exactly what lets it work for networks with many layers, not just one.">It only applies to single-layer networks, not deep ones.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -1599,6 +1768,7 @@ movies_matrix = [
     initQuiz(document.getElementById('quiz-2-6'));
     initQuiz(document.getElementById('quiz-2-7'));
     initQuiz(document.getElementById('quiz-2-8'));
+    initQuiz(document.getElementById('quiz-2-9'));
     initProgressTracking();
   })();
 </script>
