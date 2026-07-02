@@ -35,7 +35,9 @@
     <a class="nav-item" data-chapter-id="4-6" href="#chapter-4-6">
       <span class="nav-dot"></span>4.6 Random Forests &amp; Boosting
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>4.7 SVM &amp; Naive Bayes [D]</div>
+    <a class="nav-item" data-chapter-id="4-7" href="#chapter-4-7">
+      <span class="nav-dot"></span>4.7 SVM &amp; Naive Bayes [D]
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>4.8 Clustering (K-means)</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>4.9 Dimensionality Reduction (PCA/t-SNE)</div>
   </nav>
@@ -1109,6 +1111,167 @@
 
     </section>
 
+    <section id="chapter-4-7">
+      <div class="chapter-eyebrow">Part IV · Chapter 4.7 · Deep-dive</div>
+      <h1 class="chapter-title">SVM &amp; Naive Bayes</h1>
+
+      <p class="lede">
+        Two more classic classifiers, each built on a single sharp idea:
+        one about geometry, one about Chapter 2.7's Bayes' theorem with a
+        deliberate shortcut.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🚗 Frame of reference</div>
+        <p>
+          Parking a car in an empty lot, you don't just avoid touching
+          either line — you center the car for the widest possible margin
+          on both sides. A Support Vector Machine picks its boundary the
+          same way: not just any line that separates two classes, but the
+          one leaving the most breathing room on both sides.
+        </p>
+      </div>
+
+      <h2>SVM: the widest possible margin</h2>
+      <script>initJargonBox("SVM (support vector machine)",
+        "A classifier that finds the separating boundary between two classes with the widest possible margin — the most empty space on both sides — rather than just any line that happens to separate them.");</script>
+      <script>initJargonBox("support vectors",
+        "The training points closest to an SVM's boundary, touching the margin. They're the only points that actually determine where the boundary sits — every other point could move or vanish without changing it.");</script>
+      <p>
+        <span class="jargon-term">SVM</span> finds the boundary with the
+        widest possible margin between two classes. The points closest to
+        that boundary — the <span class="jargon-term">support vectors</span> —
+        are the only ones that actually matter for defining it. Every
+        other point could be moved, or deleted entirely, without the
+        boundary shifting at all.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">Click any point to see whether it's a support vector.</p>
+
+        <svg id="svm-chart" viewBox="0 0 500 350" overflow="hidden" role="img" aria-label="Two classes separated by a maximum-margin boundary, with support vectors highlighted">
+          <line x1="70" y1="245" x2="430" y2="45" stroke="#58a6ff" stroke-width="1.5" stroke-dasharray="5,4"></line>
+          <line x1="70" y1="290" x2="430" y2="90" stroke="#e6edf3" stroke-width="2.5"></line>
+          <line x1="70" y1="335" x2="430" y2="135" stroke="#ffa657" stroke-width="1.5" stroke-dasharray="5,4"></line>
+          <g id="svm-points"></g>
+        </svg>
+
+        <div class="demo-actions">
+          <div class="quiz-option" id="svm-add-btn">➕ Add a far-away point</div>
+        </div>
+        <p id="svm-readout" class="demo-readout">Click a point above to check whether it's a support vector.</p>
+      </div>
+
+      <script>
+        (function () {
+          var points = [
+            { pos: [250, 145], color: '#58a6ff', sv: true },
+            { pos: [150, 150], color: '#58a6ff', sv: false },
+            { pos: [350, 50], color: '#58a6ff', sv: false },
+            { pos: [400, 90], color: '#58a6ff', sv: false },
+            { pos: [250, 235], color: '#ffa657', sv: true },
+            { pos: [150, 320], color: '#ffa657', sv: false },
+            { pos: [350, 270], color: '#ffa657', sv: false },
+            { pos: [100, 300], color: '#ffa657', sv: false }
+          ];
+
+          var group = document.getElementById('svm-points');
+          var readout = document.getElementById('svm-readout');
+          var addBtn = document.getElementById('svm-add-btn');
+
+          function renderPoint(p) {
+            var c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            c.setAttribute('cx', p.pos[0]);
+            c.setAttribute('cy', p.pos[1]);
+            c.setAttribute('r', p.sv ? '8' : '6');
+            c.setAttribute('fill', p.color);
+            c.setAttribute('stroke', p.sv ? '#e6edf3' : 'none');
+            c.setAttribute('stroke-width', p.sv ? '2.5' : '0');
+            c.style.cursor = 'pointer';
+            c.addEventListener('click', function () {
+              readout.textContent = p.sv
+                ? 'This IS a support vector — it touches the margin and helps define exactly where the boundary sits.'
+                : "Not a support vector — this point is safely inside its class's territory. Moving or removing it wouldn't shift the boundary at all.";
+            });
+            group.appendChild(c);
+          }
+
+          points.forEach(renderPoint);
+
+          addBtn.addEventListener('click', function () {
+            var p = { pos: [410, 50], color: '#58a6ff', sv: false };
+            renderPoint(p);
+            addBtn.classList.add('disabled');
+            readout.textContent = 'New point added, deep in the blue class\'s territory — the boundary and margins didn\'t move, because the new point isn\'t a support vector.';
+          });
+        })();
+      </script>
+
+      <h2>Naive Bayes: Chapter 2.7, with a shortcut</h2>
+      <script>initJargonBox("Naive Bayes",
+        "A classifier built directly on Bayes' theorem (Chapter 2.7), with a simplifying \"naive\" assumption: that all features are independent of each other, even when in reality they're not. Fast and simple, and a common baseline for text classification.");</script>
+      <p>
+        <span class="jargon-term">Naive Bayes</span> applies Chapter 2.7's
+        Bayes' theorem directly to classification — updating a prior into
+        a posterior based on evidence — but adds one shortcut: it assumes
+        every feature is independent of the others. An email containing
+        "free" and an email containing "winner" are treated as two
+        separate, unrelated clues, even though in reality spam emails that
+        use one word are more likely to use the other too. That
+        assumption is technically wrong — which is exactly why it's called
+        "naive" — but the approximation is often good enough, and the
+        computation is extremely fast, which is why Naive Bayes remains a
+        popular, simple baseline for text classification like spam
+        filtering.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>SVM finds the separating boundary with the widest possible margin between two classes.</li>
+          <li>Only the support vectors — the closest points to the boundary — actually determine where it sits.</li>
+          <li>Naive Bayes applies Chapter 2.7's Bayes' theorem to classification, with a simplifying (and technically wrong, but often good-enough) assumption that features are independent.</li>
+          <li>Both are fast, classic, still-useful baseline techniques worth knowing even in a deep-learning-dominated field.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-4-7">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. In SVM, what determines exactly where the separating boundary sits?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Every other point could move or vanish without affecting the boundary at all.">Only the support vectors — the points closest to the boundary.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — points far from the boundary have no effect on where it sits.">Every single point in the dataset equally.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — it's the closest points, not the farthest, that matter.">Only the points farthest from the boundary.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. What does "naive" refer to in Naive Bayes?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! It's a simplifying assumption that's often wrong in detail, but works well enough in practice.">The simplifying assumption that features are independent of each other, even when they're not really.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — Naive Bayes is a genuinely useful, widely-used baseline technique.">That the algorithm is too simple to ever be useful in practice.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — Naive Bayes is built directly on Bayes' theorem (Chapter 2.7).">That it doesn't use Bayes' theorem at all.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. What does SVM try to maximize when choosing a boundary?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! The widest possible empty space between the boundary and both classes.">The margin — the width of empty space between the boundary and the closest points of each class.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — SVM cares about geometry near the boundary, not the total number of points.">The total number of training points.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the number of features is fixed by the dataset, not something SVM chooses to maximize.">The number of features in the dataset.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -1120,6 +1283,7 @@
     initQuiz(document.getElementById('quiz-4-4'));
     initQuiz(document.getElementById('quiz-4-5'));
     initQuiz(document.getElementById('quiz-4-6'));
+    initQuiz(document.getElementById('quiz-4-7'));
     initProgressTracking();
   })();
 </script>
