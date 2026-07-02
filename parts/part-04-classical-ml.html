@@ -23,7 +23,9 @@
     <a class="nav-item" data-chapter-id="4-2" href="#chapter-4-2">
       <span class="nav-dot"></span>4.2 Logistic Regression
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>4.3 How Learning Actually Happens</div>
+    <a class="nav-item" data-chapter-id="4-3" href="#chapter-4-3">
+      <span class="nav-dot"></span>4.3 How Learning Actually Happens
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>4.4 k-Nearest Neighbors</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>4.5 Decision Trees</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>4.6 Random Forests &amp; Boosting</div>
@@ -351,6 +353,224 @@
 
     </section>
 
+    <section id="chapter-4-3">
+      <div class="chapter-eyebrow">Part IV · Chapter 4.3</div>
+      <h1 class="chapter-title">How Learning Actually Happens</h1>
+
+      <p class="lede">
+        Remember dragging sliders in Chapter 1.3 to shrink that "average
+        gap" number by hand? This chapter names what you were really
+        doing, and hands the job to an algorithm that does it automatically
+        — and far faster.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🌫️ Frame of reference</div>
+        <p>
+          Imagine standing on a hilly landscape in thick fog. You can't
+          see the whole terrain, but you can feel which direction is
+          downhill right where you're standing. So you take a small step
+          that way, feel the slope again, take another small step, and
+          repeat — eventually reaching a low point, without ever seeing
+          the full map. That's the entire idea. The "landscape" is how
+          wrong a model's predictions are; "downhill" is making them less
+          wrong; and "feeling the slope" is exactly Chapter 2.8's
+          derivative.
+        </p>
+      </div>
+
+      <h2>Loss: the "average gap," formalized</h2>
+      <script>initJargonBox("loss",
+        "A formal number measuring how wrong a model's predictions are across the whole training set — the exact idea behind Chapter 1.3's \"average gap,\" now with a name. Training means searching for parameters that minimize it.");</script>
+      <p>
+        <span class="jargon-term">Loss</span> is Chapter 1.3's "average
+        gap from the dots," formalized: a single number where bigger means
+        worse. Different problems use different exact loss formulas, but
+        the idea is always the same — measure how far off the
+        predictions are, and try to shrink that number.
+      </p>
+
+      <h2>Gradient descent: walking downhill automatically</h2>
+      <script>initJargonBox("gradient descent",
+        "The algorithm that automatically finds parameter values minimizing a loss: repeatedly compute the loss's slope (derivative) with respect to each parameter, then take a small step in the direction that decreases the loss.");</script>
+      <script>initJargonBox("learning rate",
+        "A number controlling how big a step gradient descent takes at each update. Too large and it can overshoot and never settle; too small and training crawls.");</script>
+      <p>
+        <span class="jargon-term">Gradient descent</span> is the fog
+        analogy, done with math instead of feet: compute the slope of the
+        loss with respect to each parameter (Chapter 2.8's derivative),
+        then nudge every parameter a small step in the downhill direction.
+        Repeat, over and over, until the loss stops improving much. The
+        <span class="jargon-term">learning rate</span> controls how big
+        each step is — Chapters 6.5 and 6.6 return to this in more depth.
+      </p>
+
+      <h2>Worked example: the exam-score line, automated</h2>
+      <p>
+        Chapter 1.3 started at <span class="mono">m=1, b=10</span> (loss
+        ≈ 54.9) and asked you to drag sliders toward
+        <span class="mono">m=6, b=45</span> (loss ≈ 1.3) by hand.
+        Gradient descent finds that exact same destination on its own —
+        watch it happen below.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <svg id="gd-chart" viewBox="0 0 500 320" overflow="hidden" role="img" aria-label="Scatter plot with a line that gradient descent automatically fits">
+          <line x1="60" y1="280" x2="460" y2="280" stroke="#30363d" stroke-width="1"></line>
+          <line x1="60" y1="280" x2="60" y2="20" stroke="#30363d" stroke-width="1"></line>
+          <text x="260" y="305" text-anchor="middle" fill="#6e7681" font-size="12">Hours studied →</text>
+          <line id="gd-line" x1="60" y1="270" x2="460" y2="192" stroke="#3fb950" stroke-width="3"></line>
+          <g id="gd-points"></g>
+        </svg>
+
+        <div class="demo-actions">
+          <div class="quiz-option" id="gd-run-btn">▶ Run gradient descent</div>
+          <div class="quiz-option" id="gd-reset-btn">↺ Reset</div>
+        </div>
+        <p id="gd-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var points = [[1, 52], [2, 58], [3, 60], [4, 68], [5, 74], [6, 82], [7, 88]];
+          var pointsGroup = document.getElementById('gd-points');
+          var line = document.getElementById('gd-line');
+          var readout = document.getElementById('gd-readout');
+          var runBtn = document.getElementById('gd-run-btn');
+          var resetBtn = document.getElementById('gd-reset-btn');
+
+          var xMin = 0, xMax = 8, yMin = 0, yMax = 100;
+          var plotX0 = 60, plotX1 = 460, plotY0 = 280, plotY1 = 20;
+          function xPix(x) { return plotX0 + (x - xMin) / (xMax - xMin) * (plotX1 - plotX0); }
+          function yPix(y) { return plotY0 - (y - yMin) / (yMax - yMin) * (plotY0 - plotY1); }
+
+          points.forEach(function (p) {
+            var c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            c.setAttribute('cx', xPix(p[0]));
+            c.setAttribute('cy', yPix(p[1]));
+            c.setAttribute('r', '5');
+            c.setAttribute('fill', '#bc8cff');
+            pointsGroup.appendChild(c);
+          });
+
+          var m, b, step, running;
+          var lr = 0.006;
+          var stepsPerFrame = 20;
+          var maxSteps = 2400;
+
+          function avgGap(m, b) {
+            var total = 0;
+            points.forEach(function (p) { total += Math.abs(p[1] - (m * p[0] + b)); });
+            return total / points.length;
+          }
+
+          function drawLine() {
+            line.setAttribute('x1', xPix(xMin));
+            line.setAttribute('y1', yPix(b + m * xMin));
+            line.setAttribute('x2', xPix(xMax));
+            line.setAttribute('y2', yPix(b + m * xMax));
+          }
+
+          function gradientStep() {
+            var n = points.length;
+            var gradM = 0, gradB = 0;
+            points.forEach(function (p) {
+              var err = p[1] - (m * p[0] + b);
+              gradM += -2 * p[0] * err;
+              gradB += -2 * err;
+            });
+            gradM /= n;
+            gradB /= n;
+            m -= lr * gradM;
+            b -= lr * gradB;
+          }
+
+          function reset() {
+            running = false;
+            m = 1; b = 10; step = 0;
+            drawLine();
+            runBtn.textContent = '▶ Run gradient descent';
+            runBtn.classList.remove('disabled');
+            readout.textContent = 'Step 0: m=' + m.toFixed(2) + ', b=' + b.toFixed(2) + ', average gap=' + avgGap(m, b).toFixed(1) + '.';
+          }
+
+          function frame() {
+            if (!running) return;
+            for (var i = 0; i < stepsPerFrame && step < maxSteps; i++) {
+              gradientStep();
+              step++;
+            }
+            drawLine();
+            var gap = avgGap(m, b);
+            readout.textContent = 'Step ' + step + ': m=' + m.toFixed(2) + ', b=' + b.toFixed(2) + ', average gap=' + gap.toFixed(1) + '.';
+            if (step >= maxSteps) {
+              running = false;
+              readout.textContent += ' Converged! This is gradient descent automatically finding what you found by hand in Chapter 1.3.';
+              runBtn.textContent = '✓ Finished';
+              runBtn.classList.add('disabled');
+              return;
+            }
+            setTimeout(frame, 40);
+          }
+
+          runBtn.addEventListener('click', function () {
+            if (running) return;
+            running = true;
+            frame();
+          });
+          resetBtn.addEventListener('click', reset);
+
+          reset();
+        })();
+      </script>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Loss is a formal number measuring how wrong a model's predictions are — Chapter 1.3's "average gap," formalized.</li>
+          <li>Gradient descent automatically minimizes loss: repeatedly compute the local slope and step downhill.</li>
+          <li>The learning rate controls how big each step is.</li>
+          <li>This is exactly what "training" (Chapter 1.3) mechanically is — the same search you did by hand, done automatically.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-4-3">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What is "loss," in this chapter's terms?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Loss formalizes Chapter 1.3's average-gap idea — the thing training tries to minimize.">A formal number measuring how wrong a model's predictions are.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that's a property of a dataset (Chapter 2.3), not a measure of prediction error.">The number of features in a dataset.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that's Chapter 3.2's topic, an entirely different concept.">A synonym for a missing value.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. What does gradient descent do at each step?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! That's the fog-and-hillside analogy, done with derivatives.">Computes the local slope of the loss and takes a small step in the direction that decreases it.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — each step is a small, deliberate, slope-guided nudge, not a random guess.">Randomly guesses entirely new parameter values with no relationship to the previous ones.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — gradient descent adjusts parameters; it doesn't remove data points.">Deletes the worst-fitting data points from the dataset.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. What does the learning rate control?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Too big overshoots, too small crawls — it's the step size.">How big a step gradient descent takes at each update.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that's determined by the dataset and feature engineering (Chapter 3.4), not the learning rate.">How many features the model uses.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that choice is about the model type (Chapter 4.1 vs. 4.2), not the learning rate.">Whether the model is used for classification or regression.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -358,6 +578,7 @@
   (function () {
     initQuiz(document.getElementById('quiz-4-1'));
     initQuiz(document.getElementById('quiz-4-2'));
+    initQuiz(document.getElementById('quiz-4-3'));
     initProgressTracking();
   })();
 </script>
