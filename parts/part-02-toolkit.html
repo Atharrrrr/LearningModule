@@ -26,7 +26,9 @@
     <a class="nav-item" data-chapter-id="2-3" href="#chapter-2-3">
       <span class="nav-dot"></span>2.3 Matrices — Tables That Transform Data
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>2.4 Dot Products &amp; Similarity</div>
+    <a class="nav-item" data-chapter-id="2-4" href="#chapter-2-4">
+      <span class="nav-dot"></span>2.4 Dot Products &amp; Similarity
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>2.5 Probability, the Intuitive Way</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>2.6 Distributions &amp; Uncertainty</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>2.7 Bayes' Theorem, Explained With a Story</div>
@@ -588,6 +590,205 @@ movies_matrix = [
 
     </section>
 
+    <section id="chapter-2-4">
+      <div class="chapter-eyebrow">Part II · Chapter 2.4</div>
+      <h1 class="chapter-title">Dot Products &amp; Similarity</h1>
+
+      <p class="lede">
+        How does a recommendation system know Movie A is a better match for
+        you than Movie B? Underneath, it's one small calculation, repeated
+        — the dot product.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🎯 Frame of reference</div>
+        <p>
+          Imagine comparing your taste in movies to a friend's by going
+          feature by feature: you both rate how much you like action
+          (0–10) and how much you like romance (0–10), multiply your
+          matching scores together, and add the results up. If you both
+          love action and both dislike romance, those products are big and
+          positive, and the total is large — your tastes point in the same
+          direction. If one of you loves what the other hates, the total
+          comes out small. That single running total is exactly what a
+          dot product is.
+        </p>
+      </div>
+
+      <h2>The calculation</h2>
+      <script>initJargonBox("dot product",
+        "A single number computed from two same-length vectors: multiply each pair of matching entries, then add up all the results. A larger, more positive dot product means the two vectors point in a more similar direction.");</script>
+      <p>
+        The <span class="jargon-term">dot product</span> of two vectors is
+        found by multiplying each pair of matching numbers, then adding
+        everything up. For two 2D vectors
+        <span class="mono">(a₁, a₂)</span> and
+        <span class="mono">(b₁, b₂)</span>, that's
+        <span class="mono">a₁×b₁ + a₂×b₂</span> — one multiplication per
+        matching feature, then a sum. It works the same way no matter how
+        many features the vectors have; you just keep multiplying matching
+        pairs and adding.
+      </p>
+
+      <h2>Worked example: which movie matches your taste?</h2>
+      <p>
+        Say your taste vector is <span class="mono">(7, 3)</span> — you
+        lean toward action over romance. Compare it against the three
+        movies from Chapter 2.2 and 2.3:
+      </p>
+      <ul>
+        <li><span class="mono">Movie A (8, 2)</span>: 7×8 + 3×2 = 56 + 6 = <strong>62</strong></li>
+        <li><span class="mono">Movie B (2, 9)</span>: 7×2 + 3×9 = 14 + 27 = <strong>41</strong></li>
+        <li><span class="mono">Movie C (6, 6)</span>: 7×6 + 3×6 = 42 + 18 = <strong>60</strong></li>
+      </ul>
+      <p>
+        Movie A wins, narrowly ahead of Movie C — both lean action, like
+        you do. Movie B, the romance-heavy one, scores noticeably lower.
+        Try changing your taste vector below and watch the ranking shift.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">Drag the sliders to set your taste, and watch the movies re-rank by dot product.</p>
+
+        <svg id="dot-plot" viewBox="0 0 500 480" overflow="hidden" role="img" aria-label="2D plot comparing a user taste vector against three movie vectors">
+          <defs>
+            <marker id="dot-arrow-user" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="#bc8cff"></path>
+            </marker>
+            <marker id="dot-arrow-a" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="#3fb950"></path>
+            </marker>
+            <marker id="dot-arrow-b" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="#58a6ff"></path>
+            </marker>
+            <marker id="dot-arrow-c" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="#ffa657"></path>
+            </marker>
+          </defs>
+
+          <line x1="60" y1="440" x2="460" y2="440" stroke="#30363d" stroke-width="1"></line>
+          <line x1="60" y1="440" x2="60" y2="40" stroke="#30363d" stroke-width="1"></line>
+          <text x="260" y="465" text-anchor="middle" fill="#6e7681" font-size="12">Action score →</text>
+          <text x="30" y="240" text-anchor="middle" fill="#6e7681" font-size="12" transform="rotate(-90 30 240)">Romance score →</text>
+
+          <line x1="60" y1="440" x2="380" y2="360" stroke="#3fb950" stroke-width="2.5" marker-end="url(#dot-arrow-a)"></line>
+          <text x="388" y="358" fill="#3fb950" font-size="12" font-family="monospace">Movie A</text>
+
+          <line x1="60" y1="440" x2="140" y2="80" stroke="#58a6ff" stroke-width="2.5" marker-end="url(#dot-arrow-b)"></line>
+          <text x="100" y="72" fill="#58a6ff" font-size="12" font-family="monospace">Movie B</text>
+
+          <line x1="60" y1="440" x2="300" y2="200" stroke="#ffa657" stroke-width="2.5" marker-end="url(#dot-arrow-c)"></line>
+          <text x="308" y="198" fill="#ffa657" font-size="12" font-family="monospace">Movie C</text>
+
+          <line id="taste-arrow" x1="60" y1="440" x2="340" y2="320" stroke="#bc8cff" stroke-width="3" marker-end="url(#dot-arrow-user)"></line>
+        </svg>
+
+        <div class="demo-controls">
+          <label class="demo-slider-label">Your action liking: <span id="dot-x-value">7</span>
+            <input type="range" id="dot-x-slider" min="0" max="10" step="1" value="7">
+          </label>
+          <label class="demo-slider-label">Your romance liking: <span id="dot-y-value">3</span>
+            <input type="range" id="dot-y-slider" min="0" max="10" step="1" value="3">
+          </label>
+        </div>
+
+        <ol class="rank-list" id="dot-ranking"></ol>
+      </div>
+
+      <script>
+        (function () {
+          var xSlider = document.getElementById('dot-x-slider');
+          var ySlider = document.getElementById('dot-y-slider');
+          var xValue = document.getElementById('dot-x-value');
+          var yValue = document.getElementById('dot-y-value');
+          var tasteArrow = document.getElementById('taste-arrow');
+          var ranking = document.getElementById('dot-ranking');
+
+          var plotX0 = 60, plotX1 = 460, plotY0 = 440, plotY1 = 40;
+          function xPix(v) { return plotX0 + (v / 10) * (plotX1 - plotX0); }
+          function yPix(v) { return plotY0 + (v / 10) * (plotY1 - plotY0); }
+
+          var movies = [
+            { name: 'Movie A', vec: [8, 2] },
+            { name: 'Movie B', vec: [2, 9] },
+            { name: 'Movie C', vec: [6, 6] }
+          ];
+
+          function update() {
+            var x = parseInt(xSlider.value, 10);
+            var y = parseInt(ySlider.value, 10);
+            xValue.textContent = x;
+            yValue.textContent = y;
+            tasteArrow.setAttribute('x2', xPix(x));
+            tasteArrow.setAttribute('y2', yPix(y));
+
+            var scored = movies.map(function (m) {
+              return { name: m.name, score: x * m.vec[0] + y * m.vec[1] };
+            });
+            scored.sort(function (a, b) { return b.score - a.score; });
+
+            ranking.innerHTML = '';
+            scored.forEach(function (m, i) {
+              var li = document.createElement('li');
+              li.className = 'rank-item' + (i === 0 ? ' best' : '');
+              li.textContent = (i + 1) + '. ' + m.name + ' — dot product: ' + m.score + (i === 0 ? ' ⭐ best match' : '');
+              ranking.appendChild(li);
+            });
+          }
+
+          xSlider.addEventListener('input', update);
+          ySlider.addEventListener('input', update);
+          update();
+        })();
+      </script>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>The dot product multiplies matching entries of two vectors, then sums the results.</li>
+          <li>A larger, more positive dot product means the two vectors point in a more similar direction.</li>
+          <li>Dot products are used throughout ML as a similarity score — comparing tastes, words, images, and more.</li>
+          <li>Given two short vectors, you can compute their dot product by hand.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-2-4">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. How do you compute the dot product of (a₁, a₂) and (b₁, b₂)?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Multiply matching entries, then add the results.">a₁×b₁ + a₂×b₂</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that skips the multiplication step entirely.">a₁ + a₂ + b₁ + b₂</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the dot product sums two products; it doesn't multiply the whole vectors together.">(a₁×a₂) × (b₁×b₂)</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. (3, 4) · (1, 2) = ?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that's the sum of all four numbers, not the dot product.">10</div>
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! 3×1 + 4×2 = 3 + 8 = 11.">11</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that multiplies all four numbers together, which isn't how a dot product works.">24</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. Why are dot products useful in ML, based on this chapter?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a dot product produces a single number, not a matrix.">They convert a vector into a matrix.</div>
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! That single similarity number is used for ranking, recommending, and comparing throughout ML.">They give a single number measuring how similar two vectors' directions are — useful for ranking matches like recommendations.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — dot products show up far beyond just image classifiers, as later Parts will show.">They're only used for training image classifiers, nothing else.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -596,6 +797,7 @@ movies_matrix = [
     initQuiz(document.getElementById('quiz-2-1'));
     initQuiz(document.getElementById('quiz-2-2'));
     initQuiz(document.getElementById('quiz-2-3'));
+    initQuiz(document.getElementById('quiz-2-4'));
     initProgressTracking();
   })();
 </script>
