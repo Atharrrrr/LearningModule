@@ -1,11 +1,11 @@
 # Progress
 
 ## Status
-In progress. 11 of 98 chapters written. Part I is complete.
+In progress. 12 of 98 chapters written. Part I is complete.
 
 ## Next chapter due
-Part II, Chapter 2.6 — Distributions & Uncertainty
-(parts/part-02-toolkit.html already exists — insert the new <section> before </main> and flip 2.6's sidebar entry from unwritten to live)
+Part II, Chapter 2.7 — Bayes' Theorem, Explained With a Story
+(parts/part-02-toolkit.html already exists — insert the new <section> before </main> and flip 2.7's sidebar entry from unwritten to live)
 
 ## Completed chapters
 - 0.1 How This Book Works — parts/part-00-before-we-begin.html
@@ -19,6 +19,7 @@ Part II, Chapter 2.6 — Distributions & Uncertainty
 - 2.3 Matrices — Tables That Transform Data — parts/part-02-toolkit.html
 - 2.4 Dot Products & Similarity — parts/part-02-toolkit.html
 - 2.5 Probability, the Intuitive Way — parts/part-02-toolkit.html
+- 2.6 Distributions & Uncertainty — parts/part-02-toolkit.html
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in

@@ -32,7 +32,9 @@
     <a class="nav-item" data-chapter-id="2-5" href="#chapter-2-5">
       <span class="nav-dot"></span>2.5 Probability, the Intuitive Way
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>2.6 Distributions &amp; Uncertainty</div>
+    <a class="nav-item" data-chapter-id="2-6" href="#chapter-2-6">
+      <span class="nav-dot"></span>2.6 Distributions &amp; Uncertainty
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>2.7 Bayes' Theorem, Explained With a Story</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>2.8 Slopes &amp; Change — Intuitive Calculus</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>2.9 The Chain Rule</div>
@@ -983,6 +985,220 @@ movies_matrix = [
 
     </section>
 
+    <section id="chapter-2-6">
+      <div class="chapter-eyebrow">Part II · Chapter 2.6</div>
+      <h1 class="chapter-title">Distributions &amp; Uncertainty</h1>
+
+      <p class="lede">
+        Chapter 2.5 covered the probability of one event. But most things
+        worth measuring have many possible outcomes, not just two — and the
+        shape of how likely each one is has its own name.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🎲 Frame of reference</div>
+        <p>
+          Roll a fair six-sided die a thousand times and chart how often
+          each number comes up — you'd get six roughly equal bars, since
+          each face has the same 1-in-6 chance. Now measure the height of
+          every adult in a city instead. Height isn't limited to six
+          options; it can be almost any value. Chart it anyway, and you get
+          a smooth, bell-shaped hump: most people cluster near the average
+          height, with fewer and fewer people the further you get from it
+          in either direction. Both charts are describing the same kind of
+          thing — how likely each possible outcome is — just for very
+          different situations.
+        </p>
+      </div>
+
+      <h2>Distributions: the whole shape, not just one number</h2>
+      <script>initJargonBox("distribution",
+        "A description of how probability (or frequency) is spread across all the possible outcomes of something — for example, a bar chart showing how likely each face of a die is to land face-up.");</script>
+      <p>
+        A <span class="jargon-term">distribution</span> describes how
+        probability is spread across every possible outcome, not just one.
+        A fair die's distribution is flat — each of the 6 outcomes gets an
+        equal 1/6 share. But distributions don't have to be flat. A
+        "loaded" die weighted heavily toward rolling a 6 has a lopsided
+        distribution — most of the probability piled onto one outcome,
+        with the rest spread thin across the others.
+      </p>
+
+      <h2>The normal distribution: a very common shape</h2>
+      <script>initJargonBox("normal distribution",
+        "An extremely common bell-shaped distribution where outcomes cluster symmetrically around an average, with progressively fewer outcomes the further you get from that average. Also called a bell curve.");</script>
+      <p>
+        The height example follows a
+        <span class="jargon-term">normal distribution</span> — a smooth,
+        symmetric bell shape that shows up constantly, both in nature and
+        in ML. How wide or narrow that bell is describes its
+        <strong>spread</strong>: a tight, narrow bell means outcomes are
+        predictable and close to average; a wide, flat bell means outcomes
+        vary a lot — more uncertainty. You'll see this exact idea again
+        when neural network weights are initialized (Chapter 6.7) and when
+        diffusion models add and remove noise (Chapter 11.4).
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">First, compare a fair die to a loaded one — then adjust the spread of a bell curve.</p>
+
+        <svg id="dice-chart" viewBox="0 0 400 220" role="img" aria-label="Bar chart of the probability of each face of a die">
+          <line x1="20" y1="200" x2="380" y2="200" stroke="#30363d" stroke-width="1"></line>
+          <g id="dice-bars"></g>
+        </svg>
+        <div class="demo-actions" id="dice-buttons">
+          <div class="quiz-option" data-die="fair">Fair die</div>
+          <div class="quiz-option" data-die="loaded">Loaded die (toward 6)</div>
+        </div>
+
+        <svg id="bell-chart" viewBox="0 0 500 200" style="margin-top:24px;" role="img" aria-label="A normal distribution bell curve with adjustable spread">
+          <line x1="20" y1="180" x2="480" y2="180" stroke="#30363d" stroke-width="1"></line>
+          <line x1="250" y1="180" x2="250" y2="20" stroke="#30363d" stroke-width="1" stroke-dasharray="4,4"></line>
+          <text x="250" y="196" text-anchor="middle" fill="#6e7681" font-size="11">average</text>
+          <path id="bell-path" fill="none" stroke="#bc8cff" stroke-width="2.5"></path>
+        </svg>
+        <div class="demo-controls">
+          <label class="demo-slider-label">Spread: <span id="spread-value">1.0</span>
+            <input type="range" id="spread-slider" min="0.5" max="3" step="0.1" value="1">
+          </label>
+        </div>
+        <p id="spread-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var barsGroup = document.getElementById('dice-bars');
+          var buttons = document.querySelectorAll('#dice-buttons .quiz-option');
+          var barWidth = 40, gap = 20, startX = 30, maxHeight = 160, baseline = 200;
+
+          function renderDice(probs) {
+            barsGroup.innerHTML = '';
+            probs.forEach(function (p, i) {
+              var h = (p / 0.6) * maxHeight;
+              var x = startX + i * (barWidth + gap);
+              var y = baseline - h;
+
+              var rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+              rect.setAttribute('x', x);
+              rect.setAttribute('y', y);
+              rect.setAttribute('width', barWidth);
+              rect.setAttribute('height', h);
+              rect.setAttribute('fill', '#bc8cff');
+              barsGroup.appendChild(rect);
+
+              var label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+              label.setAttribute('x', x + barWidth / 2);
+              label.setAttribute('y', baseline + 18);
+              label.setAttribute('text-anchor', 'middle');
+              label.setAttribute('fill', '#6e7681');
+              label.setAttribute('font-size', '11');
+              label.textContent = (i + 1);
+              barsGroup.appendChild(label);
+
+              var pctLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+              pctLabel.setAttribute('x', x + barWidth / 2);
+              pctLabel.setAttribute('y', y - 6);
+              pctLabel.setAttribute('text-anchor', 'middle');
+              pctLabel.setAttribute('fill', '#e6edf3');
+              pctLabel.setAttribute('font-size', '11');
+              pctLabel.textContent = Math.round(p * 100) + '%';
+              barsGroup.appendChild(pctLabel);
+            });
+          }
+
+          buttons.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+              buttons.forEach(function (b) { b.classList.remove('correct'); });
+              btn.classList.add('correct');
+              var kind = btn.getAttribute('data-die');
+              if (kind === 'fair') {
+                renderDice([1 / 6, 1 / 6, 1 / 6, 1 / 6, 1 / 6, 1 / 6]);
+              } else {
+                renderDice([0.1, 0.1, 0.1, 0.1, 0.1, 0.5]);
+              }
+            });
+          });
+
+          buttons[0].classList.add('correct');
+          renderDice([1 / 6, 1 / 6, 1 / 6, 1 / 6, 1 / 6, 1 / 6]);
+
+          var bellPath = document.getElementById('bell-path');
+          var spreadSlider = document.getElementById('spread-slider');
+          var spreadValue = document.getElementById('spread-value');
+          var spreadReadout = document.getElementById('spread-readout');
+
+          function computeBellPath(sigma) {
+            var pts = [];
+            for (var i = 0; i <= 80; i++) {
+              var x = -4 + (8 * i / 80);
+              var val = Math.exp(-(x * x) / (2 * sigma * sigma));
+              var px = 20 + ((x + 4) / 8) * 460;
+              var py = 180 - val * 155;
+              pts.push(px.toFixed(1) + ',' + py.toFixed(1));
+            }
+            return 'M' + pts.join(' L');
+          }
+
+          function updateBell() {
+            var sigma = parseFloat(spreadSlider.value);
+            spreadValue.textContent = sigma.toFixed(1);
+            bellPath.setAttribute('d', computeBellPath(sigma));
+            var desc = sigma < 1 ? 'tight — predictable, close to average' : sigma < 2 ? 'moderate spread' : 'wide — more uncertain, varied outcomes';
+            spreadReadout.textContent = 'Spread = ' + sigma.toFixed(1) + ' (' + desc + ').';
+          }
+
+          spreadSlider.addEventListener('input', updateBell);
+          updateBell();
+        })();
+      </script>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>A distribution describes how probability is spread across all possible outcomes, not just one.</li>
+          <li>Discrete distributions (like a die roll) don't have to be uniform — a "loaded" die skews toward one outcome.</li>
+          <li>The normal distribution (bell curve) is a common continuous distribution where outcomes cluster around an average.</li>
+          <li>"Spread" describes how tight or wide a distribution is — tight means predictable, wide means more uncertain.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-2-6">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What is a probability distribution?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that describes a single event's probability, which is Chapter 2.5's topic.">A single number telling you if an event will happen.</div>
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! It's the whole shape — probability across every possible outcome.">A description of how probability is spread across all the possible outcomes of something.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a distribution is about probability shape, not a data archive.">A list of every dataset ever collected.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. A "loaded" die that lands on 6 half the time, compared to a fair die, is an example of what?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Still discrete (6 distinct outcomes), just not uniform anymore.">A discrete distribution that is NOT uniform — the outcomes aren't equally likely.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a die roll has 6 distinct outcomes, which makes it discrete, not continuous.">A continuous distribution.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a fair die is flat/uniform, while a loaded die is lopsided toward one outcome.">The exact same distribution as a fair die.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. In the bell-curve demo, what did increasing the "spread" do to the curve?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — increasing spread does the opposite: it widens and flattens the curve.">Made the curve taller and narrower.</div>
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! A wider spread means outcomes are less predictable and more varied.">Widened and flattened it, showing outcomes are more spread out and less predictable.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the curve stayed a smooth bell shape the whole time, just wider or narrower.">Turned it into a bar chart.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -993,6 +1209,7 @@ movies_matrix = [
     initQuiz(document.getElementById('quiz-2-3'));
     initQuiz(document.getElementById('quiz-2-4'));
     initQuiz(document.getElementById('quiz-2-5'));
+    initQuiz(document.getElementById('quiz-2-6'));
     initProgressTracking();
   })();
 </script>
