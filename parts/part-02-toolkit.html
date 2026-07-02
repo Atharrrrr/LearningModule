@@ -29,7 +29,9 @@
     <a class="nav-item" data-chapter-id="2-4" href="#chapter-2-4">
       <span class="nav-dot"></span>2.4 Dot Products &amp; Similarity
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>2.5 Probability, the Intuitive Way</div>
+    <a class="nav-item" data-chapter-id="2-5" href="#chapter-2-5">
+      <span class="nav-dot"></span>2.5 Probability, the Intuitive Way
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>2.6 Distributions &amp; Uncertainty</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>2.7 Bayes' Theorem, Explained With a Story</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>2.8 Slopes &amp; Change — Intuitive Calculus</div>
@@ -789,6 +791,198 @@ movies_matrix = [
 
     </section>
 
+    <section id="chapter-2-5">
+      <div class="chapter-eyebrow">Part II · Chapter 2.5</div>
+      <h1 class="chapter-title">Probability, the Intuitive Way</h1>
+
+      <p class="lede">
+        Models rarely say "yes" or "no." They say "73% yes." Understanding
+        what that number actually means — and the two simple rules it
+        follows — is the last piece of math before Part III's real data.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🌧️ Frame of reference</div>
+        <p>
+          "There's a 70% chance of rain tomorrow" is a probability: a
+          number expressing how confident a forecast is, based on past
+          weather patterns. It's not a guarantee — it might not rain at
+          all — but if you saw "70% chance of rain" on a hundred different
+          days, you'd expect it to actually rain on roughly 70 of them.
+          That's the whole idea. Everything else in this chapter is just
+          two rules for working with numbers like that.
+        </p>
+      </div>
+
+      <h2>Probability: a number from 0 to 1</h2>
+      <script>initJargonBox("probability",
+        "A number from 0 (impossible) to 1 (certain), often shown as a percentage, expressing how likely something is to happen — and matching, over many repeats, how often it actually would.");</script>
+      <p>
+        <span class="jargon-term">Probability</span> is always a number
+        between 0 and 1 — 0% meaning impossible, 100% meaning certain.
+        There's one rule that always holds: every possible outcome's
+        probabilities add up to exactly 1. If there's a 70% chance of
+        rain, there's a 30% chance of no rain — the two together have to
+        make 100%, since rain-or-no-rain covers every possibility.
+      </p>
+
+      <h2>Independent events: multiply</h2>
+      <script>initJargonBox("independent events",
+        "Two events where the outcome of one has no effect on the outcome of the other. The probability of both happening is found by multiplying their individual probabilities.");</script>
+      <p>
+        When two events don't affect each other —
+        <span class="jargon-term">independent events</span> — the
+        probability of both happening is found by multiplying their
+        individual probabilities together. Whether it rains tomorrow has
+        nothing to do with how a coin flip lands, so those two are
+        independent.
+      </p>
+
+      <h2>Worked example: rain and a coin flip</h2>
+      <p>
+        There's a 70% chance of rain tomorrow. Independently, a fair coin
+        flip has a 50% chance of landing heads.
+      </p>
+      <ul>
+        <li>Probability it does <strong>NOT</strong> rain: 1 − 0.70 = <strong>0.30</strong> (30%)</li>
+        <li>Probability of rain <strong>AND</strong> heads: 0.70 × 0.50 = <strong>0.35</strong> (35%)</li>
+      </ul>
+      <p>
+        Notice it's multiplication, not addition — 70% + 50% would be
+        120%, which can't be a probability at all.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          Set a "chance of rain," then simulate days one at a time — watch how the actual frequency closes in on the number you set.
+        </p>
+
+        <div class="demo-controls">
+          <label class="demo-slider-label">Chance of rain: <span id="prob-value">70</span>%
+            <input type="range" id="prob-slider" min="0" max="100" step="5" value="70">
+          </label>
+        </div>
+
+        <div class="demo-actions">
+          <div class="quiz-option" id="sim-1-btn">☔ Simulate 1 day</div>
+          <div class="quiz-option" id="sim-10-btn">📅 Simulate 10 days</div>
+          <div class="quiz-option" id="sim-reset-btn">↺ Reset</div>
+        </div>
+
+        <div class="trial-grid" id="trial-grid"></div>
+        <p id="prob-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var slider = document.getElementById('prob-slider');
+          var probValue = document.getElementById('prob-value');
+          var grid = document.getElementById('trial-grid');
+          var readout = document.getElementById('prob-readout');
+          var sim1Btn = document.getElementById('sim-1-btn');
+          var sim10Btn = document.getElementById('sim-10-btn');
+          var resetBtn = document.getElementById('sim-reset-btn');
+          var results = [];
+          var MAX_TRIALS = 100;
+
+          for (var i = 0; i < MAX_TRIALS; i++) {
+            var sq = document.createElement('div');
+            sq.className = 'trial-square';
+            grid.appendChild(sq);
+          }
+          var squares = grid.querySelectorAll('.trial-square');
+
+          function render() {
+            squares.forEach(function (sq, i) {
+              sq.className = 'trial-square' + (i < results.length ? (results[i] ? ' hit' : ' miss') : '');
+            });
+            var rainy = results.filter(Boolean).length;
+            var pct = results.length ? Math.round((rainy / results.length) * 100) : 0;
+            readout.textContent = results.length
+              ? rainy + ' rainy out of ' + results.length + ' days simulated (' + pct + '% actual, vs. ' + slider.value + '% set).'
+              : 'No days simulated yet.';
+          }
+
+          function runDay() {
+            if (results.length >= MAX_TRIALS) return;
+            var p = parseInt(slider.value, 10) / 100;
+            results.push(Math.random() < p);
+          }
+
+          sim1Btn.addEventListener('click', function () { runDay(); render(); });
+          sim10Btn.addEventListener('click', function () {
+            for (var i = 0; i < 10; i++) runDay();
+            render();
+          });
+          resetBtn.addEventListener('click', function () { results = []; render(); });
+          slider.addEventListener('input', function () {
+            probValue.textContent = slider.value;
+            results = [];
+            render();
+          });
+
+          render();
+        })();
+      </script>
+
+      <div class="panel">
+        <div class="panel-label python">▸ Python — run in your own environment</div>
+        <pre class="python-block"><span class="k">import</span> random
+
+<span class="k">def</span> <span class="f">simulate_days</span>(p, n):
+    rainy = <span class="k">sum</span>(<span class="n">1</span> <span class="k">for</span> _ <span class="k">in</span> <span class="k">range</span>(n) <span class="k">if</span> random.random() &lt; p)
+    <span class="k">return</span> rainy / n
+
+<span class="k">print</span>(simulate_days(<span class="n">0.7</span>, <span class="n">100</span>))  <span class="c"># something close to 0.7, e.g. 0.68</span></pre>
+      </div>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Probability is a number from 0 to 1 (or 0%–100%) expressing how likely an event is.</li>
+          <li>All possible outcomes' probabilities add up to 1 — so "not X" has probability 1 minus "X"'s probability.</li>
+          <li>For independent events, multiply their individual probabilities to get the probability of both happening.</li>
+          <li>Probability matches the long-run frequency you'd see if you repeated something many times.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-2-5">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. If there's a 70% chance of rain tomorrow, what's the probability it does NOT rain?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! 1 − 0.70 = 0.30, or 30%.">30%</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that's the chance it DOES rain, not the chance it doesn't.">70%</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a 70% chance of rain still leaves room for it not to happen.">0%</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. There's a 70% chance of rain, and independently a 50% chance a coin lands heads. What's the probability BOTH happen?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — adding probabilities like this doesn't work, and 120% isn't even a valid probability.">120% (0.70 + 0.50)</div>
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Independent events multiply: 0.70 × 0.50 = 0.35.">35% (0.70 × 0.50)</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — subtracting isn't the rule for combining independent events either.">20% (0.70 − 0.50)</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. In the simulation demo, what did running more trials (e.g. 100 days instead of 10) demonstrate?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! With more trials, the observed percentage settles in closer to the probability you set.">The observed frequency gets closer to the true set probability the more trials you run.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the result tracks whatever probability you set, not a fixed 50%.">More trials always produce exactly 50%, regardless of the set probability.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the set probability stays fixed; only the observed frequency changes as trials run.">Probability itself changes depending on how many trials you run.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -798,6 +992,7 @@ movies_matrix = [
     initQuiz(document.getElementById('quiz-2-2'));
     initQuiz(document.getElementById('quiz-2-3'));
     initQuiz(document.getElementById('quiz-2-4'));
+    initQuiz(document.getElementById('quiz-2-5'));
     initProgressTracking();
   })();
 </script>
