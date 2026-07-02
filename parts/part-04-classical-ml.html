@@ -38,7 +38,9 @@
     <a class="nav-item" data-chapter-id="4-7" href="#chapter-4-7">
       <span class="nav-dot"></span>4.7 SVM &amp; Naive Bayes [D]
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>4.8 Clustering (K-means)</div>
+    <a class="nav-item" data-chapter-id="4-8" href="#chapter-4-8">
+      <span class="nav-dot"></span>4.8 Clustering (K-means)
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>4.9 Dimensionality Reduction (PCA/t-SNE)</div>
   </nav>
 
@@ -1272,6 +1274,221 @@
 
     </section>
 
+    <section id="chapter-4-8">
+      <div class="chapter-eyebrow">Part IV · Chapter 4.8</div>
+      <h1 class="chapter-title">Clustering (K-means)</h1>
+
+      <p class="lede">
+        Every technique in this Part so far needed labels. This one finds
+        groups in data with absolutely none — pure unsupervised learning
+        (Chapter 1.2), in action.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🚚 Frame of reference</div>
+        <p>
+          Imagine placing k food trucks in a large park with no data on
+          where people will gather. You guess k starting spots, watch
+          which truck each visitor ends up closest to, then move every
+          truck to the center of the crowd it's currently serving. Repeat,
+          and the trucks drift toward the park's natural gathering spots —
+          without you ever telling them where those spots were.
+        </p>
+      </div>
+
+      <h2>Assign, then average, repeat</h2>
+      <script>initJargonBox("k-means",
+        "An unsupervised algorithm that groups points into k clusters: repeatedly assign each point to its nearest centroid, then move each centroid to the average position of its assigned points, until the centroids stop moving.");</script>
+      <script>initJargonBox("centroid",
+        "The center point of a cluster in k-means — the average position of every point currently assigned to it. Not necessarily a real data point itself.");</script>
+      <p>
+        <span class="jargon-term">k-means</span> picks k starting
+        <span class="jargon-term">centroids</span>, then alternates two
+        steps: assign every point to its nearest centroid (using
+        distance, Chapter 4.4's idea), then move each centroid to the
+        average position of the points now assigned to it. Repeat until
+        the centroids stop moving. No labels anywhere — just points and
+        distance.
+      </p>
+
+      <h2>Worked example: rediscovering the movie split</h2>
+      <p>
+        Ten movies, scored on action and romance, with no genre labels at
+        all. Run k-means with k=2 below, starting from two deliberately
+        bad corner guesses — watch it find the same two natural groups a
+        human would spot just by looking at the scatter.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <svg id="km-chart" viewBox="0 0 500 400" overflow="hidden" role="img" aria-label="Scatter plot with k-means clustering points into two groups">
+          <line x1="60" y1="360" x2="460" y2="360" stroke="#30363d" stroke-width="1"></line>
+          <line x1="60" y1="360" x2="60" y2="40" stroke="#30363d" stroke-width="1"></line>
+          <text x="260" y="385" text-anchor="middle" fill="#6e7681" font-size="12">Action score →</text>
+          <g id="km-points"></g>
+          <g id="km-centroids"></g>
+        </svg>
+
+        <div class="demo-actions">
+          <div class="quiz-option" id="km-run-btn">▶ Run k-means</div>
+          <div class="quiz-option" id="km-reset-btn">↺ Reset</div>
+        </div>
+        <p id="km-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var points = [[8, 2], [7, 3], [9, 1], [6, 4], [8, 3], [2, 8], [1, 9], [3, 7], [2, 7], [3, 9]];
+          var colors = ['#3fb950', '#58a6ff'];
+          var plotX0 = 60, plotX1 = 460, plotY0 = 360, plotY1 = 40;
+          function xPix(x) { return plotX0 + (x / 10) * (plotX1 - plotX0); }
+          function yPix(y) { return plotY0 - (y / 10) * (plotY0 - plotY1); }
+          function dist(a, b) { var dx = a[0] - b[0], dy = a[1] - b[1]; return Math.sqrt(dx * dx + dy * dy); }
+
+          var pointsGroup = document.getElementById('km-points');
+          var centroidsGroup = document.getElementById('km-centroids');
+          var runBtn = document.getElementById('km-run-btn');
+          var resetBtn = document.getElementById('km-reset-btn');
+          var readout = document.getElementById('km-readout');
+
+          var centroids, assignments, iteration, running;
+
+          var pointCircles = points.map(function (p) {
+            var c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            c.setAttribute('cx', xPix(p[0]));
+            c.setAttribute('cy', yPix(p[1]));
+            c.setAttribute('r', '7');
+            pointsGroup.appendChild(c);
+            return c;
+          });
+
+          var centroidMarkers = [0, 1].map(function () {
+            var c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            c.setAttribute('r', '11');
+            c.setAttribute('fill', 'none');
+            c.setAttribute('stroke-width', '3');
+            centroidsGroup.appendChild(c);
+            return c;
+          });
+
+          function assign() {
+            return points.map(function (p) {
+              return dist(p, centroids[0]) <= dist(p, centroids[1]) ? 0 : 1;
+            });
+          }
+
+          function updateCentroids(assignmentsList) {
+            var sums = [[0, 0, 0], [0, 0, 0]];
+            points.forEach(function (p, i) {
+              var c = assignmentsList[i];
+              sums[c][0] += p[0]; sums[c][1] += p[1]; sums[c][2]++;
+            });
+            return [0, 1].map(function (k) {
+              return sums[k][2] > 0 ? [sums[k][0] / sums[k][2], sums[k][1] / sums[k][2]] : centroids[k];
+            });
+          }
+
+          function draw() {
+            pointCircles.forEach(function (c, i) {
+              c.setAttribute('fill', colors[assignments[i]]);
+            });
+            centroidMarkers.forEach(function (m, k) {
+              m.setAttribute('cx', xPix(centroids[k][0]));
+              m.setAttribute('cy', yPix(centroids[k][1]));
+              m.setAttribute('stroke', colors[k]);
+            });
+          }
+
+          function reset() {
+            running = false;
+            centroids = [[1, 1], [9, 9]];
+            assignments = assign();
+            iteration = 0;
+            draw();
+            runBtn.textContent = '▶ Run k-means';
+            runBtn.classList.remove('disabled');
+            readout.textContent = 'Starting centroids placed in opposite corners. Click "Run k-means" to begin.';
+          }
+
+          function step() {
+            if (!running) return;
+            var oldCentroids = centroids;
+            assignments = assign();
+            centroids = updateCentroids(assignments);
+            iteration++;
+            draw();
+
+            var moved = dist(centroids[0], oldCentroids[0]) + dist(centroids[1], oldCentroids[1]);
+            if (moved < 0.05 || iteration >= 10) {
+              running = false;
+              readout.textContent = 'Converged after ' + iteration + ' iterations — k-means found the two natural groups with no labels at all.';
+              runBtn.textContent = '✓ Finished';
+              runBtn.classList.add('disabled');
+              return;
+            }
+            readout.textContent = 'Iteration ' + iteration + ': centroids moved to (' +
+              centroids[0].map(function (v) { return v.toFixed(1); }).join(',') + ') and (' +
+              centroids[1].map(function (v) { return v.toFixed(1); }).join(',') + ').';
+            setTimeout(step, 700);
+          }
+
+          runBtn.addEventListener('click', function () {
+            if (running) return;
+            running = true;
+            step();
+          });
+          resetBtn.addEventListener('click', reset);
+
+          reset();
+        })();
+      </script>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>k-means groups points into k clusters with no labels at all — purely by distance/similarity.</li>
+          <li>The algorithm alternates: assign each point to its nearest centroid, then move each centroid to the average of its assigned points, until stable.</li>
+          <li>You have to choose k in advance.</li>
+          <li>This is unsupervised learning (Chapter 1.2) in action — finding structure without ever being told the "right" groups.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-4-8">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What kind of learning is k-means, in Chapter 1.2's terms?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! No labels — just points, grouped by similarity.">Unsupervised — there are no labels, just points to group by similarity.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — k-means never sees any labels at all.">Supervised — every point comes with a label telling it which cluster it belongs to.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — there's no reward signal here, just distances between points.">Reinforcement — the algorithm gets rewards and penalties for its groupings.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. What does k-means do at each "update" step?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Each centroid moves to the average of the points currently assigned to it.">Moves each centroid to the average position of the points currently assigned to it.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — k-means keeps all k clusters fixed in number throughout.">Deletes whichever cluster has the fewest points.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the number of centroids, k, stays fixed the whole time.">Adds a brand new random centroid.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. What's a real practical limitation of k-means?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! The algorithm itself doesn't figure out k — you have to decide it beforehand.">You have to choose the number of clusters, k, in advance.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — k-means is unsupervised and needs no labels at all to run.">It requires labeled data to run at all.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — k is a choice you make; it can be set to any number of clusters.">It can only ever find exactly 2 clusters.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -1284,6 +1501,7 @@
     initQuiz(document.getElementById('quiz-4-5'));
     initQuiz(document.getElementById('quiz-4-6'));
     initQuiz(document.getElementById('quiz-4-7'));
+    initQuiz(document.getElementById('quiz-4-8'));
     initProgressTracking();
   })();
 </script>
