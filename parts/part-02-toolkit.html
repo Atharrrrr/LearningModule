@@ -23,7 +23,9 @@
     <a class="nav-item" data-chapter-id="2-2" href="#chapter-2-2">
       <span class="nav-dot"></span>2.2 Vectors — Data as Arrows in Space
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>2.3 Matrices — Tables That Transform Data</div>
+    <a class="nav-item" data-chapter-id="2-3" href="#chapter-2-3">
+      <span class="nav-dot"></span>2.3 Matrices — Tables That Transform Data
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>2.4 Dot Products &amp; Similarity</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>2.5 Probability, the Intuitive Way</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>2.6 Distributions &amp; Uncertainty</div>
@@ -423,6 +425,169 @@ movie_b = [<span class="n">2</span>, <span class="n">9</span>]
 
     </section>
 
+    <section id="chapter-2-3">
+      <div class="chapter-eyebrow">Part II · Chapter 2.3</div>
+      <h1 class="chapter-title">Matrices — Tables That Transform Data</h1>
+
+      <p class="lede">
+        A vector is one arrow. Stack several of them together and you get
+        a matrix — which turns out to play two very different roles in
+        ML, often at the same time.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">📋 Frame of reference</div>
+        <p>
+          A matrix is just a spreadsheet: rows and columns of numbers,
+          nothing more exotic than that. But a spreadsheet can also be a
+          machine. Imagine a photocopier with a settings dial — one
+          setting reproduces the page exactly, another stretches it
+          taller, another flips it into a mirror image. Every setting is
+          secretly just a small grid of numbers, and it treats every page
+          you feed it the exact same way, consistently. That's a matrix's
+          other job: not just holding data, but transforming it.
+        </p>
+      </div>
+
+      <h2>Role one: a matrix as a data table</h2>
+      <script>initJargonBox("matrix",
+        "A grid of numbers arranged in rows and columns. As a dataset, each row is one example (a vector) and each column is one feature. As a transformation, a matrix consistently reshapes any vector fed into it.");</script>
+      <p>
+        Stack several vectors on top of each other — one row per movie —
+        and you get a <span class="jargon-term">matrix</span>: a table
+        where each row is one example and each column is one feature. The
+        three movies from Chapter 2.2, plus a third one, become a 3-row,
+        2-column matrix:
+      </p>
+
+      <table class="data-table">
+        <tr><th></th><th>Action score</th><th>Romance score</th></tr>
+        <tr><td>Movie A</td><td>8</td><td>2</td></tr>
+        <tr><td>Movie B</td><td>2</td><td>9</td></tr>
+        <tr><td>Movie C</td><td>6</td><td>6</td></tr>
+      </table>
+
+      <p>
+        This is exactly what a real dataset looks like inside a computer —
+        rows of examples, columns of features — whether it's 3 movies or 3
+        million.
+      </p>
+
+      <h2>Role two: a matrix as a transformation</h2>
+      <p>
+        The other role is the photocopier-dial idea: a matrix can also be
+        something you multiply a vector by to move it — scale it bigger or
+        smaller, flip it, or rotate it — and it treats every vector fed
+        into it the same consistent way. You won't need to compute matrix
+        multiplication by hand in this book; what matters is the intuition,
+        which the demo below shows directly.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          The dashed triangle is the original. Click a transformation to see what its matrix does to it.
+        </p>
+
+        <svg id="matrix-transform" viewBox="0 0 400 300" overflow="hidden" role="img" aria-label="A triangle before and after a matrix transformation is applied">
+          <g transform="translate(200,170)">
+            <polygon points="0,-60 45,60 -45,60" fill="none" stroke="#30363d" stroke-width="2" stroke-dasharray="5,5"></polygon>
+            <polygon id="transformed-shape" points="0,-60 45,60 -45,60" fill="rgba(188,140,255,0.25)" stroke="#bc8cff" stroke-width="2.5" transform="matrix(1,0,0,1,0,0)"></polygon>
+          </g>
+        </svg>
+
+        <div class="demo-actions" id="matrix-buttons">
+          <div class="quiz-option" data-matrix="1,0,0,1">Identity (no change)</div>
+          <div class="quiz-option" data-matrix="1.4,0,0,1.4">Scale ×1.4</div>
+          <div class="quiz-option" data-matrix="-1,0,0,1">Flip horizontal</div>
+          <div class="quiz-option" data-matrix="0,1,-1,0">Rotate 90°</div>
+        </div>
+
+        <p id="matrix-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var shape = document.getElementById('transformed-shape');
+          var readout = document.getElementById('matrix-readout');
+          var buttons = document.querySelectorAll('#matrix-buttons .quiz-option');
+
+          function applyMatrix(values, label) {
+            var parts = values.split(',');
+            shape.setAttribute('transform', 'matrix(' + parts[0] + ',' + parts[1] + ',' + parts[2] + ',' + parts[3] + ',0,0)');
+            readout.textContent = label + ' — matrix: [[' + parts[0] + ', ' + parts[2] + '], [' + parts[1] + ', ' + parts[3] + ']]';
+          }
+
+          buttons.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+              buttons.forEach(function (b) { b.classList.remove('correct'); });
+              btn.classList.add('correct');
+              applyMatrix(btn.getAttribute('data-matrix'), btn.textContent);
+            });
+          });
+
+          buttons[0].classList.add('correct');
+          applyMatrix('1,0,0,1', 'Identity (no change)');
+        })();
+      </script>
+
+      <div class="panel">
+        <div class="panel-label python">▸ Python — run in your own environment</div>
+        <pre class="python-block"><span class="c"># A matrix as nested lists — one row per movie</span>
+movies_matrix = [
+    [<span class="n">8</span>, <span class="n">2</span>],   <span class="c"># Movie A: action, romance</span>
+    [<span class="n">2</span>, <span class="n">9</span>],   <span class="c"># Movie B</span>
+    [<span class="n">6</span>, <span class="n">6</span>],   <span class="c"># Movie C</span>
+]
+<span class="c"># 3 rows (examples) × 2 columns (features) — shape (3, 2)</span></pre>
+      </div>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>A matrix is a grid of numbers arranged in rows and columns.</li>
+          <li>As a dataset, each row is one example (a vector) and each column is one feature.</li>
+          <li>As a transformation, a matrix consistently scales, flips, or rotates any vector fed into it.</li>
+          <li>This "transform every vector consistently" idea is exactly what a neural network layer does internally (Part VI).</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-2-3">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What are the two roles a matrix commonly plays, as covered in this chapter?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Both roles showed up in this chapter's example and demo.">A table of data (rows = examples, columns = features), and a transformation that consistently reshapes vectors.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a single arrow in space is a vector, not a matrix.">A single arrow in space, and nothing else.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a matrix has nothing to do with quiz questions.">A type of quiz question, and a type of chart.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. A dataset of 5 houses, each described by 3 features (bedrooms, bathrooms, square footage), is stored as a matrix. What shape is that matrix?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! 5 examples (rows) × 3 features (columns).">5 rows × 3 columns.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that has rows and columns swapped.">3 rows × 5 columns.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a matrix keeps rows and columns separate; it doesn't flatten everything into one column.">15 rows × 1 column.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. In the interactive demo, what happened to the shape's coordinates when a transformation matrix was applied?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the transformation was consistent and predictable, not random.">They were replaced with random new coordinates.</div>
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! The matrix's numbers determined exactly how the shape scaled, flipped, or rotated.">They were consistently scaled, flipped, or rotated according to the matrix's numbers.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo showed a matrix visibly moving a shape.">Nothing — matrices only apply to numbers, not shapes.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -430,6 +595,7 @@ movie_b = [<span class="n">2</span>, <span class="n">9</span>]
   (function () {
     initQuiz(document.getElementById('quiz-2-1'));
     initQuiz(document.getElementById('quiz-2-2'));
+    initQuiz(document.getElementById('quiz-2-3'));
     initProgressTracking();
   })();
 </script>

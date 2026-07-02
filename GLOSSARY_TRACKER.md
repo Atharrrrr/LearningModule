@@ -28,3 +28,4 @@ instead of repeating it.
 | function | 2.1 Numbers, Variables & Functions | A rule that takes one or more inputs and produces exactly one output, every single time you give it the same input — written f(x), meaning "the function f applied to input x." |
 | vector | 2.2 Vectors — Data as Arrows in Space | An ordered list of numbers describing something, which can be pictured as an arrow from an origin point to a specific location in space — one axis per number in the list. |
 | feature | 2.2 Vectors — Data as Arrows in Space | One measured property used to describe something numerically — like a movie's "action score" or a house's square footage. A vector is built out of features, one per number. |
+| matrix | 2.3 Matrices — Tables That Transform Data | A grid of numbers arranged in rows and columns. As a dataset, each row is one example (a vector) and each column is one feature. As a transformation, a matrix consistently reshapes any vector fed into it. |
