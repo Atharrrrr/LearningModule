@@ -29,7 +29,9 @@
     <a class="nav-item" data-chapter-id="4-4" href="#chapter-4-4">
       <span class="nav-dot"></span>4.4 k-Nearest Neighbors
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>4.5 Decision Trees</div>
+    <a class="nav-item" data-chapter-id="4-5" href="#chapter-4-5">
+      <span class="nav-dot"></span>4.5 Decision Trees
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>4.6 Random Forests &amp; Boosting</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>4.7 SVM &amp; Naive Bayes [D]</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>4.8 Clustering (K-means)</div>
@@ -794,6 +796,166 @@
 
     </section>
 
+    <section id="chapter-4-5">
+      <div class="chapter-eyebrow">Part IV · Chapter 4.5</div>
+      <h1 class="chapter-title">Decision Trees</h1>
+
+      <p class="lede">
+        Every other technique so far has predicted with arithmetic. This
+        one predicts by asking questions — and you can read off its exact
+        reasoning afterward.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">❓ Frame of reference</div>
+        <p>
+          20 Questions: narrow down an unknown answer by asking a
+          sequence of yes/no questions, each one splitting the remaining
+          possibilities in two, until only one answer is left. A decision
+          tree does exactly this with data — ask a question about a
+          feature, branch based on the answer, ask another question,
+          until arriving at a final prediction.
+        </p>
+      </div>
+
+      <h2>Questions, branches, and a final answer</h2>
+      <script>initJargonBox("decision tree",
+        "A model that predicts by asking a sequence of yes/no (or threshold) questions about features, branching at each answer, until reaching a leaf with a final prediction.");</script>
+      <script>initJargonBox("leaf node",
+        "A final node in a decision tree with no further questions — where the tree actually gives its prediction, at the end of one specific branch.");</script>
+      <p>
+        A <span class="jargon-term">decision tree</span> asks one question
+        about a feature at each step ("is square footage over 2,000?"),
+        branches based on the answer, and repeats — until it reaches a
+        <span class="jargon-term">leaf node</span>: a final answer, no
+        more questions. Building the tree means picking, at each step, the
+        question that best separates the data into cleaner groups, then
+        repeating on each resulting group.
+      </p>
+
+      <h2>Worked example: should I go for a run?</h2>
+      <p>Try the flowchart below yourself, one question at a time.</p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p id="tree-path" style="margin-top:0; color:#6e7681; font-size:13px; font-family:monospace;"></p>
+        <div id="tree-node" style="font-size:16px; margin:16px 0;"></div>
+        <div class="demo-actions" id="tree-buttons"></div>
+      </div>
+
+      <script>
+        (function () {
+          var tree = {
+            question: 'Is it raining?',
+            yes: { leaf: "Don't run. ☔" },
+            no: {
+              question: 'Is it hotter than 90°F?',
+              yes: { leaf: "Don't run. 🥵" },
+              no: { leaf: 'Go for a run! 🏃' }
+            }
+          };
+
+          var pathEl = document.getElementById('tree-path');
+          var nodeEl = document.getElementById('tree-node');
+          var buttonsEl = document.getElementById('tree-buttons');
+          var current, path;
+
+          function render() {
+            pathEl.textContent = path.length ? path.join(' → ') : '(start)';
+            buttonsEl.innerHTML = '';
+
+            if (current.leaf) {
+              nodeEl.textContent = 'Leaf reached: ' + current.leaf;
+              var restart = document.createElement('div');
+              restart.className = 'quiz-option';
+              restart.textContent = '↺ Start over';
+              restart.addEventListener('click', reset);
+              buttonsEl.appendChild(restart);
+              return;
+            }
+
+            nodeEl.textContent = current.question;
+            ['Yes', 'No'].forEach(function (answer) {
+              var btn = document.createElement('div');
+              btn.className = 'quiz-option';
+              btn.textContent = answer;
+              btn.addEventListener('click', function () {
+                path.push(current.question + ' → ' + answer);
+                current = answer === 'Yes' ? current.yes : current.no;
+                render();
+              });
+              buttonsEl.appendChild(btn);
+            });
+          }
+
+          function reset() {
+            current = tree;
+            path = [];
+            render();
+          }
+
+          reset();
+        })();
+      </script>
+
+      <div class="panel">
+        <div class="panel-label python">▸ Python — run in your own environment</div>
+        <pre class="python-block"><span class="k">def</span> <span class="f">should_i_run</span>(raining, temp_f):
+    <span class="k">if</span> raining:
+        <span class="k">return</span> <span class="s">"Don't run"</span>
+    <span class="k">elif</span> temp_f &gt; <span class="n">90</span>:
+        <span class="k">return</span> <span class="s">"Don't run"</span>
+    <span class="k">else</span>:
+        <span class="k">return</span> <span class="s">"Go for a run!"</span>
+<span class="c"># A decision tree is exactly this: nested if/else on features</span></pre>
+      </div>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>A decision tree predicts by asking a sequence of questions about features, branching until it reaches a leaf.</li>
+          <li>Building a tree means picking, at each step, the question that best separates the data into cleaner groups.</li>
+          <li>Trees are highly interpretable — you can read off the exact reasoning path for any prediction.</li>
+          <li>A tree that grows too deep can memorize training-data quirks rather than general patterns (overfitting, Chapter 5.1) — Chapter 4.6's Random Forests addresses this.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-4-5">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. How does a decision tree make a prediction?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Question, branch, question, branch — until a leaf gives the final answer.">By asking a sequence of yes/no questions about features, branching until it reaches a final leaf.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that's logistic regression (Chapter 4.2)'s approach.">By computing a weighted sum and squashing it through sigmoid.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that's kNN (Chapter 4.4), a different technique.">By averaging the k nearest training examples.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. What is a "leaf" in a decision tree?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! No further branching — the leaf is the tree's actual answer.">A final node with no further questions — where the tree gives its actual prediction.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the first question is the root node, not a leaf.">The very first question the tree asks.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a leaf is about position in the tree, not about unused features.">A feature the tree never uses.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. Why are decision trees often praised for interpretability?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Every prediction traces back to a readable chain of questions and answers.">Because you can read off the exact sequence of questions that led to any specific prediction.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — trees absolutely can make mistakes, especially if grown too deep.">Because they never make mistakes.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — trees make their decisions using the original features directly.">Because they don't use any of the original features.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -803,6 +965,7 @@
     initQuiz(document.getElementById('quiz-4-2'));
     initQuiz(document.getElementById('quiz-4-3'));
     initQuiz(document.getElementById('quiz-4-4'));
+    initQuiz(document.getElementById('quiz-4-5'));
     initProgressTracking();
   })();
 </script>
