@@ -38,7 +38,9 @@
     <a class="nav-item" data-chapter-id="2-7" href="#chapter-2-7">
       <span class="nav-dot"></span>2.7 Bayes' Theorem, Explained With a Story
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>2.8 Slopes &amp; Change — Intuitive Calculus</div>
+    <a class="nav-item" data-chapter-id="2-8" href="#chapter-2-8">
+      <span class="nav-dot"></span>2.8 Slopes &amp; Change — Intuitive Calculus
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>2.9 The Chain Rule</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>2.10 Your First Lines of Code (Python)</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>2.11 Arrays, Tables &amp; Tensors (NumPy/pandas)</div>
@@ -1401,6 +1403,189 @@ movies_matrix = [
 
     </section>
 
+    <section id="chapter-2-8">
+      <div class="chapter-eyebrow">Part II · Chapter 2.8</div>
+      <h1 class="chapter-title">Slopes &amp; Change — Intuitive Calculus</h1>
+
+      <p class="lede">
+        Chapter 1.3's exam-score line had a "steepness" you could turn like
+        a knob. This chapter gives that idea a proper name, and extends it
+        to shapes that aren't straight lines at all.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🚗 Frame of reference</div>
+        <p>
+          Your car's speedometer isn't measuring some separate quantity —
+          it's measuring how fast your position is changing, right at this
+          instant. If you graphed your position over time, that graph
+          would usually be a curve, not a straight line: speeding up here,
+          slowing down there. Your speed at any given moment is exactly
+          the steepness of that curve at that exact point. Calculus is
+          mostly just a name for "the steepness of a curve, measured
+          precisely, at any point you like."
+        </p>
+      </div>
+
+      <h2>Slope: rise over run</h2>
+      <script>initJargonBox("slope",
+        "How much a line's output (y) changes for each unit its input (x) changes — rise over run. For a straight line, it's the same number everywhere.");</script>
+      <p>
+        <span class="jargon-term">Slope</span> measures how much y changes
+        for each unit x changes — "rise over run." It's exactly the
+        <span class="mono">m</span> from Chapter 1.3's
+        <span class="mono">score = m × hours + b</span>: a bigger m meant
+        a steeper line. For a straight line, the slope is the same
+        everywhere you measure it. That's what makes it a straight line in
+        the first place.
+      </p>
+
+      <h2>Curves don't have just one slope</h2>
+      <script>initJargonBox("derivative",
+        "The slope of a curve at one specific point — found by zooming in close enough that the curve looks like a straight line right there. Different points on a curve can have different derivatives.");</script>
+      <p>
+        A curve, unlike a straight line, is steeper in some places than
+        others. So "the slope of the curve" doesn't mean anything on its
+        own — you have to ask for the slope <em>at a specific point</em>.
+        Zoom in closely enough around any single point on a smooth curve,
+        and it starts looking almost exactly like a straight line — that
+        local, zoomed-in slope is called the
+        <span class="jargon-term">derivative</span> at that point.
+      </p>
+
+      <h2>Worked example: the slope of x²</h2>
+      <p>
+        Take <span class="mono">f(x) = x²</span> — one of the functions
+        from Chapter 2.1's function machine. Its curve is flat near
+        x = 0 and gets steeper the further out you go. It turns out the
+        derivative of x² at any point x is exactly
+        <span class="mono">2x</span>:
+      </p>
+      <ul>
+        <li>At x = 1: slope = 2 × 1 = <strong>2</strong> — fairly shallow.</li>
+        <li>At x = 3: slope = 2 × 3 = <strong>6</strong> — much steeper.</li>
+      </ul>
+      <p>Drag the point along the curve below and watch the tangent line's steepness change.</p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <svg id="slope-chart" viewBox="0 0 500 400" overflow="hidden" role="img" aria-label="The curve y=x squared with a movable tangent line showing the slope at a point">
+          <line x1="60" y1="360" x2="460" y2="360" stroke="#30363d" stroke-width="1"></line>
+          <text x="260" y="385" text-anchor="middle" fill="#6e7681" font-size="12">x →</text>
+          <path id="curve-path" fill="none" stroke="#58a6ff" stroke-width="2"></path>
+          <line id="tangent-line" stroke="#3fb950" stroke-width="3"></line>
+          <circle id="curve-point" r="6" fill="#bc8cff"></circle>
+        </svg>
+        <div class="demo-controls">
+          <label class="demo-slider-label">x: <span id="slope-x-value">1.0</span>
+            <input type="range" id="slope-x-slider" min="-3" max="3" step="0.1" value="1">
+          </label>
+        </div>
+        <p id="slope-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var curvePath = document.getElementById('curve-path');
+          var tangentLine = document.getElementById('tangent-line');
+          var curvePoint = document.getElementById('curve-point');
+          var xSlider = document.getElementById('slope-x-slider');
+          var xValue = document.getElementById('slope-x-value');
+          var readout = document.getElementById('slope-readout');
+
+          var xMin = -3, xMax = 3, yMin = 0, yMax = 9;
+          function xPix(x) { return 60 + ((x - xMin) / (xMax - xMin)) * 400; }
+          function yPix(y) { return 360 - ((y - yMin) / (yMax - yMin)) * 320; }
+
+          var pts = [];
+          for (var i = 0; i <= 60; i++) {
+            var x = xMin + (xMax - xMin) * i / 60;
+            pts.push(xPix(x).toFixed(1) + ',' + yPix(x * x).toFixed(1));
+          }
+          curvePath.setAttribute('d', 'M' + pts.join(' L'));
+
+          function update() {
+            var x0 = parseFloat(xSlider.value);
+            xValue.textContent = x0.toFixed(1);
+            var y0 = x0 * x0;
+            var slope = 2 * x0;
+
+            curvePoint.setAttribute('cx', xPix(x0));
+            curvePoint.setAttribute('cy', yPix(y0));
+
+            var dx = 1.2;
+            var x1 = x0 - dx, x2 = x0 + dx;
+            var y1 = y0 - slope * dx, y2 = y0 + slope * dx;
+            tangentLine.setAttribute('x1', xPix(x1));
+            tangentLine.setAttribute('y1', yPix(y1));
+            tangentLine.setAttribute('x2', xPix(x2));
+            tangentLine.setAttribute('y2', yPix(y2));
+
+            readout.textContent = 'At x = ' + x0.toFixed(1) + ', the curve\'s slope is 2 × ' + x0.toFixed(1) + ' = ' + slope.toFixed(1) + '.';
+          }
+
+          xSlider.addEventListener('input', update);
+          update();
+        })();
+      </script>
+
+      <div class="panel">
+        <div class="panel-label python">▸ Python — run in your own environment</div>
+        <pre class="python-block"><span class="k">def</span> <span class="f">slope_at</span>(f, x, h=<span class="n">0.0001</span>):
+    <span class="k">return</span> (f(x + h) - f(x)) / h
+
+<span class="k">def</span> <span class="f">f</span>(x):
+    <span class="k">return</span> x ** <span class="n">2</span>
+
+<span class="k">print</span>(slope_at(f, <span class="n">2</span>))   <span class="c"># approximately 4.0 — matches 2×x</span></pre>
+      </div>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Slope measures how much y changes per unit change in x — rise over run.</li>
+          <li>A straight line has one constant slope; a curve's slope is different at every point.</li>
+          <li>That point-specific slope is called a derivative, found by zooming in until the curve looks straight.</li>
+          <li>ML training uses slopes to find "which way is downhill" — covered properly in Chapters 4.3 and 6.4.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-2-8">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What does "slope" measure?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Rise over run — the rate of change.">How much y changes for each unit change in x.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that's just the value of the function at one point, not how it's changing.">The exact value of y at a single point.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — slope is about rate of change, not dataset size.">How many data points are in a dataset.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. Why can't a curve, unlike a straight line, have just one single slope value?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! That's exactly why we talk about the slope AT a point, not the slope of the whole curve.">Because its steepness is different at different points along the curve.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — curves do have a well-defined slope, it's just different at each point.">Because curves don't have any defined slope anywhere.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — this chapter's whole point is extending slope beyond straight lines.">Because only straight lines are allowed to have a slope in math.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. In the speedometer analogy, what does your car's speed correspond to?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — total distance is a running sum, not a rate of change at a moment.">The total distance traveled so far.</div>
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Speed is exactly the derivative of position with respect to time, at that instant.">The derivative (slope) of your position-over-time curve at that moment.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a speedometer shows your current speed, not an average over the whole trip.">The average speed over the entire trip, regardless of when you check it.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -1413,6 +1598,7 @@ movies_matrix = [
     initQuiz(document.getElementById('quiz-2-5'));
     initQuiz(document.getElementById('quiz-2-6'));
     initQuiz(document.getElementById('quiz-2-7'));
+    initQuiz(document.getElementById('quiz-2-8'));
     initProgressTracking();
   })();
 </script>

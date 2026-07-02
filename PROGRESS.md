@@ -1,11 +1,11 @@
 # Progress
 
 ## Status
-In progress. 13 of 98 chapters written. Part I is complete.
+In progress. 14 of 98 chapters written. Part I is complete.
 
 ## Next chapter due
-Part II, Chapter 2.8 — Slopes & Change — Intuitive Calculus
-(parts/part-02-toolkit.html already exists — insert the new <section> before </main> and flip 2.8's sidebar entry from unwritten to live)
+Part II, Chapter 2.9 — The Chain Rule
+(parts/part-02-toolkit.html already exists — insert the new <section> before </main> and flip 2.9's sidebar entry from unwritten to live)
 
 ## Completed chapters
 - 0.1 How This Book Works — parts/part-00-before-we-begin.html
@@ -21,6 +21,7 @@ Part II, Chapter 2.8 — Slopes & Change — Intuitive Calculus
 - 2.5 Probability, the Intuitive Way — parts/part-02-toolkit.html
 - 2.6 Distributions & Uncertainty — parts/part-02-toolkit.html
 - 2.7 Bayes' Theorem, Explained With a Story — parts/part-02-toolkit.html
+- 2.8 Slopes & Change — Intuitive Calculus — parts/part-02-toolkit.html
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in

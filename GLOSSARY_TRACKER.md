@@ -37,3 +37,5 @@ instead of repeating it.
 | Bayes' theorem | 2.7 Bayes' Theorem, Explained With a Story | A rule for updating a probability estimate (the prior) into a more accurate one (the posterior) after seeing new evidence, by properly weighing that evidence against how rare the thing you're looking for was to begin with. |
 | prior | 2.7 Bayes' Theorem, Explained With a Story | Your probability estimate before seeing new evidence — in the story above, the 1% base rate of the condition. |
 | posterior | 2.7 Bayes' Theorem, Explained With a Story | Your updated probability estimate after seeing new evidence — in the story above, the roughly 50% chance of actually having the condition given a positive test. |
+| slope | 2.8 Slopes & Change — Intuitive Calculus | How much a line's output (y) changes for each unit its input (x) changes — rise over run. For a straight line, it's the same number everywhere. |
+| derivative | 2.8 Slopes & Change — Intuitive Calculus | The slope of a curve at one specific point — found by zooming in close enough that the curve looks like a straight line right there. Different points on a curve can have different derivatives. |
