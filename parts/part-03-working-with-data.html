@@ -20,7 +20,9 @@
     <a class="nav-item" data-chapter-id="3-1" href="#chapter-3-1">
       <span class="nav-dot"></span>3.1 Where Data Comes From
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>3.2 Cleaning Messy Data</div>
+    <a class="nav-item" data-chapter-id="3-2" href="#chapter-3-2">
+      <span class="nav-dot"></span>3.2 Cleaning Messy Data
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>3.3 Exploratory Data Analysis</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>3.4 Feature Engineering</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>3.5 Imbalanced Data &amp; Why Accuracy Lies</div>
@@ -214,12 +216,207 @@
 
     </section>
 
+    <section id="chapter-3-2">
+      <div class="chapter-eyebrow">Part III · Chapter 3.2</div>
+      <h1 class="chapter-title">Cleaning Messy Data</h1>
+
+      <p class="lede">
+        Chapter 3.1 got the ingredients into your kitchen. Before any of
+        them go in a pot, you wash them, trim the bad parts, and toss what's
+        rotten — that's data cleaning, and it's usually the least glamorous,
+        most time-consuming part of the entire job.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🧼 Frame of reference</div>
+        <p>
+          You wouldn't cook with unwashed vegetables straight from a
+          delivery box — some need trimming, some are duplicates you
+          didn't mean to order twice, one's labeled wrong, and one looks
+          suspicious enough that you'd want to check it before using it.
+          Raw data arrives the same way: messy, inconsistent, and full of
+          small problems that need attention before anything gets built
+          on top of it.
+        </p>
+      </div>
+
+      <h2>Four problems that show up constantly</h2>
+      <script>initJargonBox("missing value",
+        "A blank or absent entry in a dataset — a row where one feature simply wasn't recorded. Common fixes are removing the row or filling it in with a reasonable estimate, like the average.");</script>
+      <script>initJargonBox("outlier",
+        "A data point far outside the normal range of the rest of the data — possibly a genuine rare case, or possibly a data-entry error. Outliers need investigation, not an automatic fix.");</script>
+      <p>
+        A <span class="jargon-term">missing value</span> is a blank
+        entry — nobody recorded it. A <strong>duplicate</strong> is the
+        same example appearing more than once, which can quietly bias a
+        model toward whatever got repeated. <strong>Inconsistent
+        formatting</strong> is the same thing written different ways —
+        "NY," "New York," and "new york" as three different-looking
+        values that actually mean one thing. And an
+        <span class="jargon-term">outlier</span> is a value far outside
+        the normal range — which might be a genuine rare case, or might
+        just be a typo.
+      </p>
+
+      <h2>Worked example: a messy little table</h2>
+      <p>
+        Six rows of customer ages, with one of each problem baked in.
+        Click "Clean the data" to see how each gets handled.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <table class="data-table" id="clean-table">
+          <tr><th>Name</th><th>Age</th></tr>
+          <tbody id="clean-table-body"></tbody>
+        </table>
+        <div class="demo-actions">
+          <div class="quiz-option" id="clean-btn">🧼 Clean the data</div>
+          <div class="quiz-option" id="clean-reset-btn">↺ Show raw data</div>
+        </div>
+        <p id="clean-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var rows = [
+            { name: 'Alice', ageRaw: '25', status: 'ok' },
+            { name: 'Bob', ageRaw: '', status: 'missing' },
+            { name: 'Alice', ageRaw: '25', status: 'duplicate' },
+            { name: 'Carla', ageRaw: 'twenty-five', status: 'wrongtype' },
+            { name: 'Dave', ageRaw: '200', status: 'outlier' },
+            { name: 'Elena', ageRaw: '31', status: 'ok' }
+          ];
+          var wordToNum = { 'twenty-five': 25 };
+          var tbody = document.getElementById('clean-table-body');
+          var readout = document.getElementById('clean-readout');
+          var cleanBtn = document.getElementById('clean-btn');
+          var resetBtn = document.getElementById('clean-reset-btn');
+
+          function numericValue(row) {
+            if (row.status === 'wrongtype') return wordToNum[row.ageRaw];
+            if (row.status === 'missing') return null;
+            return parseInt(row.ageRaw, 10);
+          }
+
+          function renderMessy() {
+            tbody.innerHTML = '';
+            rows.forEach(function (row) {
+              var tr = document.createElement('tr');
+              if (row.status === 'duplicate') tr.className = 'row-duplicate';
+              var nameTd = document.createElement('td');
+              nameTd.textContent = row.name;
+              var ageTd = document.createElement('td');
+              if (row.status === 'missing') {
+                ageTd.textContent = '(missing)';
+                ageTd.className = 'cell-missing';
+              } else if (row.status === 'outlier') {
+                ageTd.textContent = row.ageRaw;
+                ageTd.className = 'cell-outlier';
+              } else {
+                ageTd.textContent = row.ageRaw;
+              }
+              tr.appendChild(nameTd);
+              tr.appendChild(ageTd);
+              tbody.appendChild(tr);
+            });
+            readout.textContent = 'Raw data: 1 missing value (Bob), 1 duplicate row (Alice), 1 wrong type ("twenty-five"), 1 possible outlier (age 200).';
+          }
+
+          function renderCleaned() {
+            var validAges = rows.filter(function (r) { return r.status === 'ok' || r.status === 'wrongtype'; }).map(numericValue);
+            var avg = Math.round(validAges.reduce(function (a, b) { return a + b; }, 0) / validAges.length);
+
+            tbody.innerHTML = '';
+            var fixedCount = 0, removedCount = 0;
+            rows.forEach(function (row) {
+              if (row.status === 'duplicate') { removedCount++; return; }
+              var tr = document.createElement('tr');
+              var nameTd = document.createElement('td');
+              nameTd.textContent = row.name;
+              var ageTd = document.createElement('td');
+              if (row.status === 'missing') {
+                ageTd.textContent = avg + ' (filled in — average of the rest)';
+                ageTd.className = 'cell-fixed';
+                fixedCount++;
+              } else if (row.status === 'wrongtype') {
+                ageTd.textContent = numericValue(row) + ' (converted from text)';
+                ageTd.className = 'cell-fixed';
+                fixedCount++;
+              } else if (row.status === 'outlier') {
+                ageTd.textContent = row.ageRaw + ' — flagged for human review';
+                ageTd.className = 'cell-outlier';
+              } else {
+                ageTd.textContent = row.ageRaw;
+              }
+              tr.appendChild(nameTd);
+              tr.appendChild(ageTd);
+              tbody.appendChild(tr);
+            });
+
+            readout.textContent = 'Cleaned: ' + fixedCount + ' values fixed (missing value filled in, text converted to a number), ' +
+              removedCount + ' duplicate row removed. The age-200 outlier is kept but flagged — that needs a human judgment call, not an automatic fix.';
+          }
+
+          cleanBtn.addEventListener('click', renderCleaned);
+          resetBtn.addEventListener('click', renderMessy);
+          renderMessy();
+        })();
+      </script>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Real-world data is almost never clean — missing values, duplicates, inconsistent formats, and outliers are the norm, not the exception.</li>
+          <li>Missing values can be dropped or filled in (e.g., with an average); duplicates should generally be removed.</li>
+          <li>Outliers require judgment — they might be genuine rare cases or simple data-entry errors, not something to silently "fix."</li>
+          <li>Data cleaning routinely takes up more time than building the model itself.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-3-2">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What's a reasonable way to handle a duplicate row in a dataset?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! A duplicate would otherwise quietly bias the model toward that repeated example.">Remove the extra copy.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a duplicate doesn't add real new information; it just repeats an existing example.">Leave it in, since more rows always improve a model.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — duplicating more rows would make the bias worse, not fix it.">Automatically double every other row to match.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. A dataset has a customer age listed as 200. What's the best first step?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — one questionable value doesn't call for discarding the whole dataset.">Immediately delete the entire dataset.</div>
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! It might be a typo, or rarely a genuine edge case — either way it deserves a look before deciding what to do.">Flag it for investigation.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — an unexamined extreme value shouldn't be assumed correct by default.">Assume it's correct and move on without checking.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. Why is data cleaning such a significant part of real ML work?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Messiness is the default state of real-world data, not a rare exception.">Because real-world data is almost never clean to begin with.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — models don't refuse to run on imperfect data; they just learn the wrong things from it silently.">Because models refuse to run at all on any dataset with even one imperfect value.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — in practice, cleaning is usually one of the most time-consuming steps.">It isn't significant — most datasets arrive ready to use.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
 <script>
   (function () {
     initQuiz(document.getElementById('quiz-3-1'));
+    initQuiz(document.getElementById('quiz-3-2'));
     initProgressTracking();
   })();
 </script>

@@ -1,11 +1,11 @@
 # Progress
 
 ## Status
-In progress. 19 of 98 chapters written. Part I and Part II are both complete.
+In progress. 20 of 98 chapters written. Part I and Part II are both complete.
 
 ## Next chapter due
-Part III, Chapter 3.2 — Cleaning Messy Data
-(parts/part-03-working-with-data.html already exists — insert the new <section> before </main> and flip 3.2's sidebar entry from unwritten to live)
+Part III, Chapter 3.3 — Exploratory Data Analysis
+(parts/part-03-working-with-data.html already exists — insert the new <section> before </main> and flip 3.3's sidebar entry from unwritten to live)
 
 ## Completed chapters
 - 0.1 How This Book Works — parts/part-00-before-we-begin.html
@@ -27,6 +27,7 @@ Part III, Chapter 3.2 — Cleaning Messy Data
 - 2.11 Arrays, Tables & Tensors (NumPy/pandas) — parts/part-02-toolkit.html
 - 2.12 Plotting & Seeing Your Data [D] — parts/part-02-toolkit.html
 - 3.1 Where Data Comes From — parts/part-03-working-with-data.html
+- 3.2 Cleaning Messy Data — parts/part-03-working-with-data.html
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in

@@ -48,3 +48,5 @@ instead of repeating it.
 | histogram | 2.12 Plotting & Seeing Your Data | A chart that bins one feature's values and counts how many examples fall into each bin — a direct visual picture of the distributions from Chapter 2.6. |
 | dataset | 3.1 Where Data Comes From | A collection of examples — rows of data, each one a vector or set of features — used to train or evaluate a model. |
 | synthetic data | 3.1 Where Data Comes From | Artificially generated data — created by a simulator or another model — used when real examples of a situation are too rare, expensive, or sensitive to collect directly. |
+| missing value | 3.2 Cleaning Messy Data | A blank or absent entry in a dataset — a row where one feature simply wasn't recorded. Common fixes are removing the row or filling it in with a reasonable estimate, like the average. |
+| outlier | 3.2 Cleaning Messy Data | A data point far outside the normal range of the rest of the data — possibly a genuine rare case, or possibly a data-entry error. Outliers need investigation, not an automatic fix. |
