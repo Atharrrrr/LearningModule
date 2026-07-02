@@ -35,7 +35,9 @@
     <a class="nav-item" data-chapter-id="2-6" href="#chapter-2-6">
       <span class="nav-dot"></span>2.6 Distributions &amp; Uncertainty
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>2.7 Bayes' Theorem, Explained With a Story</div>
+    <a class="nav-item" data-chapter-id="2-7" href="#chapter-2-7">
+      <span class="nav-dot"></span>2.7 Bayes' Theorem, Explained With a Story
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>2.8 Slopes &amp; Change — Intuitive Calculus</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>2.9 The Chain Rule</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>2.10 Your First Lines of Code (Python)</div>
@@ -1199,6 +1201,206 @@ movies_matrix = [
 
     </section>
 
+    <section id="chapter-2-7">
+      <div class="chapter-eyebrow">Part II · Chapter 2.7</div>
+      <h1 class="chapter-title">Bayes' Theorem, Explained With a Story</h1>
+
+      <p class="lede">
+        Here's a question that trips up almost everyone the first time:
+        if a medical test is 99% accurate and you test positive, what's
+        the chance you actually have the condition? The honest answer is
+        rarely 99% — and the reason why is one of the most useful ideas
+        in this entire book.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🩺 Frame of reference</div>
+        <p>
+          Imagine a rare condition that affects just 1% of people. A test
+          for it is 99% accurate — meaning it correctly identifies 99% of
+          people who have it, and correctly clears 99% of people who
+          don't. You take the test. It comes back positive. Most people's
+          gut instinct is "99% chance I have it." The actual answer, it
+          turns out, is closer to a coin flip — about 50%. The test's
+          accuracy isn't the whole story; how rare the condition is
+          matters just as much.
+        </p>
+      </div>
+
+      <h2>Why the gut instinct is wrong: count people, not percentages</h2>
+      <script>initJargonBox("Bayes' theorem",
+        "A rule for updating a probability estimate (the prior) into a more accurate one (the posterior) after seeing new evidence, by properly weighing that evidence against how rare the thing you're looking for was to begin with.");</script>
+      <p>
+        <span class="jargon-term">Bayes' theorem</span> is easiest to see
+        by imagining 100 real people instead of thinking in abstract
+        percentages. 1% of them — 1 person — actually has the condition.
+        The test correctly flags that 1 person about 99% of the time, so
+        call it 1 true positive. But among the other 99 healthy people, a
+        99%-accurate test still gets 1% of them wrong — roughly 1 false
+        positive. So out of everyone who tests positive (1 true positive +
+        1 false positive = 2 people), only half actually have the
+        condition. The test didn't get worse — there just weren't many
+        sick people to begin with, so its small error rate on the huge
+        healthy group produces about as many false alarms as real hits.
+      </p>
+
+      <h2>Prior and posterior</h2>
+      <script>initJargonBox("prior",
+        "Your probability estimate before seeing new evidence — in the story above, the 1% base rate of the condition.");</script>
+      <script>initJargonBox("posterior",
+        "Your updated probability estimate after seeing new evidence — in the story above, the roughly 50% chance of actually having the condition given a positive test.");</script>
+      <p>
+        The 1% starting estimate is called the <span class="jargon-term">prior</span> —
+        what you believed before any evidence. The ~50% updated estimate,
+        after folding in the positive test result, is the
+        <span class="jargon-term">posterior</span>. Bayes' theorem is
+        simply the rule for turning a prior into a posterior correctly,
+        instead of by gut feeling.
+      </p>
+
+      <h2>Worked example: a spam filter, revisited</h2>
+      <p>
+        Suppose only 10% of your incoming mail is truly spam (the prior),
+        and your spam filter is 90% accurate in both directions. Out of
+        100 emails: 10 are truly spam, 90 are truly legitimate. The filter
+        correctly flags about 9 of the 10 spam emails, and incorrectly
+        flags about 9 of the 90 legitimate ones (90 × 10% ≈ 9). So of the
+        18 emails flagged as spam (9 real + 9 false), only half are
+        actually spam — even with a filter that sounds quite good on
+        paper.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">Adjust how rare the condition is and how accurate the test is, out of a sample of 100 people.</p>
+
+        <div class="demo-controls">
+          <label class="demo-slider-label">Rarity (% who really have it): <span id="bayes-rarity-value">1</span>%
+            <input type="range" id="bayes-rarity-slider" min="1" max="20" step="1" value="1">
+          </label>
+          <label class="demo-slider-label">Test accuracy: <span id="bayes-accuracy-value">99</span>%
+            <input type="range" id="bayes-accuracy-slider" min="50" max="99" step="1" value="99">
+          </label>
+        </div>
+
+        <div class="trial-grid" id="bayes-grid"></div>
+        <p id="bayes-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var raritySlider = document.getElementById('bayes-rarity-slider');
+          var accuracySlider = document.getElementById('bayes-accuracy-slider');
+          var rarityValue = document.getElementById('bayes-rarity-value');
+          var accuracyValue = document.getElementById('bayes-accuracy-value');
+          var grid = document.getElementById('bayes-grid');
+          var readout = document.getElementById('bayes-readout');
+
+          for (var i = 0; i < 100; i++) {
+            var sq = document.createElement('div');
+            sq.className = 'trial-square';
+            grid.appendChild(sq);
+          }
+          var squares = grid.querySelectorAll('.trial-square');
+
+          function update() {
+            var rarity = parseInt(raritySlider.value, 10) / 100;
+            var accuracy = parseInt(accuracySlider.value, 10) / 100;
+            rarityValue.textContent = raritySlider.value;
+            accuracyValue.textContent = accuracySlider.value;
+
+            var diseased = Math.round(100 * rarity);
+            var healthy = 100 - diseased;
+            var truePositives = Math.round(diseased * accuracy);
+            var falseNegatives = diseased - truePositives;
+            var falsePositives = Math.round(healthy * (1 - accuracy));
+            var trueNegatives = healthy - falsePositives;
+
+            var categories = [];
+            for (var i = 0; i < truePositives; i++) categories.push('tp');
+            for (var i = 0; i < falseNegatives; i++) categories.push('fn');
+            for (var i = 0; i < falsePositives; i++) categories.push('fp');
+            for (var i = 0; i < trueNegatives; i++) categories.push('tn');
+            while (categories.length < 100) categories.push('tn');
+
+            squares.forEach(function (sq, i) {
+              sq.className = 'trial-square ' + categories[i];
+            });
+
+            var totalPositive = truePositives + falsePositives;
+            var posterior = totalPositive > 0 ? Math.round((truePositives / totalPositive) * 100) : 0;
+
+            readout.textContent = 'Out of 100 people: ' + diseased + ' actually have it. ' +
+              truePositives + ' of them test positive (green, true positives), and ' +
+              falsePositives + ' healthy people test positive anyway (orange, false positives). ' +
+              'So of ' + totalPositive + ' total positive tests, only ' + truePositives +
+              ' are real → P(has it | positive test) ≈ ' + posterior + '%.';
+          }
+
+          raritySlider.addEventListener('input', update);
+          accuracySlider.addEventListener('input', update);
+          update();
+        })();
+      </script>
+
+      <div class="panel">
+        <div class="panel-label python">▸ Python — run in your own environment</div>
+        <pre class="python-block"><span class="k">def</span> <span class="f">posterior_probability</span>(rarity, accuracy, population=<span class="n">100</span>):
+    diseased = <span class="k">round</span>(population * rarity)
+    healthy = population - diseased
+    true_positives = <span class="k">round</span>(diseased * accuracy)
+    false_positives = <span class="k">round</span>(healthy * (<span class="n">1</span> - accuracy))
+    <span class="k">return</span> true_positives / (true_positives + false_positives)
+
+<span class="k">print</span>(posterior_probability(<span class="n">0.01</span>, <span class="n">0.99</span>))  <span class="c"># about 0.5 — surprisingly low!</span></pre>
+      </div>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Bayes' theorem updates a prior probability into a posterior probability after new evidence, properly weighing how rare the thing is.</li>
+          <li>A positive test result isn't the same as "you have it" — the test's accuracy has to be weighed against the base rate.</li>
+          <li>Counting people out of a sample (natural frequencies) is often easier than memorizing the formula.</li>
+          <li>The rarer something is, the more a test's false positives can outnumber its true positives.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-2-7">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. A condition is rare (1% of people) and a test is 99% accurate. You test positive. Why isn't the probability you have it close to 99%?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! With so few truly sick people, even a small false-positive rate on the large healthy group adds up to roughly as many false alarms as true hits.">Because the condition is so rare that even a small false-positive rate produces about as many false positives as true positives.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the test really is 99% accurate; the surprise comes from how rare the condition is, not the test itself.">Because the test is actually only 1% accurate.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — this isn't a general flaw in probability math, it's a specific consequence of a low base rate.">Because probability calculations always underestimate the true rate.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. What does Bayes' theorem let you do?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — Bayes' theorem gives you an updated probability, not a guarantee.">Guarantee a prediction is 100% correct.</div>
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! It turns a prior into a posterior, properly accounting for how rare the thing is.">Update a probability estimate given new evidence, properly weighing how rare the thing is.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that's Chapter 2.3's topic; Bayes' theorem is about probability, not data shape.">Convert a vector into a matrix.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. In the demo, increasing "rarity" (making the condition more common) while keeping test accuracy the same generally does what to P(has it | positive test)?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — making the condition more common actually raises the posterior, not lowers it.">Lowers it toward 0%.</div>
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! A more common condition means a larger share of positive tests are real hits, not false alarms.">Raises it — a positive test becomes more trustworthy when the condition itself is more common.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — try it in the demo above; the rarity slider clearly moves the result.">Has no effect at all.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -1210,6 +1412,7 @@ movies_matrix = [
     initQuiz(document.getElementById('quiz-2-4'));
     initQuiz(document.getElementById('quiz-2-5'));
     initQuiz(document.getElementById('quiz-2-6'));
+    initQuiz(document.getElementById('quiz-2-7'));
     initProgressTracking();
   })();
 </script>
