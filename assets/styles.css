@@ -623,6 +623,47 @@ pre.python-block .f { color: var(--purple); } /* function */
 .data-table td.cell-fixed { background: rgba(63, 185, 80, 0.12); border-color: var(--green); color: var(--green); }
 .data-table td.cell-removed { display: none; }
 
+.trial-square.orange { background: var(--orange); border-color: var(--orange); }
+.trial-square.gray { background: var(--text-faint); border-color: var(--text-faint); }
+
+/* ---------------------------------------------------------------------- */
+/* Augmentation preview row (reusable)                                     */
+/* ---------------------------------------------------------------------- */
+
+.augment-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 16px 0;
+}
+
+.augment-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.augment-box-frame {
+  width: 90px;
+  height: 90px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-inset);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-size: 42px;
+}
+
+.augment-box-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-faint);
+  text-align: center;
+}
+
 /* ---------------------------------------------------------------------- */
 /* Recap block                                                             */
 /* ---------------------------------------------------------------------- */

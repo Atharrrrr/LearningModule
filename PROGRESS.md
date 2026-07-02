@@ -1,11 +1,11 @@
 # Progress
 
 ## Status
-In progress. 23 of 98 chapters written. Part I and Part II are both complete.
+In progress. 24 of 98 chapters written. Part I and Part II are both complete.
 
 ## Next chapter due
-Part III, Chapter 3.6 — Data Augmentation
-(parts/part-03-working-with-data.html already exists — insert the new <section> before </main> and flip 3.6's sidebar entry from unwritten to live; 3.7 Bias in Data, Bias in Models [D] is the last chapter of Part III after that)
+Part III, Chapter 3.7 — Bias in Data, Bias in Models [D]
+(parts/part-03-working-with-data.html already exists — insert the new <section> before </main> and flip 3.7's sidebar entry from unwritten to live; this is the last chapter of Part III)
 
 ## Completed chapters
 - 0.1 How This Book Works — parts/part-00-before-we-begin.html
@@ -31,6 +31,7 @@ Part III, Chapter 3.6 — Data Augmentation
 - 3.3 Exploratory Data Analysis — parts/part-03-working-with-data.html
 - 3.4 Feature Engineering — parts/part-03-working-with-data.html
 - 3.5 Imbalanced Data & Why Accuracy Lies — parts/part-03-working-with-data.html
+- 3.6 Data Augmentation — parts/part-03-working-with-data.html
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in

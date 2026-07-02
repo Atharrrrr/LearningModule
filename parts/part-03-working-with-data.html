@@ -32,7 +32,9 @@
     <a class="nav-item" data-chapter-id="3-5" href="#chapter-3-5">
       <span class="nav-dot"></span>3.5 Imbalanced Data &amp; Why Accuracy Lies
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>3.6 Data Augmentation</div>
+    <a class="nav-item" data-chapter-id="3-6" href="#chapter-3-6">
+      <span class="nav-dot"></span>3.6 Data Augmentation
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>3.7 Bias in Data, Bias in Models [D]</div>
   </nav>
 
@@ -953,6 +955,165 @@
 
     </section>
 
+    <section id="chapter-3-6">
+      <div class="chapter-eyebrow">Part III · Chapter 3.6</div>
+      <h1 class="chapter-title">Data Augmentation</h1>
+
+      <p class="lede">
+        What if you can't get more data? Sometimes you don't need to — you
+        can manufacture more training examples out of the ones you
+        already have.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🏀 Frame of reference</div>
+        <p>
+          A basketball player who only ever practices free throws in a
+          perfectly quiet, perfectly lit gym will struggle the first time
+          they shoot in a loud, unfamiliar arena. A smarter training plan
+          deliberately varies the conditions — different lighting,
+          background noise, fatigue — so the skill generalizes beyond the
+          exact circumstances it was practiced in. A model trained on
+          data has the same weakness: if every example looks the same way
+          in the same conditions, it can fail the moment reality looks
+          even slightly different.
+        </p>
+      </div>
+
+      <h2>Manufacturing more examples from the ones you have</h2>
+      <script>initJargonBox("data augmentation",
+        "Creating modified copies of real training examples — flipped, rotated, cropped, or otherwise altered — to expand a dataset and teach a model to handle variations it might see in the real world.");</script>
+      <p>
+        <span class="jargon-term">Data augmentation</span> takes real
+        examples you already have and creates modified copies: flip an
+        image horizontally, rotate it slightly, crop it differently,
+        brighten or darken it. Each version is still unmistakably the same
+        thing — but the model now has to learn to recognize it under more
+        conditions than the one original photo showed. This is different
+        from <a href="#chapter-3-1">synthetic data</a> (Chapter 3.1):
+        augmentation modifies real examples you already have; synthetic
+        data invents entirely new examples from a simulator.
+      </p>
+
+      <h2>Worked example: one photo becomes five</h2>
+      <p>
+        A single training photo, turned into five training examples with
+        no new data collection at all:
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">Click to re-randomize each augmentation — real augmentation pipelines apply random variation within a range, not one fixed transform.</p>
+
+        <div class="augment-row">
+          <div class="augment-box">
+            <div class="augment-box-frame">🐱</div>
+            <div class="augment-box-label">Original</div>
+          </div>
+          <div class="augment-box">
+            <div class="augment-box-frame"><span id="aug-flip">🐱</span></div>
+            <div class="augment-box-label" id="aug-flip-label">Flipped</div>
+          </div>
+          <div class="augment-box">
+            <div class="augment-box-frame"><span id="aug-rotate">🐱</span></div>
+            <div class="augment-box-label" id="aug-rotate-label">Rotated</div>
+          </div>
+          <div class="augment-box">
+            <div class="augment-box-frame"><span id="aug-zoom">🐱</span></div>
+            <div class="augment-box-label" id="aug-zoom-label">Cropped/zoomed</div>
+          </div>
+          <div class="augment-box">
+            <div class="augment-box-frame"><span id="aug-bright">🐱</span></div>
+            <div class="augment-box-label" id="aug-bright-label">Brightness</div>
+          </div>
+        </div>
+
+        <div class="demo-actions">
+          <div class="quiz-option" id="aug-regen-btn">🎲 Generate new augmentations</div>
+        </div>
+      </div>
+
+      <script>
+        (function () {
+          var flipEl = document.getElementById('aug-flip');
+          var rotateEl = document.getElementById('aug-rotate');
+          var zoomEl = document.getElementById('aug-zoom');
+          var brightEl = document.getElementById('aug-bright');
+          var flipLabel = document.getElementById('aug-flip-label');
+          var rotateLabel = document.getElementById('aug-rotate-label');
+          var zoomLabel = document.getElementById('aug-zoom-label');
+          var brightLabel = document.getElementById('aug-bright-label');
+          var btn = document.getElementById('aug-regen-btn');
+
+          function regenerate() {
+            var flipped = Math.random() < 0.5;
+            flipEl.style.transform = flipped ? 'scaleX(-1)' : 'none';
+            flipLabel.textContent = flipped ? 'Flipped' : 'Flipped (no-op this time)';
+
+            var angle = Math.round(Math.random() * 40 - 20);
+            rotateEl.style.transform = 'rotate(' + angle + 'deg)';
+            rotateLabel.textContent = 'Rotated ' + angle + '°';
+
+            var zoom = (1 + Math.random() * 0.6).toFixed(2);
+            zoomEl.style.transform = 'scale(' + zoom + ')';
+            zoomLabel.textContent = 'Zoomed ' + zoom + '×';
+
+            var brightness = (0.6 + Math.random() * 1.0).toFixed(2);
+            brightEl.style.filter = 'brightness(' + brightness + ')';
+            brightLabel.textContent = 'Brightness ' + brightness + '×';
+          }
+
+          btn.addEventListener('click', regenerate);
+          regenerate();
+        })();
+      </script>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Data augmentation creates modified copies of real examples to expand a training set without new data collection.</li>
+          <li>It teaches a model to be robust to variations it might encounter in the real world.</li>
+          <li>Augmentation modifies real examples you already have; synthetic data (Chapter 3.1) invents entirely new ones.</li>
+          <li>One real example can become many training examples through augmentation.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-3-6">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What is data augmentation?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Flipping, rotating, cropping, and similar changes turn one example into several.">Creating modified copies of real examples to expand a training set.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that's closer to Chapter 3.2's cleaning process, not augmentation.">Deleting bad examples from a dataset.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that's synthetic data (Chapter 3.1), which invents new examples rather than modifying real ones.">Generating entirely new, artificial examples from a simulator.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. How does data augmentation differ from synthetic data (Chapter 3.1)?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — they're related but distinct: one modifies real data, the other invents new data.">They're exactly the same thing, just different names.</div>
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Augmentation modifies what's real; synthetic data invents something new entirely.">Augmentation modifies real examples you already have; synthetic data generates entirely new examples from scratch.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — both can apply to images, text, audio, or other data types.">Augmentation only works on text, and synthetic data only works on images.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. Why might flipping and rotating training images help a model perform better in the real world?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Variety during training builds robustness to variety at test time.">It teaches the model to recognize the same object even when it appears in a different orientation than the original photos.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — augmentation is about data variety, not raw computation speed.">It doubles the model's processing speed.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — augmentation helps generalization, but it's not a guarantee against every mistake.">It guarantees the model will never make a mistake.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -963,6 +1124,7 @@
     initQuiz(document.getElementById('quiz-3-3'));
     initQuiz(document.getElementById('quiz-3-4'));
     initQuiz(document.getElementById('quiz-3-5'));
+    initQuiz(document.getElementById('quiz-3-6'));
     initProgressTracking();
   })();
 </script>

@@ -56,3 +56,4 @@ instead of repeating it.
 | one-hot encoding | 3.4 Feature Engineering | A way of turning a category into numbers: create one new column per possible category, and put a 1 in the column that matches, 0 in all the others. |
 | imbalanced data | 3.5 Imbalanced Data & Why Accuracy Lies | A dataset where one class vastly outnumbers another — like 99% legitimate transactions and 1% fraud. Common in fraud detection, rare disease detection, and defect detection. |
 | accuracy | 3.5 Imbalanced Data & Why Accuracy Lies | The percentage of a model's predictions that were correct overall. On imbalanced data, accuracy can look excellent while the model completely fails at the rare class that actually matters. |
+| data augmentation | 3.6 Data Augmentation | Creating modified copies of real training examples — flipped, rotated, cropped, or otherwise altered — to expand a dataset and teach a model to handle variations it might see in the real world. |
