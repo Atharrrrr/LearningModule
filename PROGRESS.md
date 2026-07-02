@@ -1,11 +1,11 @@
 # Progress
 
 ## Status
-In progress. 28 of 98 chapters written. Parts I, II, and III are all complete.
+In progress. 29 of 98 chapters written. Parts I, II, and III are all complete.
 
 ## Next chapter due
-Part IV, Chapter 4.4 — k-Nearest Neighbors
-(parts/part-04-classical-ml.html already exists — insert the new <section> before </main> and flip 4.4's sidebar entry from unwritten to live)
+Part IV, Chapter 4.5 — Decision Trees
+(parts/part-04-classical-ml.html already exists — insert the new <section> before </main> and flip 4.5's sidebar entry from unwritten to live)
 
 ## Completed chapters
 - 0.1 How This Book Works — parts/part-00-before-we-begin.html
@@ -36,6 +36,7 @@ Part IV, Chapter 4.4 — k-Nearest Neighbors
 - 4.1 Linear Regression — parts/part-04-classical-ml.html
 - 4.2 Logistic Regression — parts/part-04-classical-ml.html
 - 4.3 How Learning Actually Happens (loss, gradient descent) — parts/part-04-classical-ml.html
+- 4.4 k-Nearest Neighbors — parts/part-04-classical-ml.html
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in

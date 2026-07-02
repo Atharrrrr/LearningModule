@@ -26,7 +26,9 @@
     <a class="nav-item" data-chapter-id="4-3" href="#chapter-4-3">
       <span class="nav-dot"></span>4.3 How Learning Actually Happens
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>4.4 k-Nearest Neighbors</div>
+    <a class="nav-item" data-chapter-id="4-4" href="#chapter-4-4">
+      <span class="nav-dot"></span>4.4 k-Nearest Neighbors
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>4.5 Decision Trees</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>4.6 Random Forests &amp; Boosting</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>4.7 SVM &amp; Naive Bayes [D]</div>
@@ -571,6 +573,227 @@
 
     </section>
 
+    <section id="chapter-4-4">
+      <div class="chapter-eyebrow">Part IV · Chapter 4.4</div>
+      <h1 class="chapter-title">k-Nearest Neighbors</h1>
+
+      <p class="lede">
+        No weights, no sigmoid, no gradient descent — just ask the closest
+        examples what they think, and go with the majority.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🏡 Frame of reference</div>
+        <p>
+          A real estate appraiser pricing a house doesn't run a formula
+          from scratch — they pull up "comps": the handful of most
+          similar recently-sold houses nearby, and base the estimate on
+          what those actually sold for. No line-fitting, no training. Just
+          find the closest matches and let them answer.
+        </p>
+      </div>
+
+      <h2>Let the neighbors vote</h2>
+      <script>initJargonBox("k-Nearest Neighbors (kNN)",
+        "A technique that predicts a new point's label by finding its k closest points in the training data (by distance) and taking a majority vote — or an average, for a continuous prediction. There's no real training step; all the work happens at prediction time.");</script>
+      <p>
+        <span class="jargon-term">k-Nearest Neighbors</span> finds the k
+        closest points to a new example — using distance, a different
+        notion of "similar" than Chapter 2.4's dot product — and lets
+        them vote. Whichever label is most common among those k neighbors
+        wins. There's no training step at all: the "model" is just the
+        stored data, and all the work happens the moment a prediction is
+        requested.
+      </p>
+
+      <h2>Choosing k matters</h2>
+      <p>
+        A small k (like 1) makes the prediction hinge on a single closest
+        point — great if that point is representative, risky if it's a
+        noisy outlier. A larger k smooths things out by averaging over
+        more neighbors, but can blur real local patterns and drift toward
+        whatever's most common overall.
+      </p>
+
+      <h2>Worked example: is the new movie a franchise film?</h2>
+      <p>
+        Reusing the movie vectors from Chapter 2.2, each now labeled
+        Franchise or Not: a new movie at (7, 3) is closest to
+        <span class="mono">(8, 2)</span> — distance √2 ≈ 1.41, a
+        Franchise film — so k=1 predicts Franchise. Try different
+        positions and k values below.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <svg id="knn-chart" viewBox="0 0 500 480" overflow="hidden" role="img" aria-label="Scatter plot with a query point and its k nearest neighbors highlighted">
+          <line x1="60" y1="440" x2="460" y2="440" stroke="#30363d" stroke-width="1"></line>
+          <line x1="60" y1="440" x2="60" y2="40" stroke="#30363d" stroke-width="1"></line>
+          <text x="260" y="465" text-anchor="middle" fill="#6e7681" font-size="12">Action score →</text>
+          <text x="30" y="240" text-anchor="middle" fill="#6e7681" font-size="12" transform="rotate(-90 30 240)">Romance score →</text>
+          <g id="knn-lines"></g>
+          <g id="knn-training-points"></g>
+          <circle id="knn-query-point" r="8" fill="#bc8cff" stroke="#e6edf3" stroke-width="2"></circle>
+        </svg>
+
+        <div class="demo-controls">
+          <label class="demo-slider-label">Query action score: <span id="knn-x-value">7</span>
+            <input type="range" id="knn-x-slider" min="0" max="10" step="1" value="7">
+          </label>
+          <label class="demo-slider-label">Query romance score: <span id="knn-y-value">3</span>
+            <input type="range" id="knn-y-slider" min="0" max="10" step="1" value="3">
+          </label>
+          <label class="demo-slider-label">k: <span id="knn-k-value">3</span>
+            <input type="range" id="knn-k-slider" min="1" max="5" step="1" value="3">
+          </label>
+        </div>
+        <p id="knn-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var training = [
+            { pos: [8, 2], label: 'Franchise', color: '#3fb950' },
+            { pos: [2, 9], label: 'Not Franchise', color: '#58a6ff' },
+            { pos: [6, 6], label: 'Franchise', color: '#3fb950' },
+            { pos: [9, 7], label: 'Franchise', color: '#3fb950' },
+            { pos: [3, 3], label: 'Not Franchise', color: '#58a6ff' },
+            { pos: [1, 8], label: 'Not Franchise', color: '#58a6ff' }
+          ];
+
+          var plotX0 = 60, plotX1 = 460, plotY0 = 440, plotY1 = 40;
+          function xPix(x) { return plotX0 + (x / 10) * (plotX1 - plotX0); }
+          function yPix(y) { return plotY0 - (y / 10) * (plotY0 - plotY1); }
+
+          var trainingGroup = document.getElementById('knn-training-points');
+          var linesGroup = document.getElementById('knn-lines');
+          var queryPoint = document.getElementById('knn-query-point');
+          var xSlider = document.getElementById('knn-x-slider');
+          var ySlider = document.getElementById('knn-y-slider');
+          var kSlider = document.getElementById('knn-k-slider');
+          var xValue = document.getElementById('knn-x-value');
+          var yValue = document.getElementById('knn-y-value');
+          var kValue = document.getElementById('knn-k-value');
+          var readout = document.getElementById('knn-readout');
+
+          var circles = training.map(function (t) {
+            var c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            c.setAttribute('cx', xPix(t.pos[0]));
+            c.setAttribute('cy', yPix(t.pos[1]));
+            c.setAttribute('r', '7');
+            c.setAttribute('fill', t.color);
+            c.setAttribute('stroke', 'none');
+            trainingGroup.appendChild(c);
+            return c;
+          });
+
+          function update() {
+            var qx = parseInt(xSlider.value, 10);
+            var qy = parseInt(ySlider.value, 10);
+            var k = parseInt(kSlider.value, 10);
+            xValue.textContent = qx;
+            yValue.textContent = qy;
+            kValue.textContent = k;
+
+            queryPoint.setAttribute('cx', xPix(qx));
+            queryPoint.setAttribute('cy', yPix(qy));
+
+            var distances = training.map(function (t, i) {
+              var dx = t.pos[0] - qx, dy = t.pos[1] - qy;
+              return { i: i, dist: Math.sqrt(dx * dx + dy * dy) };
+            });
+            distances.sort(function (a, b) { return a.dist - b.dist; });
+            var nearest = distances.slice(0, k);
+            var nearestSet = {};
+            nearest.forEach(function (n) { nearestSet[n.i] = true; });
+
+            circles.forEach(function (c, i) {
+              c.setAttribute('stroke', nearestSet[i] ? '#e6edf3' : 'none');
+              c.setAttribute('stroke-width', nearestSet[i] ? '3' : '0');
+            });
+
+            linesGroup.innerHTML = '';
+            nearest.forEach(function (n) {
+              var t = training[n.i];
+              var line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+              line.setAttribute('x1', xPix(qx));
+              line.setAttribute('y1', yPix(qy));
+              line.setAttribute('x2', xPix(t.pos[0]));
+              line.setAttribute('y2', yPix(t.pos[1]));
+              line.setAttribute('stroke', '#6e7681');
+              line.setAttribute('stroke-width', '1.5');
+              line.setAttribute('stroke-dasharray', '4,3');
+              linesGroup.appendChild(line);
+            });
+
+            var counts = {};
+            nearest.forEach(function (n) {
+              var label = training[n.i].label;
+              counts[label] = (counts[label] || 0) + 1;
+            });
+            var labels = Object.keys(counts);
+            labels.sort(function (a, b) { return counts[b] - counts[a]; });
+            var winner = labels[0];
+            var isTie = labels.length > 1 && counts[labels[0]] === counts[labels[1]];
+
+            readout.textContent = isTie
+              ? 'Tie among the ' + k + ' nearest neighbors — no clear majority.'
+              : 'Predicted: ' + winner.toUpperCase() + ' (' + counts[winner] + ' of ' + k + ' nearest neighbors).';
+          }
+
+          xSlider.addEventListener('input', update);
+          ySlider.addEventListener('input', update);
+          kSlider.addEventListener('input', update);
+          update();
+        })();
+      </script>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>kNN classifies a new point by finding its k nearest neighbors in the training data and taking a majority vote.</li>
+          <li>There's no real training step — the model just stores the data and does the work at prediction time.</li>
+          <li>A small k is sensitive to noise; a large k smooths things out but can blur real local patterns.</li>
+          <li>Distance is a different notion of "similar" than Chapter 2.4's dot product.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-4-4">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. How does kNN make a prediction for a new point?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Find the k closest training points and let them vote (or average).">By finding its k nearest neighbors in the training data and taking a majority vote.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that's linear regression (Chapter 4.1), a different technique entirely.">By fitting a straight line through all the data.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that's logistic regression (Chapter 4.2)'s approach.">By squashing a weighted sum through the sigmoid function.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. What happens with a very small k, like k=1?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! With k=1, a single unusual neighbor can completely determine the prediction.">The prediction becomes very sensitive to a single close (possibly noisy or unusual) neighbor.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — kNN always relies directly on the stored training data.">The model automatically ignores all training data.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — averaging the entire dataset would be a very large k, not k=1.">The prediction becomes an average of the entire dataset.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. Why is kNN sometimes called "lazy learning"?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! There's no upfront training — all the effort happens when a prediction is actually requested.">Because there's no real training step — all the work happens at prediction time, comparing to stored data.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — kNN is a legitimately useful, widely-used technique, not a poor one.">Because it's a poorly performing algorithm not worth using.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — kNN skips training computation entirely; the cost shows up later, at prediction time.">Because it requires more computation during training than any other algorithm.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -579,6 +802,7 @@
     initQuiz(document.getElementById('quiz-4-1'));
     initQuiz(document.getElementById('quiz-4-2'));
     initQuiz(document.getElementById('quiz-4-3'));
+    initQuiz(document.getElementById('quiz-4-4'));
     initProgressTracking();
   })();
 </script>
