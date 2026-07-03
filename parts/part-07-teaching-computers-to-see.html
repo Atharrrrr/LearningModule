@@ -23,7 +23,9 @@
     <a class="nav-item" data-chapter-id="7-2" href="#chapter-7-2">
       <span class="nav-dot"></span>7.2 Convolutional Neural Networks
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>7.3 The Classic CV Toolbox (SIFT/ORB)</div>
+    <a class="nav-item" data-chapter-id="7-3" href="#chapter-7-3">
+      <span class="nav-dot"></span>7.3 The Classic CV Toolbox (SIFT/ORB)
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>7.4 Classification vs. Detection vs. Segmentation</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>7.5 Famous Architectures &amp; Transfer Learning</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>7.6 Evaluating Vision Models (IoU/mAP)</div>
@@ -578,6 +580,250 @@
 
     </section>
 
+    <section id="chapter-7-3">
+      <div class="chapter-eyebrow">Part VII · Chapter 7.3</div>
+      <h1 class="chapter-title">The Classic CV Toolbox (SIFT/ORB)</h1>
+
+      <p class="lede">
+        Long before CNNs (Chapter 7.2) learned features automatically,
+        computer vision found distinctive points in images using
+        hand-engineered rules. Those classic techniques are still used
+        today, and directly set up Chapter 7.8's SuperPoint — a learned
+        replacement for exactly this idea.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🏠 Frame of reference</div>
+        <p>
+          Recognizing your own house in a stranger's photo album, even
+          though every photo was taken at a different angle, time of
+          day, and zoom level. You don't compare every pixel — you
+          scan for a few unmistakable landmarks (the red door, a
+          distinctive window shape) and check whether those specific
+          landmarks show up. Classic computer vision automates exactly
+          that: find a handful of distinctive points, then describe
+          each one well enough to recognize it again elsewhere.
+        </p>
+      </div>
+
+      <h2>Keypoints: points worth remembering</h2>
+      <script>initJargonBox("keypoint",
+        "A distinctive, repeatable point in an image — like a corner — that can reliably be found again in another image of the same scene, even if it's rotated, scaled, or viewed from a different angle.");</script>
+      <p>
+        A <span class="jargon-term">keypoint</span> is a point worth
+        remembering: not just any pixel, but one distinctive enough to
+        find again. Flat regions and straight edges make poor
+        keypoints — a flat patch of sky looks identical wherever you
+        crop it, and a point on a straight edge could have slid along
+        that edge and looked the same. A <em>corner</em>, where
+        intensity changes sharply in more than one direction at once,
+        is exactly the kind of point that's genuinely pinpoint-able.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          Reusing Chapter 7.2's exact vertical- and horizontal-edge
+          responses on the plus sign: a point only counts as a corner
+          if <em>both</em> are strong there — real, computed keypoint
+          detection, the same idea Harris and FAST corner detectors use.
+        </p>
+        <div class="demo-actions">
+          <div class="quiz-option" id="kp-detect-btn">🔎 Detect keypoints</div>
+        </div>
+        <div id="kp-grid" style="display:grid; grid-template-columns:repeat(6, 40px); gap:2px; margin:12px 0;"></div>
+        <p id="kp-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var img = [
+            [230, 230, 230, 60, 60, 230, 230, 230],
+            [230, 230, 230, 60, 60, 230, 230, 230],
+            [230, 230, 230, 60, 60, 230, 230, 230],
+            [60, 60, 60, 60, 60, 60, 60, 60],
+            [60, 60, 60, 60, 60, 60, 60, 60],
+            [230, 230, 230, 60, 60, 230, 230, 230],
+            [230, 230, 230, 60, 60, 230, 230, 230],
+            [230, 230, 230, 60, 60, 230, 230, 230]
+          ];
+          var vKernel = [[-1, 0, 1], [-1, 0, 1], [-1, 0, 1]];
+          var hKernel = [[-1, -1, -1], [0, 0, 0], [1, 1, 1]];
+
+          function convAt(kernel, r, c) {
+            var sum = 0;
+            for (var i = 0; i < 3; i++) for (var j = 0; j < 3; j++) sum += img[r + i][c + j] * kernel[i][j];
+            return sum;
+          }
+
+          var grid = document.getElementById('kp-grid');
+          var readout = document.getElementById('kp-readout');
+          var cells = [];
+
+          for (var r = 0; r <= 5; r++) {
+            for (var c = 0; c <= 5; c++) {
+              var v = convAt(vKernel, r, c);
+              var h = convAt(hKernel, r, c);
+              var cornerness = Math.min(Math.abs(v), Math.abs(h));
+              var cell = document.createElement('div');
+              cell.style.width = '40px'; cell.style.height = '40px';
+              cell.style.display = 'flex'; cell.style.alignItems = 'center'; cell.style.justifyContent = 'center';
+              cell.style.fontSize = '10px'; cell.style.background = '#161b22'; cell.style.border = '1px solid #30363d';
+              grid.appendChild(cell);
+              cells.push({ el: cell, cornerness: cornerness });
+            }
+          }
+
+          document.getElementById('kp-detect-btn').addEventListener('click', function () {
+            var threshold = 300;
+            var count = 0;
+            cells.forEach(function (cell) {
+              if (cell.cornerness > threshold) {
+                cell.el.style.background = 'var(--orange)';
+                cell.el.textContent = '★';
+                cell.el.style.color = '#000';
+                count++;
+              } else {
+                cell.el.style.background = '#161b22';
+                cell.el.textContent = cell.cornerness;
+                cell.el.style.color = '#6e7681';
+              }
+            });
+            readout.textContent = count + ' keypoints detected (cornerness > ' + threshold +
+              ') — exactly the plus sign\'s 4 inner corners, where both edge directions are strong at once.';
+          });
+        })();
+      </script>
+
+      <h2>Descriptors: fingerprints for matching</h2>
+      <script>initJargonBox("descriptor",
+        "A numeric vector describing the local appearance around a keypoint — a fingerprint. Two keypoints are considered a match if their descriptors are close together, using ordinary vector distance (Chapter 2.4).");</script>
+      <p>
+        Finding a keypoint is only half the job — you also need a way
+        to recognize the <em>same</em> keypoint in a different image. A
+        <span class="jargon-term">descriptor</span> is a vector
+        (Chapter 2.2) summarizing what the area around a keypoint looks
+        like. Matching two keypoints across images becomes a distance
+        calculation between their descriptor vectors — smaller distance
+        means a better match, exactly the similarity idea from Chapter
+        2.4.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          A query keypoint's descriptor, and two candidates from a
+          second image. Which candidate is the real match?
+        </p>
+        <div class="demo-actions">
+          <div class="quiz-option" id="desc-compute-btn">📏 Compute distances</div>
+        </div>
+        <table class="data-table" id="desc-table">
+          <thead><tr><th>Descriptor</th><th>Values</th><th>Distance to query</th></tr></thead>
+          <tbody>
+            <tr><td>Query (image A)</td><td class="mono">[12, 45, 200, 88, 5, 150]</td><td>—</td></tr>
+            <tr><td>Candidate 1 (image B)</td><td class="mono">[15, 40, 195, 90, 8, 145]</td><td id="desc-dist-1"></td></tr>
+            <tr><td>Candidate 2 (image B)</td><td class="mono">[200, 10, 5, 220, 180, 30]</td><td id="desc-dist-2"></td></tr>
+          </tbody>
+        </table>
+        <p id="desc-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var query = [12, 45, 200, 88, 5, 150];
+          var cand1 = [15, 40, 195, 90, 8, 145];
+          var cand2 = [200, 10, 5, 220, 180, 30];
+
+          function euclidean(a, b) {
+            var sum = 0;
+            for (var i = 0; i < a.length; i++) sum += Math.pow(a[i] - b[i], 2);
+            return Math.sqrt(sum);
+          }
+
+          document.getElementById('desc-compute-btn').addEventListener('click', function () {
+            var d1 = euclidean(query, cand1);
+            var d2 = euclidean(query, cand2);
+            document.getElementById('desc-dist-1').textContent = d1.toFixed(2);
+            document.getElementById('desc-dist-2').textContent = d2.toFixed(2);
+            var winner = d1 < d2 ? 'Candidate 1' : 'Candidate 2';
+            document.getElementById('desc-readout').textContent = winner + ' is the match — distance ' +
+              Math.min(d1, d2).toFixed(2) + ' vs. ' + Math.max(d1, d2).toFixed(2) + ' for the other candidate.';
+          });
+        })();
+      </script>
+
+      <h2>SIFT vs. ORB</h2>
+      <script>initJargonBox("SIFT",
+        "Scale-Invariant Feature Transform: a classic, highly influential keypoint detector and descriptor designed to stay recognizable even if an image is scaled or rotated. Accurate, but slower to compute.");</script>
+      <script>initJargonBox("ORB",
+        "Oriented FAST and Rotated BRIEF: a fast, free alternative to SIFT, using compact binary descriptors — dramatically cheaper to compute and compare, at some cost to accuracy compared to SIFT.");</script>
+      <p>
+        <span class="jargon-term">SIFT</span> and
+        <span class="jargon-term">ORB</span> are the two most
+        well-known classic detector-and-descriptor pairs. Both find
+        keypoints and build descriptors for them; they differ mainly in
+        speed and descriptor design:
+      </p>
+      <ul>
+        <li><strong>SIFT</strong> — descriptors are longer vectors of real numbers, very robust to scale and rotation changes, but slower to compute and compare.</li>
+        <li><strong>ORB</strong> — descriptors are compact binary strings (matched with fast bitwise comparisons instead of Euclidean distance), dramatically faster, free to use, slightly less robust than SIFT.</li>
+      </ul>
+      <p>
+        Both were, for years, the standard way to stitch panoramas,
+        track objects across video, and reconstruct 3D scenes from
+        photos — all without a single learned parameter. Chapter 7.8
+        picks this exact thread back up with SuperPoint, which learns
+        both the keypoint detector and the descriptor instead of
+        hand-designing them.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>A keypoint is a distinctive, repeatable point — typically a corner, where intensity changes sharply in more than one direction.</li>
+          <li>A descriptor is a vector summarizing a keypoint's local appearance, used to match it against keypoints in another image via vector distance.</li>
+          <li>SIFT uses accurate but slower real-valued descriptors; ORB uses fast, compact binary descriptors — a speed/accuracy trade-off.</li>
+          <li>These classic, hand-engineered techniques predate CNNs and still directly motivate learned successors like Chapter 7.8's SuperPoint.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-7-3">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. Why do corners make better keypoints than flat regions or straight edges?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Multi-directional intensity change is exactly what makes a point genuinely pinpoint-able.">A corner has intensity changing sharply in more than one direction, making its exact location distinctive and repeatable — unlike a flat region (no change) or a straight edge (change in only one direction).</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — corners are chosen because of their distinctiveness, not simply because they're common.">Corners are simply the most common type of point in most images.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — plenty of real images have very few obvious corners; that's exactly why not every point qualifies as a keypoint.">Every image is guaranteed to contain the same number of corners.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. What is a descriptor used for?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! A descriptor is what lets you recognize the same keypoint again elsewhere.">Summarizing a keypoint's local appearance as a vector, so it can be matched against keypoints in another image via distance.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that's what a keypoint detector does; a descriptor's job comes after a keypoint is already found.">Deciding which points in an image count as keypoints in the first place.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a descriptor is computed once per keypoint, not per image row.">Storing the raw pixel values of an entire image row.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. What's the main practical trade-off between SIFT and ORB?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! SIFT trades speed for accuracy; ORB trades some accuracy for a big speed and cost advantage.">SIFT is more accurate but slower; ORB is much faster and free, at some cost to accuracy.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — both SIFT and ORB find keypoints and build descriptors for them; that's not what differs.">ORB doesn't use descriptors at all, only SIFT does.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo showed a real, computed distance-based matching process for classic descriptors, not randomness.">SIFT and ORB produce identical results; the difference is purely aesthetic.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -585,6 +831,7 @@
   (function () {
     initQuiz(document.getElementById('quiz-7-1'));
     initQuiz(document.getElementById('quiz-7-2'));
+    initQuiz(document.getElementById('quiz-7-3'));
     initProgressTracking();
   })();
 </script>
