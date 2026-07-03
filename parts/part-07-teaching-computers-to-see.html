@@ -26,7 +26,9 @@
     <a class="nav-item" data-chapter-id="7-3" href="#chapter-7-3">
       <span class="nav-dot"></span>7.3 The Classic CV Toolbox (SIFT/ORB)
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>7.4 Classification vs. Detection vs. Segmentation</div>
+    <a class="nav-item" data-chapter-id="7-4" href="#chapter-7-4">
+      <span class="nav-dot"></span>7.4 Classification vs. Detection vs. Segmentation
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>7.5 Famous Architectures &amp; Transfer Learning</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>7.6 Evaluating Vision Models (IoU/mAP)</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>7.7 Meet YOLO</div>
@@ -824,6 +826,219 @@
 
     </section>
 
+    <section id="chapter-7-4">
+      <div class="chapter-eyebrow">Part VII · Chapter 7.4</div>
+      <h1 class="chapter-title">Classification vs. Detection vs. Segmentation</h1>
+
+      <p class="lede">
+        "What does a vision model output?" doesn't have one answer —
+        it depends entirely on the question being asked. Three
+        different questions about the same photo produce three
+        genuinely different kinds of output.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🖼️ Frame of reference</div>
+        <p>
+          Three different requests to a photo editor, about the same
+          photo. "Is there a dog in this photo?" needs one word:
+          "yes." "Where is the dog?" needs a box drawn around it.
+          "Cut the dog out perfectly, so I can put it on a different
+          background" needs every single pixel that belongs to the dog
+          traced out, exactly — nothing more, nothing less. Same photo,
+          three completely different amounts of detail.
+        </p>
+      </div>
+
+      <h2>Three tasks, three output shapes</h2>
+      <p>
+        <span class="jargon-term">Classification</span> (Chapter 4.2)
+        answers "what's the main thing here?" with a single label for
+        the whole image — no location information at all.
+      </p>
+      <script>initJargonBox("object detection",
+        "Finding every instance of one or more object classes in an image and marking each with a bounding box — a rectangle tight enough to contain it — plus a label. Unlike classification, detection handles multiple objects and says where each one is.");</script>
+      <script>initJargonBox("bounding box",
+        "The smallest rectangle that fully contains a detected object, usually described by its corner coordinates. Detection's standard output format — location, but not exact shape.");</script>
+      <p>
+        <span class="jargon-term">Object detection</span> answers
+        "what's here, and where?" — every object gets its own
+        <span class="jargon-term">bounding box</span> and label. This
+        handles multiple objects naturally, but a box is a loose fit:
+        it includes some background inside its rectangle, and says
+        nothing about the object's exact outline.
+      </p>
+      <script>initJargonBox("segmentation",
+        "Labeling every individual pixel in an image with which object (or background) it belongs to — the finest-grained of the three tasks. Semantic segmentation labels pixels by class only; instance segmentation additionally distinguishes separate objects of the same class.");</script>
+      <p>
+        <span class="jargon-term">Segmentation</span> answers "exactly
+        which pixels?" — a label for every single pixel, tracing each
+        object's true outline instead of a loose rectangle around it.
+        It's the most detailed of the three, and also the most
+        expensive to produce training data for, since every pixel
+        needs a human-verified label rather than one label per image.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          The exact same underlying scene — a square and a diamond —
+          shown as each task's real output, computed from one shared
+          ground-truth pixel map.
+        </p>
+
+        <div class="demo-actions" id="cds-mode-buttons">
+          <div class="quiz-option" data-mode="classification">Classification</div>
+          <div class="quiz-option" data-mode="detection">Detection</div>
+          <div class="quiz-option" data-mode="segmentation">Segmentation</div>
+        </div>
+
+        <div style="position:relative; display:inline-block; margin-top:12px;">
+          <div id="cds-grid" style="display:grid; grid-template-columns:repeat(12, 28px); gap:1px;"></div>
+          <svg id="cds-overlay" style="position:absolute; top:0; left:0; pointer-events:none;" width="356" height="290"></svg>
+        </div>
+        <p id="cds-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var rows = 10, cols = 12;
+          var grid = [];
+          for (var r = 0; r < rows; r++) grid.push(new Array(cols).fill(0));
+
+          for (var r = 1; r <= 3; r++) for (var c = 1; c <= 3; c++) grid[r][c] = 1;
+
+          [[4, 8], [5, 7], [5, 8], [5, 9], [6, 6], [6, 7], [6, 8], [6, 9], [6, 10],
+            [7, 7], [7, 8], [7, 9], [8, 8]].forEach(function (p) { grid[p[0]][p[1]] = 2; });
+
+          function boundingBox(label) {
+            var minR = Infinity, maxR = -Infinity, minC = Infinity, maxC = -Infinity;
+            for (var r = 0; r < rows; r++) {
+              for (var c = 0; c < cols; c++) {
+                if (grid[r][c] === label) {
+                  minR = Math.min(minR, r); maxR = Math.max(maxR, r);
+                  minC = Math.min(minC, c); maxC = Math.max(maxC, c);
+                }
+              }
+            }
+            return { minR: minR, maxR: maxR, minC: minC, maxC: maxC };
+          }
+
+          var gridEl = document.getElementById('cds-grid');
+          var overlay = document.getElementById('cds-overlay');
+          var readout = document.getElementById('cds-readout');
+          var buttons = document.querySelectorAll('#cds-mode-buttons .quiz-option');
+          var cellSize = 29;
+
+          var cellEls = [];
+          for (var r = 0; r < rows; r++) {
+            for (var c = 0; c < cols; c++) {
+              var cell = document.createElement('div');
+              cell.style.width = '28px'; cell.style.height = '28px';
+              gridEl.appendChild(cell);
+              cellEls.push({ el: cell, r: r, c: c });
+            }
+          }
+
+          function svgRect(box, color) {
+            var x = box.minC * cellSize, y = box.minR * cellSize;
+            var w = (box.maxC - box.minC + 1) * cellSize, h = (box.maxR - box.minR + 1) * cellSize;
+            return '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h +
+              '" fill="none" stroke="' + color + '" stroke-width="2.5"></rect>';
+          }
+
+          function render(mode) {
+            overlay.innerHTML = '';
+            cellEls.forEach(function (cell) {
+              var v = grid[cell.r][cell.c];
+              if (mode === 'segmentation') {
+                cell.el.style.background = v === 0 ? '#161b22' : (v === 1 ? 'var(--blue)' : 'var(--orange)');
+              } else {
+                cell.el.style.background = v === 0 ? '#161b22' : '#3a4048';
+              }
+            });
+
+            if (mode === 'classification') {
+              readout.textContent = 'Output: "This image contains: Shape A, Shape B" — one label set, no location at all.';
+            } else if (mode === 'detection') {
+              var boxA = boundingBox(1), boxB = boundingBox(2);
+              overlay.innerHTML = svgRect(boxA, 'var(--blue)') + svgRect(boxB, 'var(--orange)');
+              readout.textContent = 'Output: Shape A at rows ' + boxA.minR + '–' + boxA.maxR + ', cols ' + boxA.minC + '–' + boxA.maxC +
+                '; Shape B at rows ' + boxB.minR + '–' + boxB.maxR + ', cols ' + boxB.minC + '–' + boxB.maxC +
+                '. Notice Shape B\'s box includes background corners the diamond doesn\'t actually occupy.';
+            } else {
+              readout.textContent = 'Output: a label for every one of the ' + (rows * cols) + ' pixels — exactly which ones are Shape A (blue), Shape B (orange), or background.';
+            }
+          }
+
+          buttons.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+              buttons.forEach(function (b) { b.classList.remove('correct'); });
+              btn.classList.add('correct');
+              render(btn.getAttribute('data-mode'));
+            });
+          });
+
+          buttons[1].classList.add('correct');
+          render('detection');
+        })();
+      </script>
+
+      <p>
+        Detection's box around Shape B is a 5×5 rectangle, but the
+        diamond itself only fills 13 of those 25 cells — the rest is
+        background caught inside the box. Segmentation is the only one
+        of the three that gets that distinction exactly right, at the
+        cost of needing a label for every pixel instead of one number
+        or one rectangle.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Classification outputs one label for the whole image — no location.</li>
+          <li>Detection outputs a bounding box and label per object — location, but only a loose rectangle, not an exact outline.</li>
+          <li>Segmentation outputs a label for every pixel — the exact outline, at the highest labeling cost.</li>
+          <li>Each task is strictly more detailed (and more expensive to produce training data for) than the one before it.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-7-4">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What does object detection add on top of classification?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! A bounding box and label per object, instead of one label for the whole image.">The location of each object (as a bounding box), and support for multiple objects in one image.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that level of detail is segmentation's job, not detection's.">The exact pixel-by-pixel outline of each object.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — detection typically finds multiple objects, not exactly one.">Nothing meaningful — detection and classification produce identical output.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. Why might a bounding box be a poor fit for an irregularly-shaped object?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! A rectangle can't hug an irregular shape tightly, so it always includes some background.">A rectangle can't hug an irregular outline exactly, so it inevitably includes background pixels the object doesn't actually occupy.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo computed a real, tight bounding box from the actual pixel data, not an oversized guess.">Bounding boxes are always drawn far larger than necessary, on purpose.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — bounding boxes work with any object shape; they just can't fit irregular shapes exactly.">Bounding boxes only work for perfectly square objects.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. Why is segmentation training data more expensive to produce than classification training data?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! One label per image (classification) is far cheaper than a verified label for every single pixel (segmentation).">Segmentation needs a verified label for every individual pixel, while classification needs only one label for the entire image.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — segmentation models can be trained on ordinary photographs, not specialized image formats.">Segmentation requires a fundamentally different, more expensive camera.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the cost difference comes from how much labeling detail each task's ground truth requires.">There's actually no real difference in labeling cost between the two tasks.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -832,6 +1047,7 @@
     initQuiz(document.getElementById('quiz-7-1'));
     initQuiz(document.getElementById('quiz-7-2'));
     initQuiz(document.getElementById('quiz-7-3'));
+    initQuiz(document.getElementById('quiz-7-4'));
     initProgressTracking();
   })();
 </script>
