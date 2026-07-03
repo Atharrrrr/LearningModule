@@ -26,7 +26,9 @@
     <a class="nav-item" data-chapter-id="6-3" href="#chapter-6-3">
       <span class="nav-dot"></span>6.3 Activation Functions
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>6.4 Backpropagation</div>
+    <a class="nav-item" data-chapter-id="6-4" href="#chapter-6-4">
+      <span class="nav-dot"></span>6.4 Backpropagation
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>6.5 Optimizers (SGD, Adam)</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>6.6 The Training Toolbox</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>6.7 Vanishing Gradients &amp; Initialization</div>
@@ -843,6 +845,345 @@
 
     </section>
 
+    <section id="chapter-6-4">
+      <div class="chapter-eyebrow">Part VI · Chapter 6.4</div>
+      <h1 class="chapter-title">Backpropagation</h1>
+
+      <p class="lede">
+        Chapter 4.3 showed gradient descent finding the slope of the
+        loss and stepping downhill — for one layer, that slope was easy
+        to compute directly. Chapter 6.2 stacked layers. This chapter
+        answers the question that stacking raises: with several layers
+        between the weights and the loss, how do you find the slope for
+        a weight buried in the middle?
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🏭 Frame of reference</div>
+        <p>
+          An assembly line ships a defective product. To fix it, you
+          can't just yell at the final inspector — the defect might
+          trace back to a setting on station 1, three stations earlier.
+          The only way to know how much each station's setting
+          contributed is to work backward from the defect: the final
+          inspector reports how far off the product was, that report
+          tells station 3 how much its own adjustment mattered, station
+          3's finding tells station 2, and so on — blame (and the size
+          of the needed correction) getting passed backward, one link
+          at a time, all the way to station 1.
+        </p>
+      </div>
+
+      <h2>The chain rule, applied twice in a row</h2>
+      <p>
+        That's exactly <span class="jargon-term">backpropagation</span>:
+        Chapter 2.9's <span class="jargon-term">chain rule</span>,
+        applied repeatedly, once per layer, working backward from the
+        loss to every weight in the network. Chapter 4.3's gradient
+        descent needs the loss's slope with respect to <em>every</em>
+        weight before it can take a step. For a one-layer model, that
+        slope was one direct calculation. For a multilayer network, a
+        weight near the input only affects the loss <em>indirectly</em>
+        — through everything downstream of it — and the chain rule is
+        precisely the tool for multiplying through a chain of indirect
+        effects like that.
+      </p>
+      <script>initJargonBox("backpropagation",
+        "The algorithm that computes the loss's gradient with respect to every weight in a neural network, by applying the chain rule repeatedly, working backward from the output layer to the input layer one layer at a time.");</script>
+
+      <h2>Worked example: two layers, by hand</h2>
+      <p>
+        The smallest network that actually needs backpropagation: one
+        input, one hidden neuron, one output neuron, both using sigmoid
+        (Chapter 6.1). Fixed for this example: input <span class="mono">x = 1.0</span>,
+        target <span class="mono">t = 1.0</span>, and squared error
+        <span class="mono">L = (y − t)²</span> as the loss (Chapter 4.3).
+        The forward pass is nothing new:
+      </p>
+      <ul>
+        <li><span class="mono">z1 = w1·x + b1</span>, then <span class="mono">h = sigmoid(z1)</span></li>
+        <li><span class="mono">z2 = w2·h + b2</span>, then <span class="mono">y = sigmoid(z2)</span></li>
+        <li><span class="mono">L = (y − t)²</span></li>
+      </ul>
+      <p>
+        The backward pass walks that exact same chain in reverse,
+        multiplying local derivatives together at each step — precisely
+        Chapter 2.9's chain rule, just with more links:
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          x = 1.0 and target = 1.0 stay fixed. Click through a training
+          step and watch every number in both passes get computed live.
+        </p>
+
+        <p id="bp-weights-readout" class="demo-readout"></p>
+
+        <p style="margin:16px 0 4px; font-size:13px; color:#6e7681; text-transform:uppercase; letter-spacing:0.04em;">Forward pass</p>
+        <table class="data-table" id="bp-forward-table">
+          <thead><tr><th>Quantity</th><th>Formula</th><th>Value</th></tr></thead>
+          <tbody></tbody>
+        </table>
+
+        <p style="margin:16px 0 4px; font-size:13px; color:#6e7681; text-transform:uppercase; letter-spacing:0.04em;">Backward pass — the chain rule, one link at a time</p>
+        <table class="data-table" id="bp-backward-table">
+          <thead><tr><th>Quantity</th><th>Formula</th><th>Value</th></tr></thead>
+          <tbody></tbody>
+        </table>
+
+        <div class="demo-actions">
+          <div class="quiz-option" id="bp-step-btn">▶ Take one training step (forward + backward + update)</div>
+          <div class="quiz-option" id="bp-reset-btn">↺ Reset</div>
+        </div>
+        <p id="bp-step-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          function sigmoid(v) { return 1 / (1 + Math.exp(-v)); }
+
+          var x = 1.0, target = 1.0, lr = 1.0;
+          var initial = { w1: 0.5, b1: 0.0, w2: 1.0, b2: 0.0 };
+          var state = { w1: initial.w1, b1: initial.b1, w2: initial.w2, b2: initial.b2, step: 0 };
+
+          function forward(w1, b1, w2, b2) {
+            var z1 = w1 * x + b1;
+            var h = sigmoid(z1);
+            var z2 = w2 * h + b2;
+            var y = sigmoid(z2);
+            var L = Math.pow(y - target, 2);
+            return { z1: z1, h: h, z2: z2, y: y, L: L };
+          }
+
+          function backward(w2, fwd) {
+            var dL_dy = 2 * (fwd.y - target);
+            var dy_dz2 = fwd.y * (1 - fwd.y);
+            var dL_dz2 = dL_dy * dy_dz2;
+            var dL_dw2 = dL_dz2 * fwd.h;
+            var dL_db2 = dL_dz2 * 1;
+            var dL_dh = dL_dz2 * w2;
+            var dh_dz1 = fwd.h * (1 - fwd.h);
+            var dL_dz1 = dL_dh * dh_dz1;
+            var dL_dw1 = dL_dz1 * x;
+            var dL_db1 = dL_dz1 * 1;
+            return {
+              dL_dy: dL_dy, dy_dz2: dy_dz2, dL_dz2: dL_dz2,
+              dL_dw2: dL_dw2, dL_db2: dL_db2, dL_dh: dL_dh,
+              dh_dz1: dh_dz1, dL_dz1: dL_dz1, dL_dw1: dL_dw1, dL_db1: dL_db1
+            };
+          }
+
+          var weightsReadout = document.getElementById('bp-weights-readout');
+          var forwardTbody = document.querySelector('#bp-forward-table tbody');
+          var backwardTbody = document.querySelector('#bp-backward-table tbody');
+          var stepReadout = document.getElementById('bp-step-readout');
+
+          function fmt(n) { return n.toFixed(5); }
+
+          function render() {
+            var fwd = forward(state.w1, state.b1, state.w2, state.b2);
+            var bwd = backward(state.w2, fwd);
+
+            weightsReadout.textContent = 'Step ' + state.step + '  —  w1=' + fmt(state.w1) +
+              ', b1=' + fmt(state.b1) + ', w2=' + fmt(state.w2) + ', b2=' + fmt(state.b2);
+
+            forwardTbody.innerHTML =
+              '<tr><td>z1</td><td>w1·x + b1</td><td>' + fmt(fwd.z1) + '</td></tr>' +
+              '<tr><td>h</td><td>sigmoid(z1)</td><td>' + fmt(fwd.h) + '</td></tr>' +
+              '<tr><td>z2</td><td>w2·h + b2</td><td>' + fmt(fwd.z2) + '</td></tr>' +
+              '<tr><td>y</td><td>sigmoid(z2)</td><td>' + fmt(fwd.y) + '</td></tr>' +
+              '<tr><td>L</td><td>(y − target)²</td><td>' + fmt(fwd.L) + '</td></tr>';
+
+            backwardTbody.innerHTML =
+              '<tr><td>dL/dy</td><td>2(y − target)</td><td>' + fmt(bwd.dL_dy) + '</td></tr>' +
+              '<tr><td>dy/dz2</td><td>y(1 − y)</td><td>' + fmt(bwd.dy_dz2) + '</td></tr>' +
+              '<tr><td>dL/dz2</td><td>dL/dy × dy/dz2</td><td>' + fmt(bwd.dL_dz2) + '</td></tr>' +
+              '<tr><td>dL/dw2</td><td>dL/dz2 × h</td><td>' + fmt(bwd.dL_dw2) + '</td></tr>' +
+              '<tr><td>dL/db2</td><td>dL/dz2 × 1</td><td>' + fmt(bwd.dL_db2) + '</td></tr>' +
+              '<tr><td>dL/dh</td><td>dL/dz2 × w2</td><td>' + fmt(bwd.dL_dh) + '</td></tr>' +
+              '<tr><td>dh/dz1</td><td>h(1 − h)</td><td>' + fmt(bwd.dh_dz1) + '</td></tr>' +
+              '<tr><td>dL/dz1</td><td>dL/dh × dh/dz1</td><td>' + fmt(bwd.dL_dz1) + '</td></tr>' +
+              '<tr><td>dL/dw1</td><td>dL/dz1 × x</td><td>' + fmt(bwd.dL_dw1) + '</td></tr>' +
+              '<tr><td>dL/db1</td><td>dL/dz1 × 1</td><td>' + fmt(bwd.dL_db1) + '</td></tr>';
+
+            return { fwd: fwd, bwd: bwd };
+          }
+
+          var current = render();
+
+          document.getElementById('bp-step-btn').addEventListener('click', function () {
+            var oldLoss = current.fwd.L;
+            state.w1 -= lr * current.bwd.dL_dw1;
+            state.b1 -= lr * current.bwd.dL_db1;
+            state.w2 -= lr * current.bwd.dL_dw2;
+            state.b2 -= lr * current.bwd.dL_db2;
+            state.step += 1;
+            current = render();
+            stepReadout.textContent = 'Loss went from ' + fmt(oldLoss) + ' to ' + fmt(current.fwd.L) +
+              ' after that update — gradient descent (Chapter 4.3), using the gradients backprop just computed.';
+          });
+
+          document.getElementById('bp-reset-btn').addEventListener('click', function () {
+            state.w1 = initial.w1; state.b1 = initial.b1;
+            state.w2 = initial.w2; state.b2 = initial.b2;
+            state.step = 0;
+            current = render();
+            stepReadout.textContent = '';
+          });
+        })();
+      </script>
+
+      <p>
+        Notice the pattern: each row in the backward-pass table is one
+        local derivative — a slope Chapter 2.8 could compute in
+        isolation — and the running gradient is just those local slopes
+        multiplied together, link by link, exactly as Chapter 2.9
+        described. <span class="mono">dL/dw1</span> is buried three
+        multiplications deep, but every one of those multiplications is
+        individually simple.
+      </p>
+
+      <h2>Proving the gradients are actually right</h2>
+      <p>
+        A gradient can be checked without calculus at all: nudge one
+        weight by a tiny amount, see how much the loss changes, and
+        divide — the definition of a derivative from Chapter 2.8. If
+        backpropagation's chain-rule answer doesn't match that
+        independent nudge-and-measure check, something is wrong.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          Using the network's current weights (whatever they are right
+          now above), compare backprop's answer to a direct numerical
+          check.
+        </p>
+        <div class="demo-actions">
+          <div class="quiz-option" id="bp-verify-btn">🔍 Verify with finite differences</div>
+        </div>
+        <table class="data-table" id="bp-verify-table" style="margin-top:12px;">
+          <thead><tr><th>Parameter</th><th>Backprop (analytical)</th><th>Nudge-and-measure (numerical)</th><th>Match?</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <script>
+        (function () {
+          function sigmoid(v) { return 1 / (1 + Math.exp(-v)); }
+          var x = 1.0, target = 1.0;
+
+          function loss(w1, b1, w2, b2) {
+            var z1 = w1 * x + b1, h = sigmoid(z1);
+            var z2 = w2 * h + b2, y = sigmoid(z2);
+            return Math.pow(y - target, 2);
+          }
+
+          function analyticalGradients(w1, b1, w2, b2) {
+            var z1 = w1 * x + b1, h = sigmoid(z1);
+            var z2 = w2 * h + b2, y = sigmoid(z2);
+            var dL_dy = 2 * (y - target);
+            var dy_dz2 = y * (1 - y);
+            var dL_dz2 = dL_dy * dy_dz2;
+            var dL_dw2 = dL_dz2 * h;
+            var dL_db2 = dL_dz2;
+            var dL_dh = dL_dz2 * w2;
+            var dh_dz1 = h * (1 - h);
+            var dL_dz1 = dL_dh * dh_dz1;
+            var dL_dw1 = dL_dz1 * x;
+            var dL_db1 = dL_dz1;
+            return { w1: dL_dw1, b1: dL_db1, w2: dL_dw2, b2: dL_db2 };
+          }
+
+          function numericalGradient(param, w1, b1, w2, b2) {
+            var eps = 1e-5;
+            var params = { w1: w1, b1: b1, w2: w2, b2: b2 };
+            var plus = Object.assign({}, params); plus[param] += eps;
+            var minus = Object.assign({}, params); minus[param] -= eps;
+            var lp = loss(plus.w1, plus.b1, plus.w2, plus.b2);
+            var lm = loss(minus.w1, minus.b1, minus.w2, minus.b2);
+            return (lp - lm) / (2 * eps);
+          }
+
+          document.getElementById('bp-verify-btn').addEventListener('click', function () {
+            var weightsText = document.getElementById('bp-weights-readout').textContent;
+            var m = weightsText.match(/w1=([\-\d.]+), b1=([\-\d.]+), w2=([\-\d.]+), b2=([\-\d.]+)/);
+            var w1 = parseFloat(m[1]), b1 = parseFloat(m[2]), w2 = parseFloat(m[3]), b2 = parseFloat(m[4]);
+
+            var analytical = analyticalGradients(w1, b1, w2, b2);
+            var tbody = document.querySelector('#bp-verify-table tbody');
+            tbody.innerHTML = '';
+            ['w1', 'b1', 'w2', 'b2'].forEach(function (p) {
+              var num = numericalGradient(p, w1, b1, w2, b2);
+              var diff = Math.abs(num - analytical[p]);
+              var match = diff < 0.0001;
+              var tr = document.createElement('tr');
+              tr.innerHTML = '<td>dL/d' + p + '</td><td>' + analytical[p].toFixed(6) + '</td><td>' +
+                num.toFixed(6) + '</td><td>' + (match ? '✓ match' : '✗ mismatch') + '</td>';
+              tbody.appendChild(tr);
+            });
+          });
+        })();
+      </script>
+
+      <p>
+        They match to five decimal places, every time, at any point
+        during training — solid evidence the chain-rule bookkeeping is
+        actually correct, not just plausible-looking. In practice,
+        nobody derives these formulas by hand for a real network with
+        millions of weights; frameworks like PyTorch (Chapter 6.9) do
+        exactly this chain-rule multiplication automatically, for every
+        parameter, every training step. What you just watched by hand
+        is precisely what that automation is doing under the hood.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Backpropagation computes the loss's gradient with respect to every weight by applying the chain rule (Chapter 2.9) backward through the network, one layer at a time.</li>
+          <li>Each step of backprop is a simple local derivative; the full gradient for a weight buried in an early layer is just those local derivatives multiplied together.</li>
+          <li>Gradient descent (Chapter 4.3) needs exactly these gradients to know which direction — and how far — to step each weight.</li>
+          <li>A backprop-computed gradient can be independently verified by nudging a weight and measuring the loss change directly — the two always agree.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-6-4">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What does backpropagation compute?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! The gradient of the loss with respect to every weight, via the chain rule, working backward.">The loss's gradient with respect to every weight in the network, by applying the chain rule backward from the output.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that's what gradient descent does with the gradients backprop produces.">The final updated values of every weight, directly.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that's the forward pass, which backprop relies on but doesn't replace.">The network's prediction for a new input.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. Why does a weight near the input need the chain rule, specifically?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Its effect on the loss passes through every layer between it and the output, so those effects must be multiplied together.">It only affects the loss indirectly, through every layer between it and the output — the chain rule is how those indirect effects combine.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — every weight in the network gets a gradient computed via backprop, not just early ones.">Weights near the input don't actually need a gradient at all.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the chain rule is exactly the same rule from Chapter 2.9, not a different or approximate one.">It's an approximation used only when exact computation would be too slow.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. How was backprop's gradient verified in the demo, without relying on the chain-rule derivation being trusted?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Nudging a weight and measuring the resulting change in loss is the direct definition of a derivative — an independent check.">By nudging each weight slightly and measuring how much the loss changed directly, then comparing that to backprop's answer.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo actually ran an independent numerical check, not a repeat of the same formula.">By running the exact same chain-rule formula a second time.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the two values were compared directly and shown to genuinely agree, not simply assumed correct.">There's no real way to verify a gradient; it just has to be trusted.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -851,6 +1192,7 @@
     initQuiz(document.getElementById('quiz-6-1'));
     initQuiz(document.getElementById('quiz-6-2'));
     initQuiz(document.getElementById('quiz-6-3'));
+    initQuiz(document.getElementById('quiz-6-4'));
     initProgressTracking();
   })();
 </script>
