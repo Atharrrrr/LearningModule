@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Part V — The Science of Evaluation | AI/ML From Zero to Job-Ready</title>
+<link rel="stylesheet" href="../assets/styles.css">
+<script src="../assets/components.js"></script>
+</head>
+<body>
+<div class="book-shell">
+
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">AI/ML: Zero to Job-Ready</div>
+    </div>
+    <div class="progress-bar-track"><div class="progress-bar-fill"></div></div>
+
+    <div class="sidebar-part">Part V — The Science of Evaluation</div>
+    <a class="nav-item" data-chapter-id="5-1" href="#chapter-5-1">
+      <span class="nav-dot"></span>5.1 Why Models Fail
+    </a>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>5.2 Train/Val/Test &amp; Cross-Validation</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>5.3 Metrics</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>5.4 Regularization</div>
+  </nav>
+
+  <main>
+
+    <section id="chapter-5-1">
+      <div class="chapter-eyebrow">Part V · Chapter 5.1</div>
+      <h1 class="chapter-title">Why Models Fail (Over/Underfitting, Bias-Variance)</h1>
+
+      <p class="lede">
+        A model can fail in exactly two directions: too simple, or too
+        clever for its own good. Both look fine on paper until you check
+        the wrong number.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🎯 Frame of reference</div>
+        <p>
+          Picture four archery targets. Target one: every arrow lands in
+          a tight cluster, but far from the bullseye — consistently
+          wrong in the same way. Target two: arrows scattered all over,
+          some close, some far — inconsistent, but averaging out near the
+          center. Target three: a tight cluster right on the bullseye —
+          the goal. Target four: scattered <em>and</em> off-center — the
+          worst case. Those first two targets are exactly the two ways a
+          model fails.
+        </p>
+      </div>
+
+      <h2>Too simple, or too clever</h2>
+      <script>initJargonBox("underfitting",
+        "When a model is too simple to capture the real pattern in the data, producing high error on both the training data and new data. Corresponds to \"high bias\" — consistently wrong in the same way, like arrows clustered far from the bullseye.");</script>
+      <script>initJargonBox("overfitting",
+        "When a model is too complex and memorizes the training data — including its noise and quirks — producing very low training error but poor performance on new, unseen data. Corresponds to \"high variance.\"");</script>
+      <p>
+        <span class="jargon-term">Underfitting</span> is target one: the
+        model is too simple to capture the real pattern, so it does
+        poorly on training data <em>and</em> new data alike — high bias.
+        <span class="jargon-term">Overfitting</span> is target two: the
+        model is complex enough to memorize the training data's every
+        quirk, including its noise, so it looks great on training data
+        but falls apart on anything new — high variance. Note: this
+        "bias" is a different concept from Chapter 3.7's data/model
+        fairness bias — same word, unrelated meaning.
+      </p>
+
+      <h2>The bias-variance tradeoff</h2>
+      <script>initJargonBox("bias-variance tradeoff",
+        "The tension between underfitting (high bias, too simple) and overfitting (high variance, too complex): reducing one often increases the other, and the goal is finding the sweet spot between them.");</script>
+      <p>
+        The <span class="jargon-term">bias-variance tradeoff</span> is
+        the tension between these two failure modes: making a model more
+        flexible reduces bias but raises variance, and vice versa. The
+        goal is the sweet spot in between — capturing the real pattern
+        without memorizing the noise.
+      </p>
+
+      <h2>Worked example: three fits, one new student</h2>
+      <p>
+        Back to the familiar seven students. A held-out student studied
+        1.5 hours and scored 54 — never shown to any of these three
+        fits. Watch what each one predicts for that student.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <svg id="fit-compare-chart" viewBox="0 0 500 320" overflow="hidden" role="img" aria-label="Three curves of differing complexity fit to the same seven points, compared on a held-out point">
+          <line x1="60" y1="280" x2="460" y2="280" stroke="#30363d" stroke-width="1"></line>
+          <line x1="60" y1="280" x2="60" y2="20" stroke="#30363d" stroke-width="1"></line>
+          <text x="260" y="305" text-anchor="middle" fill="#6e7681" font-size="12">Hours studied →</text>
+          <path id="fit-curve" fill="none" stroke-width="2.5"></path>
+          <g id="fit-points"></g>
+          <circle id="fit-testpoint" r="7" fill="none" stroke="#e6edf3" stroke-width="2.5"></circle>
+        </svg>
+
+        <div class="demo-actions" id="fit-buttons">
+          <div class="quiz-option" data-fit="under">Underfit (flat)</div>
+          <div class="quiz-option" data-fit="good">Good fit (line)</div>
+          <div class="quiz-option" data-fit="over">Overfit (wiggly curve)</div>
+        </div>
+        <p id="fit-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var points = [[1, 52], [2, 58], [3, 60], [4, 68], [5, 74], [6, 82], [7, 88]];
+          var testPoint = [1.5, 54];
+          var xMin = 0, xMax = 8, yMin = 0, yMax = 100;
+          var plotX0 = 60, plotX1 = 460, plotY0 = 280, plotY1 = 20;
+          function xPix(x) { return plotX0 + (x - xMin) / (xMax - xMin) * (plotX1 - plotX0); }
+          function yPix(y) { return plotY0 - (y - yMin) / (yMax - yMin) * (plotY0 - plotY1); }
+
+          var pointsGroup = document.getElementById('fit-points');
+          var curvePath = document.getElementById('fit-curve');
+          var testCircle = document.getElementById('fit-testpoint');
+          var readout = document.getElementById('fit-readout');
+          var buttons = document.querySelectorAll('#fit-buttons .quiz-option');
+
+          points.forEach(function (p) {
+            var c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            c.setAttribute('cx', xPix(p[0]));
+            c.setAttribute('cy', yPix(p[1]));
+            c.setAttribute('r', '5');
+            c.setAttribute('fill', '#bc8cff');
+            pointsGroup.appendChild(c);
+          });
+          testCircle.setAttribute('cx', xPix(testPoint[0]));
+          testCircle.setAttribute('cy', yPix(testPoint[1]));
+
+          function flatFn() {
+            var mean = points.reduce(function (s, p) { return s + p[1]; }, 0) / points.length;
+            return function () { return mean; };
+          }
+          function lineFn() {
+            return function (x) { return 6 * x + 45; };
+          }
+          function lagrangeFn() {
+            var xs = points.map(function (p) { return p[0]; });
+            var ys = points.map(function (p) { return p[1]; });
+            return function (x) {
+              var total = 0;
+              for (var i = 0; i < xs.length; i++) {
+                var term = ys[i];
+                for (var j = 0; j < xs.length; j++) {
+                  if (j !== i) term *= (x - xs[j]) / (xs[i] - xs[j]);
+                }
+                total += term;
+              }
+              return total;
+            };
+          }
+
+          function avgAbsError(fn) {
+            var total = 0;
+            points.forEach(function (p) { total += Math.abs(p[1] - fn(p[0])); });
+            return total / points.length;
+          }
+
+          function drawCurve(fn, color, xStart, xEnd) {
+            var pts = [];
+            for (var i = 0; i <= 80; i++) {
+              var x = xStart + (xEnd - xStart) * i / 80;
+              var y = fn(x);
+              pts.push(xPix(x).toFixed(1) + ',' + yPix(Math.max(-20, Math.min(140, y))).toFixed(1));
+            }
+            curvePath.setAttribute('d', 'M' + pts.join(' L'));
+            curvePath.setAttribute('stroke', color);
+          }
+
+          function select(kind) {
+            buttons.forEach(function (b) { b.classList.remove('correct'); });
+            document.querySelector('#fit-buttons .quiz-option[data-fit="' + kind + '"]').classList.add('correct');
+
+            var fn, color, label, xStart = 0.5, xEnd = 7.5;
+            if (kind === 'under') { fn = flatFn(); color = '#f85149'; label = 'Underfit (flat line)'; }
+            else if (kind === 'good') { fn = lineFn(); color = '#3fb950'; label = 'Good fit (straight line)'; }
+            else { fn = lagrangeFn(); color = '#ffa657'; label = 'Overfit (wiggly curve through every point)'; xStart = 0.8; xEnd = 7.2; }
+
+            drawCurve(fn, color, xStart, xEnd);
+            var trainErr = avgAbsError(fn);
+            var testPred = fn(testPoint[0]);
+            var testErr = Math.abs(testPred - testPoint[1]);
+
+            readout.textContent = label + ': average training error = ' + trainErr.toFixed(2) +
+              '. Prediction for the held-out student (1.5 hrs, true score 54): ' + testPred.toFixed(1) +
+              ' (off by ' + testErr.toFixed(1) + ').';
+          }
+
+          buttons.forEach(function (btn) {
+            btn.addEventListener('click', function () { select(btn.getAttribute('data-fit')); });
+          });
+
+          select('good');
+        })();
+      </script>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Underfitting: a model too simple to capture the real pattern — high error everywhere. High bias.</li>
+          <li>Overfitting: a model too complex, memorizing training data's noise — near-zero training error, poor performance on new data. High variance.</li>
+          <li>The bias-variance tradeoff: reducing one often increases the other; the goal is the sweet spot between them.</li>
+          <li>This chapter's "bias" is a different concept from Chapter 3.7's data/model fairness bias.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-5-1">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. A model has very low error on training data but performs poorly on new data it hasn't seen. What's happening?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! It memorized the training data's noise rather than learning the general pattern.">Overfitting — the model memorized the training data, including its noise.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — underfitting produces high error on training data too, not low error.">Underfitting — the model is too simple.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a big gap between training and new-data performance is a real warning sign, not normal.">The model is working exactly as intended; this is normal and desirable.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. In the archery-target analogy, what does "high bias, low variance" look like?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Consistent, but consistently wrong — that's underfitting.">A tight cluster of arrows, consistently landing far from the bullseye.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that scattered-but-centered pattern is closer to low bias, high variance.">Arrows scattered all over the target, on average near the bullseye.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that ideal outcome is low bias AND low variance, not high bias.">A single perfect bullseye hit, every time.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. How does this chapter's "bias" differ from Chapter 3.7's "bias"?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Same word, two genuinely different ideas in ML.">This chapter's bias is about a model being too simple to capture a pattern; Chapter 3.7's bias is about unfair skew in data or models.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — they're related only by sharing a name, not by meaning the same thing.">They're exactly the same concept, just mentioned twice.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that's backwards; Chapter 3.7's bias is about fairness, and this chapter's is the statistical one.">Chapter 3.7's bias is a statistical term, and this chapter's bias is about fairness.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+</div>
+
+<script>
+  (function () {
+    initQuiz(document.getElementById('quiz-5-1'));
+    initProgressTracking();
+  })();
+</script>
+</body>
+</html>

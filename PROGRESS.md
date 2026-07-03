@@ -1,11 +1,11 @@
 # Progress
 
 ## Status
-In progress. 34 of 98 chapters written. Parts I, II, III, and IV are all complete.
+In progress. 35 of 98 chapters written. Parts I, II, III, and IV are all complete.
 
 ## Next chapter due
-Part V, Chapter 5.1 — Why Models Fail (over/underfitting, bias-variance)
-(first chapter of parts/part-05-evaluation.html — create the file with a full sidebar TOC for Part V's 4 chapters)
+Part V, Chapter 5.2 — Train/Val/Test & Cross-Validation
+(parts/part-05-evaluation.html already exists — insert the new <section> before </main> and flip 5.2's sidebar entry from unwritten to live)
 
 ## Completed chapters
 - 0.1 How This Book Works — parts/part-00-before-we-begin.html
@@ -42,6 +42,7 @@ Part V, Chapter 5.1 — Why Models Fail (over/underfitting, bias-variance)
 - 4.7 SVM & Naive Bayes [D] — parts/part-04-classical-ml.html
 - 4.8 Clustering (K-means) — parts/part-04-classical-ml.html
 - 4.9 Dimensionality Reduction (PCA/t-SNE) — parts/part-04-classical-ml.html
+- 5.1 Why Models Fail (over/underfitting, bias-variance) — parts/part-05-evaluation.html
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in
