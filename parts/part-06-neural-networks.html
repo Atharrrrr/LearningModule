@@ -20,7 +20,9 @@
     <a class="nav-item" data-chapter-id="6-1" href="#chapter-6-1">
       <span class="nav-dot"></span>6.1 The Neuron
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>6.2 Stacking Neurons (Layers, MLPs)</div>
+    <a class="nav-item" data-chapter-id="6-2" href="#chapter-6-2">
+      <span class="nav-dot"></span>6.2 Stacking Neurons (Layers, MLPs)
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>6.3 Activation Functions</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>6.4 Backpropagation</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>6.5 Optimizers (SGD, Adam)</div>
@@ -246,12 +248,311 @@
 
     </section>
 
+    <section id="chapter-6-2">
+      <div class="chapter-eyebrow">Part VI · Chapter 6.2</div>
+      <h1 class="chapter-title">Stacking Neurons (Layers, MLPs)</h1>
+
+      <p class="lede">
+        A single neuron (Chapter 6.1) can only draw one straight
+        decision boundary — the same limitation logistic regression
+        always had. Some real problems simply can't be solved by any
+        straight line, no matter how you tune it. Stacking neurons
+        together is the fix.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🏢 Frame of reference</div>
+        <p>
+          A hiring committee with two rounds. In round one, several
+          interviewers each independently score the candidate on their
+          own narrow read of the evidence — one focused on technical
+          depth, one on communication. In round two, a hiring manager
+          doesn't see the raw resume at all — only the round-one
+          scores — and combines <em>those</em> into the final decision.
+          Each round can only draw simple conclusions on its own, but
+          stacked together, the committee can capture far more nuanced
+          patterns than any single interviewer could alone.
+        </p>
+      </div>
+
+      <h2>Layers: neurons feeding neurons</h2>
+      <script>initJargonBox("layer",
+        "A group of neurons that all receive the same inputs and compute their outputs independently, side by side. A neural network is built from a sequence of layers, each one feeding its outputs forward as the next layer's inputs.");</script>
+      <script>initJargonBox("multilayer perceptron (MLP)",
+        "A neural network built from an input layer, one or more hidden layers, and an output layer, with every neuron in one layer connected to every neuron in the next. The most basic neural network architecture.");</script>
+      <p>
+        A <span class="jargon-term">layer</span> is a group of neurons
+        that all look at the same inputs and compute their outputs side
+        by side. Feed the outputs of one layer in as the inputs to
+        another, and you get a <span class="jargon-term">multilayer
+        perceptron (MLP)</span>: an <strong>input layer</strong> (the
+        raw features), one or more <strong>hidden layers</strong>
+        (layers that sit between input and output, whose values you
+        never directly observe), and an <strong>output layer</strong>
+        (the final prediction). Chapter 6.1's single neuron was, in this
+        language, a network with no hidden layers at all — the input
+        connected straight to the output.
+      </p>
+
+      <h2>A problem one neuron genuinely cannot solve</h2>
+      <p>
+        Consider XOR ("exclusive or"): a function of two 0/1 inputs
+        that outputs 1 exactly when the inputs disagree.
+      </p>
+      <ul>
+        <li>(0, 0) → 0</li>
+        <li>(0, 1) → 1</li>
+        <li>(1, 0) → 1</li>
+        <li>(1, 1) → 0</li>
+      </ul>
+      <p>
+        Plotted as points, the two 0-labeled points and the two
+        1-labeled points sit on opposite corners of a square — no
+        single straight line can separate them. Try it below: the line
+        represents everything one neuron can express (Chapter 6.1's
+        weighted sum is a line; the sigmoid just decides which side is
+        "on").
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          Rotate and shift the line. Orange dots are label 0, blue dots
+          are label 1. Try to get all 4 on the correct side.
+        </p>
+
+        <svg id="xor-line-svg" viewBox="0 0 300 300" overflow="hidden" role="img" aria-label="Four points at the corners of a square, colored by XOR label, with a movable line">
+          <rect x="0" y="0" width="300" height="300" fill="none"></rect>
+          <line id="xor-line" x1="0" y1="0" x2="300" y2="300" stroke="var(--purple)" stroke-width="2"></line>
+          <circle id="xor-p00" cx="70" cy="230" r="10" fill="var(--orange)"></circle>
+          <circle id="xor-p01" cx="70" cy="70" r="10" fill="var(--blue)"></circle>
+          <circle id="xor-p10" cx="230" cy="230" r="10" fill="var(--blue)"></circle>
+          <circle id="xor-p11" cx="230" cy="70" r="10" fill="var(--orange)"></circle>
+        </svg>
+
+        <div class="demo-controls">
+          <label class="demo-slider-label">Line angle: <span id="xor-angle-value">0</span>°
+            <input type="range" id="xor-angle-slider" min="0" max="179" step="1" value="0">
+          </label>
+          <label class="demo-slider-label">Line offset: <span id="xor-offset-value">0.00</span>
+            <input type="range" id="xor-offset-slider" min="-0.70" max="0.70" step="0.02" value="0">
+          </label>
+        </div>
+        <p id="xor-line-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var points = [
+            { x: -0.5, y: -0.5, label: 0 },
+            { x: -0.5, y: 0.5, label: 1 },
+            { x: 0.5, y: -0.5, label: 1 },
+            { x: 0.5, y: 0.5, label: 0 }
+          ];
+          var center = 150, scale = 160;
+
+          function countCorrect(angleDeg, offset) {
+            var rad = angleDeg * Math.PI / 180;
+            var nx = -Math.sin(rad), ny = Math.cos(rad);
+            var countA = 0, countB = 0;
+            points.forEach(function (p) {
+              var side = (p.x * nx + p.y * ny + offset) >= 0 ? 1 : 0;
+              if (side === p.label) countA++; else countB++;
+            });
+            return Math.max(countA, countB);
+          }
+
+          var bestPossible = 0;
+          for (var deg = 0; deg < 180; deg += 1) {
+            for (var off = -0.7; off <= 0.7; off += 0.01) {
+              bestPossible = Math.max(bestPossible, countCorrect(deg, off));
+            }
+          }
+
+          var angleSlider = document.getElementById('xor-angle-slider');
+          var offsetSlider = document.getElementById('xor-offset-slider');
+          var angleValue = document.getElementById('xor-angle-value');
+          var offsetValue = document.getElementById('xor-offset-value');
+          var lineEl = document.getElementById('xor-line');
+          var readout = document.getElementById('xor-line-readout');
+
+          function render() {
+            var angleDeg = parseFloat(angleSlider.value);
+            var offset = parseFloat(offsetSlider.value);
+            angleValue.textContent = angleDeg.toFixed(0);
+            offsetValue.textContent = offset.toFixed(2);
+
+            var rad = angleDeg * Math.PI / 180;
+            var nx = -Math.sin(rad), ny = Math.cos(rad);
+            var tx = Math.cos(rad), ty = Math.sin(rad);
+            var qx = -offset * nx, qy = -offset * ny;
+            var L = 1.2;
+            var x1 = qx - L * tx, y1 = qy - L * ty;
+            var x2 = qx + L * tx, y2 = qy + L * ty;
+
+            lineEl.setAttribute('x1', center + x1 * scale);
+            lineEl.setAttribute('y1', center - y1 * scale);
+            lineEl.setAttribute('x2', center + x2 * scale);
+            lineEl.setAttribute('y2', center - y2 * scale);
+
+            var correct = countCorrect(angleDeg, offset);
+            readout.textContent = correct + ' of 4 correctly separated' +
+              (correct >= 4 ? ' — wait, that shouldn\'t be possible!' :
+                '. Best possible with any single line: ' + bestPossible + ' of 4.');
+          }
+
+          angleSlider.addEventListener('input', render);
+          offsetSlider.addEventListener('input', render);
+          render();
+        })();
+      </script>
+
+      <p>
+        No matter how you rotate or shift it, one straight line tops
+        out at 3 of the 4 points — XOR is <strong>not linearly
+        separable</strong>. This is exactly the limitation a single
+        neuron has. A hidden layer fixes it.
+      </p>
+
+      <h2>Two hidden neurons solve what one neuron can't</h2>
+      <p>
+        Here's a real, working 2-neuron hidden layer that solves XOR,
+        using ordinary sigmoid neurons (Chapter 6.1) — no cheating with
+        special functions. Toggle the inputs below and watch every
+        number get computed live, forward through both layers:
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <div class="demo-actions" id="xor-input-buttons">
+          <div class="quiz-option" data-x1="0" data-x2="0">x1=0, x2=0</div>
+          <div class="quiz-option" data-x1="0" data-x2="1">x1=0, x2=1</div>
+          <div class="quiz-option" data-x1="1" data-x2="0">x1=1, x2=0</div>
+          <div class="quiz-option" data-x1="1" data-x2="1">x1=1, x2=1</div>
+        </div>
+        <p id="xor-mlp-readout" class="demo-readout"></p>
+        <table class="data-table" id="xor-truth-table" style="margin-top:12px;">
+          <thead>
+            <tr><th>x1</th><th>x2</th><th>hidden h1</th><th>hidden h2</th><th>output</th><th>rounded</th><th>expected</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <script>
+        (function () {
+          function sigmoid(x) { return 1 / (1 + Math.exp(-x)); }
+
+          function forward(x1, x2) {
+            var h1 = sigmoid(10 * x1 + 10 * x2 - 5);
+            var h2 = sigmoid(-10 * x1 - 10 * x2 + 15);
+            var y = sigmoid(10 * h1 + 10 * h2 - 15);
+            return { h1: h1, h2: h2, y: y };
+          }
+
+          var buttons = document.querySelectorAll('#xor-input-buttons .quiz-option');
+          var readout = document.getElementById('xor-mlp-readout');
+          var tbody = document.querySelector('#xor-truth-table tbody');
+
+          function expectedXOR(x1, x2) { return (x1 !== x2) ? 1 : 0; }
+
+          function renderTable() {
+            tbody.innerHTML = '';
+            [[0, 0], [0, 1], [1, 0], [1, 1]].forEach(function (pair) {
+              var r = forward(pair[0], pair[1]);
+              var rounded = r.y >= 0.5 ? 1 : 0;
+              var expected = expectedXOR(pair[0], pair[1]);
+              var tr = document.createElement('tr');
+              tr.innerHTML = '<td>' + pair[0] + '</td><td>' + pair[1] + '</td>' +
+                '<td>' + r.h1.toFixed(3) + '</td><td>' + r.h2.toFixed(3) + '</td>' +
+                '<td>' + r.y.toFixed(3) + '</td><td>' + rounded + '</td><td>' + expected + '</td>';
+              tbody.appendChild(tr);
+            });
+          }
+
+          function select(x1, x2, btn) {
+            buttons.forEach(function (b) { b.classList.remove('correct'); });
+            btn.classList.add('correct');
+            var r = forward(x1, x2);
+            var rounded = r.y >= 0.5 ? 1 : 0;
+            readout.textContent = 'h1 = ' + r.h1.toFixed(3) + ', h2 = ' + r.h2.toFixed(3) +
+              '  →  output = ' + r.y.toFixed(3) + '  →  rounds to ' + rounded +
+              ' (expected XOR(' + x1 + ',' + x2 + ') = ' + expectedXOR(x1, x2) + ')';
+          }
+
+          buttons.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+              select(parseInt(btn.getAttribute('data-x1'), 10), parseInt(btn.getAttribute('data-x2'), 10), btn);
+            });
+          });
+
+          select(0, 0, buttons[0]);
+          renderTable();
+        })();
+      </script>
+
+      <p>
+        Every row in that table rounds to the correct XOR answer — a
+        problem no single neuron could touch, solved by two neurons
+        feeding a third. That's the entire point of depth: each layer
+        can only express something simple, but layers stacked on
+        layers compose into something far more expressive than any one
+        of them alone.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>A layer is a group of neurons computing side by side from the same inputs; an MLP chains an input layer, hidden layer(s), and an output layer together.</li>
+          <li>A single neuron can only express a straight-line (linear) decision boundary.</li>
+          <li>XOR is not linearly separable — no single line correctly classifies all 4 points, capping out at 3 of 4.</li>
+          <li>A hidden layer of just two neurons, feeding a third, solves XOR exactly — depth adds real expressive power a single neuron doesn't have.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-6-2">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What is a "hidden layer"?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! It sits between input and output, and its values aren't directly observed.">A layer of neurons between the input and output layers, whose values you never directly observe.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that's the output layer's job.">The final layer that produces the network's prediction.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that's the input layer.">The layer that holds the raw input features.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. Why can't a single neuron solve XOR?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! A single neuron can only draw a straight line, and XOR's two classes sit on opposite corners of a square, impossible to separate with any line.">A single neuron can only express a straight-line decision boundary, and XOR's labels aren't linearly separable.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — XOR only has 4 possible input combinations, which is a very small problem.">XOR requires too much training data for one neuron to handle.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the sigmoid function isn't the limitation here; the underlying weighted sum's straight-line boundary is.">The sigmoid function is mathematically incompatible with the XOR function.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. How did two hidden neurons manage to solve XOR?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Each hidden neuron draws its own simple line, and a third neuron combines their outputs into a boundary neither could express alone.">Each hidden neuron learned its own simple linear boundary, and a third neuron combined their two outputs into a more complex, non-linear boundary.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo used ordinary sigmoid neurons throughout, the same kind from Chapter 6.1.">By switching to a completely different, non-neuron computation just for this problem.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the network's weights are fixed for this example, not adjusted per input.">By memorizing all 4 answers directly, with no real computation involved.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
 <script>
   (function () {
     initQuiz(document.getElementById('quiz-6-1'));
+    initQuiz(document.getElementById('quiz-6-2'));
     initProgressTracking();
   })();
 </script>
