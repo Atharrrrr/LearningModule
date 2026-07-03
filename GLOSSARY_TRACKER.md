@@ -108,3 +108,5 @@ instead of repeating it.
 | weight initialization | 6.7 Vanishing Gradients & Initialization | The choice of starting values for a network's weights before training begins. Poorly scaled initial weights can cause signals to shrink toward zero or explode toward infinity as they pass through layers, even before any learning happens. |
 | dropout | 6.8 Dropout & BatchNorm | A regularization technique that randomly zeroes out a fraction of a layer's neurons on each training forward pass, forcing the network to avoid over-relying on any single neuron. All neurons are used at test time, with the kept activations rescaled during training to keep the expected total roughly unchanged. |
 | batch normalization (BatchNorm) | 6.8 Dropout & BatchNorm | A technique that renormalizes a layer's activations back to a stable, consistent scale after every layer, throughout training — not just at initialization. Directly counteracts the signal drift that causes vanishing or exploding gradients (Chapter 6.7). |
+
+Note: Chapter 6.9 (Building Your First Network, PyTorch) introduced no new jargon terms — it mapped Chapters 6.1–6.8's existing vocabulary onto real PyTorch code.

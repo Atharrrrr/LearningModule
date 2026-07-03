@@ -41,7 +41,9 @@
     <a class="nav-item" data-chapter-id="6-8" href="#chapter-6-8">
       <span class="nav-dot"></span>6.8 Dropout &amp; BatchNorm
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>6.9 Building Your First Network (PyTorch)</div>
+    <a class="nav-item" data-chapter-id="6-9" href="#chapter-6-9">
+      <span class="nav-dot"></span>6.9 Building Your First Network (PyTorch)
+    </a>
   </nav>
 
   <main>
@@ -2269,6 +2271,174 @@
 
     </section>
 
+    <section id="chapter-6-9">
+      <div class="chapter-eyebrow">Part VI · Chapter 6.9</div>
+      <h1 class="chapter-title">Building Your First Network (PyTorch)</h1>
+
+      <p class="lede">
+        Chapters 6.1 through 6.8 built a neural network by hand — every
+        weighted sum, every activation, every chain-rule multiplication,
+        every optimizer step, worked out explicitly. This chapter shows
+        the same ideas written the way they're actually used in
+        practice: as real, runnable PyTorch code.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🚗 Frame of reference</div>
+        <p>
+          Learning to drive a manual transmission before ever touching
+          an automatic. Once you've felt exactly what the clutch,
+          gearbox, and engine are doing together, driving an automatic
+          doesn't feel like magic — it feels like the car doing, very
+          fast and very reliably, precisely the mechanics you already
+          understand. PyTorch is the automatic transmission. Chapter
+          6.4's hand-derived chain rule is the clutch you now know how
+          to operate by feel.
+        </p>
+      </div>
+
+      <h2>The same network, in real code</h2>
+      <p>
+        Below is a small feedforward network — one hidden layer, one
+        output — built with PyTorch, plus the training loop that fits
+        it. Every piece maps directly onto a chapter from this Part.
+        Click a concept to see exactly where it lives in the code.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <div class="demo-actions" id="pt-concept-buttons">
+          <div class="quiz-option" data-region="neuron">Neurons &amp; Layers (6.1, 6.2)</div>
+          <div class="quiz-option" data-region="activation">Activation Functions (6.3)</div>
+          <div class="quiz-option" data-region="loss">Loss (4.3)</div>
+          <div class="quiz-option" data-region="backprop">Backpropagation (6.4)</div>
+          <div class="quiz-option" data-region="optimizer">Optimizer (6.5)</div>
+          <div class="quiz-option" data-region="epochbatch">Epochs &amp; Batches (6.6)</div>
+        </div>
+
+        <div class="panel" style="margin-top:12px;">
+          <div class="panel-label python">▸ Python — run in your own environment</div>
+          <pre class="python-block" id="pt-code"><span class="k">import</span> torch
+<span class="k">import</span> torch.nn <span class="k">as</span> nn
+
+<span class="k">class</span> <span class="f">TinyNet</span>(nn.Module):
+    <span class="k">def</span> <span class="f">__init__</span>(self):
+        super().__init__()
+<span class="code-line" data-region="neuron">        self.hidden = nn.Linear(<span class="n">2</span>, <span class="n">8</span>)   <span class="c"># neuron + hidden layer</span>
+        self.output = nn.Linear(<span class="n">8</span>, <span class="n">1</span>)   <span class="c"># output layer</span>
+</span><span class="code-line" data-region="activation">        self.relu = nn.ReLU()        <span class="c"># activation function</span>
+        self.sigmoid = nn.Sigmoid()  <span class="c"># activation function</span>
+</span>
+    <span class="k">def</span> <span class="f">forward</span>(self, x):
+<span class="code-line" data-region="activation">        x = self.relu(self.hidden(x))
+        x = self.sigmoid(self.output(x))
+</span>        <span class="k">return</span> x
+
+model = TinyNet()
+<span class="code-line" data-region="loss">loss_fn = nn.BCELoss()  <span class="c"># loss (Chapter 4.3)</span>
+</span><span class="code-line" data-region="optimizer">optimizer = torch.optim.Adam(model.parameters(), lr=<span class="n">0.01</span>)  <span class="c"># optimizer</span>
+</span>
+<span class="code-line" data-region="epochbatch">for epoch in range(<span class="n">20</span>):  <span class="c"># epoch (Chapter 6.6)</span>
+    for batch_x, batch_y in dataloader:  <span class="c"># batch (Chapter 6.6)</span>
+</span>        optimizer.zero_grad()
+        predictions = model(batch_x)
+<span class="code-line" data-region="loss">        loss = loss_fn(predictions, batch_y)
+</span><span class="code-line" data-region="backprop">        loss.backward()  <span class="c"># backprop, automatic</span>
+</span><span class="code-line" data-region="optimizer">        optimizer.step()  <span class="c"># gradient descent update</span>
+</span></pre>
+        </div>
+        <p id="pt-explain-readout" class="demo-readout">Click a concept above to highlight where it lives in the code.</p>
+      </div>
+
+      <script>
+        (function () {
+          var buttons = document.querySelectorAll('#pt-concept-buttons .quiz-option');
+          var explain = document.getElementById('pt-explain-readout');
+
+          var explanations = {
+            neuron: 'nn.Linear(2, 8) is a full layer of 8 neurons at once — each one a weighted sum plus bias over its inputs, exactly Chapter 6.1\'s neuron, Chapter 6.2\'s layer.',
+            activation: 'nn.ReLU() and nn.Sigmoid() are Chapter 6.3\'s activation functions, applied right after each layer\'s weighted sum, in forward().',
+            loss: 'nn.BCELoss() computes the same kind of loss number Chapter 4.3 introduced — how wrong the current predictions are.',
+            backprop: 'loss.backward() runs the entire chain-rule computation from Chapter 6.4 automatically, for every weight in the network, in one line.',
+            optimizer: 'torch.optim.Adam(...) and optimizer.step() are Chapter 6.5\'s optimizer, turning backprop\'s gradients into actual weight updates.',
+            epochbatch: 'The nested for-loops are Chapter 6.6\'s epochs (outer loop, full passes through the data) and batches (inner loop, one gradient step\'s worth of data each).'
+          };
+
+          buttons.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+              var region = btn.getAttribute('data-region');
+              buttons.forEach(function (b) { b.classList.remove('correct'); });
+              btn.classList.add('correct');
+
+              document.querySelectorAll('#pt-code .code-line').forEach(function (line) {
+                line.classList.toggle('active', line.getAttribute('data-region') === region);
+              });
+
+              explain.textContent = explanations[region];
+            });
+          });
+        })();
+      </script>
+
+      <p>
+        Two things from this Part are notably absent from the code
+        above: weight initialization (Chapter 6.7) and dropout/BatchNorm
+        (Chapter 6.8). That's not because they're unimportant — PyTorch
+        applies sensible default initialization automatically, and
+        adding dropout or BatchNorm is as simple as inserting
+        <span class="mono">nn.Dropout(0.5)</span> or
+        <span class="mono">nn.BatchNorm1d(8)</span> into the layer stack
+        above. The concepts don't disappear in real code; they just
+        become one more line, because you now understand exactly what
+        that line is doing underneath.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>A PyTorch nn.Module defines a network's layers in __init__ and how data flows through them in forward() — the exact same neurons, layers, and activation functions from Chapters 6.1–6.3.</li>
+          <li>loss.backward() performs Chapter 6.4's entire chain-rule computation automatically, for every weight, in one line.</li>
+          <li>An optimizer object (Chapter 6.5) and its .step() method turn those gradients into actual parameter updates.</li>
+          <li>A standard training loop is exactly Chapter 6.6's epochs and batches, nested: an outer loop over full passes through the data, an inner loop over one batch's worth at a time.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-6-9">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What does loss.backward() do?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! It's Chapter 6.4's entire hand-derived process, automated.">Automatically computes the gradient of the loss with respect to every weight in the network, via backpropagation.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that's optimizer.step()'s job, which happens afterward.">Directly updates every weight in the network.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that's what the forward() method and the loss function itself compute.">Computes the network's prediction for the current input.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. In the training loop, what does the outer for-loop (over epochs) represent?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Each full pass through the training data is one epoch (Chapter 6.6).">One complete pass through the entire training dataset, repeated multiple times.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that's the inner loop's job, iterating over one batch at a time.">Iterating over one small chunk of data at a time.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the outer loop doesn't touch individual weights directly; that's what the optimizer and backward pass do.">Adjusting a single specific weight in the network.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. Why aren't weight initialization and dropout/BatchNorm explicitly shown as separate steps in the code?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! PyTorch handles sensible defaults automatically, and dropout/BatchNorm are just additional layers you can insert.">PyTorch applies reasonable default initialization automatically, and dropout/BatchNorm can simply be added as additional layers when needed.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the chapter explicitly explains how each one maps onto real PyTorch code.">Those concepts don't actually apply to real PyTorch networks.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — PyTorch fully supports both initialization control and dropout/BatchNorm layers.">PyTorch doesn't support either of those features at all.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -2282,6 +2452,7 @@
     initQuiz(document.getElementById('quiz-6-6'));
     initQuiz(document.getElementById('quiz-6-7'));
     initQuiz(document.getElementById('quiz-6-8'));
+    initQuiz(document.getElementById('quiz-6-9'));
     initProgressTracking();
   })();
 </script>

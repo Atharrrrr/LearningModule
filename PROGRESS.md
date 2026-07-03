@@ -1,14 +1,18 @@
 # Progress
 
 ## Status
-In progress. 46 of 98 chapters written. Parts I, II, III, IV, and V are all complete.
+In progress. 47 of 98 chapters written. Parts I, II, III, IV, V, and VI
+are all complete.
 
 ## Next chapter due
-Part VI, Chapter 6.9 — Building Your First Network (PyTorch)
-(parts/part-06-neural-networks.html already exists — insert the new
-<section> before </main> and flip 6.9's sidebar entry from unwritten to
-live. This is the LAST chapter of Part VI — completing it finishes the
-Part. Not an anchor chapter.)
+Part VII — Teaching Computers to See, Chapter 7.1 — Images Are Just Grids
+of Numbers
+(parts/part-07-teaching-computers-to-see.html does not exist yet — create
+it with a full 8-chapter sidebar TOC per CURRICULUM.md, only 7.1 live, the
+rest "unwritten," following the same template as prior Part files. Note:
+7.7 Meet YOLO and 7.8 Meet SuperPoint are anchor chapters — must each be
+written alone, one per turn. A batch reaching 7.7 should stop right
+before it, after 7.6.)
 
 ## Completed chapters
 - 0.1 How This Book Works — parts/part-00-before-we-begin.html
@@ -57,6 +61,7 @@ Part. Not an anchor chapter.)
 - 6.6 The Training Toolbox — parts/part-06-neural-networks.html
 - 6.7 Vanishing Gradients & Initialization — parts/part-06-neural-networks.html
 - 6.8 Dropout & BatchNorm — parts/part-06-neural-networks.html
+- 6.9 Building Your First Network (PyTorch) — parts/part-06-neural-networks.html
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in
