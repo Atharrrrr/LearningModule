@@ -1,14 +1,14 @@
 # Progress
 
 ## Status
-In progress. 40 of 98 chapters written. Parts I, II, III, IV, and V are all complete.
+In progress. 41 of 98 chapters written. Parts I, II, III, IV, and V are all complete.
 
 ## Next chapter due
-Part VI, Chapter 6.3 — Activation Functions
+Part VI, Chapter 6.4 — Backpropagation
 (parts/part-06-neural-networks.html already exists — insert the new
-<section> before </main> and flip 6.3's sidebar entry from unwritten to
-live. Note: 6.4 Backpropagation, right after this one, is an anchor
-chapter — must be written alone, so any batch should stop after 6.3.)
+<section> before </main> and flip 6.4's sidebar entry from unwritten to
+live. IMPORTANT: 6.4 is an anchor chapter (see CLAUDE.md) — it must be
+written ALONE, one per turn, no matter what batch size is requested.)
 
 ## Completed chapters
 - 0.1 How This Book Works — parts/part-00-before-we-begin.html
@@ -51,6 +51,7 @@ chapter — must be written alone, so any batch should stop after 6.3.)
 - 5.4 Regularization — parts/part-05-evaluation.html
 - 6.1 The Neuron — parts/part-06-neural-networks.html
 - 6.2 Stacking Neurons (Layers, MLPs) — parts/part-06-neural-networks.html
+- 6.3 Activation Functions — parts/part-06-neural-networks.html
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in

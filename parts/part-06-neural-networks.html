@@ -23,7 +23,9 @@
     <a class="nav-item" data-chapter-id="6-2" href="#chapter-6-2">
       <span class="nav-dot"></span>6.2 Stacking Neurons (Layers, MLPs)
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>6.3 Activation Functions</div>
+    <a class="nav-item" data-chapter-id="6-3" href="#chapter-6-3">
+      <span class="nav-dot"></span>6.3 Activation Functions
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>6.4 Backpropagation</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>6.5 Optimizers (SGD, Adam)</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>6.6 The Training Toolbox</div>
@@ -546,6 +548,301 @@
 
     </section>
 
+    <section id="chapter-6-3">
+      <div class="chapter-eyebrow">Part VI · Chapter 6.3</div>
+      <h1 class="chapter-title">Activation Functions</h1>
+
+      <p class="lede">
+        Chapter 6.2 stacked neurons to solve XOR — but that trick only
+        works because of one small piece sitting inside every neuron.
+        Remove it, and stacking layers turns out to buy you nothing at
+        all.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🚰 Frame of reference</div>
+        <p>
+          Different kinds of valves in a pipe. An on/off valve either
+          blocks everything or lets everything through — abrupt, all or
+          nothing. A pressure-relief valve stays fully shut until
+          pressure crosses a threshold, then opens in proportion beyond
+          that point. A dimmer-style valve smoothly increases flow
+          across its whole range, but caps out at a maximum no matter
+          how hard you push. Every activation function behaves like one
+          of these valve types, shaping how strongly a neuron's signal
+          passes forward to the next layer.
+        </p>
+      </div>
+
+      <h2>Why the activation function isn't optional</h2>
+      <script>initJargonBox("activation function",
+        "The function a neuron applies to its weighted sum plus bias before passing the result onward. Without a non-linear activation function, stacking any number of layers collapses down to the exact same thing as one single layer.");</script>
+      <p>
+        Every neuron so far has ended with a squash through an
+        <span class="jargon-term">activation function</span> — Chapter
+        6.1 used <span class="jargon-term">sigmoid function</span>. It's
+        tempting to think of that step as a finishing touch. It's
+        actually the entire reason depth helps at all. Composing two
+        purely linear steps together always produces something that's
+        still just linear — no amount of stacking adds any real power.
+      </p>
+      <p>
+        Concretely: suppose one layer computes
+        <span class="mono">y = 2x + 3</span>, and a second layer takes
+        that output and computes <span class="mono">z = 4y − 1</span>.
+        Substituting: <span class="mono">z = 4(2x + 3) − 1 = 8x + 11</span>
+        — a single straight line, exactly as expressible by one layer
+        alone. Insert a non-linear activation function like ReLU between
+        the two layers, and that collapse no longer happens — the
+        composed function actually bends.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          Two layers (y = 2x + 3, then z = 4y − 1) computed two ways:
+          with nothing between them, and with ReLU between them. Drag x
+          and watch where the curves agree — and where they don't.
+        </p>
+
+        <svg id="collapse-svg" viewBox="0 0 500 320" overflow="hidden" role="img" aria-label="Two curves comparing a composed linear function against the same composition with ReLU inserted between the layers">
+          <line x1="60" y1="280" x2="460" y2="280" stroke="#30363d" stroke-width="1"></line>
+          <line x1="60" y1="280" x2="60" y2="20" stroke="#30363d" stroke-width="1"></line>
+          <text x="260" y="305" text-anchor="middle" fill="#6e7681" font-size="12">x →</text>
+          <path id="collapse-linear-path" fill="none" stroke="#6e7681" stroke-width="2" stroke-dasharray="5,4"></path>
+          <path id="collapse-relu-path" fill="none" stroke="var(--purple)" stroke-width="2.5"></path>
+          <line id="collapse-marker" x1="0" y1="20" x2="0" y2="280" stroke="var(--orange)" stroke-width="1" stroke-dasharray="3,3"></line>
+          <circle id="collapse-dot-linear" r="5" fill="#6e7681"></circle>
+          <circle id="collapse-dot-relu" r="5" fill="var(--purple)"></circle>
+        </svg>
+        <p style="font-size:12.5px; color:#6e7681; margin-top:-4px;">
+          Dashed gray = no activation function (always a straight line). Solid purple = ReLU between the layers.
+        </p>
+
+        <div class="demo-controls">
+          <label class="demo-slider-label">x: <span id="collapse-x-value">0.0</span>
+            <input type="range" id="collapse-x-slider" min="-3" max="1.5" step="0.05" value="0">
+          </label>
+        </div>
+        <p id="collapse-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var xMin = -3, xMax = 1.5, yMin = -15, yMax = 25;
+          var left = 60, right = 460, top = 20, bottom = 280;
+
+          function xScale(x) { return left + (x - xMin) / (xMax - xMin) * (right - left); }
+          function yScale(y) { return bottom - (y - yMin) / (yMax - yMin) * (bottom - top); }
+
+          function hiddenRaw(x) { return 2 * x + 3; }
+          function composedLinear(x) { return 4 * hiddenRaw(x) - 1; }
+          function composedRelu(x) { return 4 * Math.max(0, hiddenRaw(x)) - 1; }
+
+          function buildPath(fn) {
+            var d = '';
+            for (var i = 0; i <= 80; i++) {
+              var x = xMin + (xMax - xMin) * i / 80;
+              var px = xScale(x), py = yScale(fn(x));
+              d += (i === 0 ? 'M' : 'L') + px + ',' + py + ' ';
+            }
+            return d;
+          }
+
+          document.getElementById('collapse-linear-path').setAttribute('d', buildPath(composedLinear));
+          document.getElementById('collapse-relu-path').setAttribute('d', buildPath(composedRelu));
+
+          var slider = document.getElementById('collapse-x-slider');
+          var xValue = document.getElementById('collapse-x-value');
+          var readout = document.getElementById('collapse-readout');
+          var marker = document.getElementById('collapse-marker');
+          var dotLinear = document.getElementById('collapse-dot-linear');
+          var dotRelu = document.getElementById('collapse-dot-relu');
+
+          function render() {
+            var x = parseFloat(slider.value);
+            xValue.textContent = x.toFixed(2);
+
+            var zLinear = composedLinear(x);
+            var zRelu = composedRelu(x);
+            var px = xScale(x);
+            marker.setAttribute('x1', px); marker.setAttribute('x2', px);
+            dotLinear.setAttribute('cx', px); dotLinear.setAttribute('cy', yScale(zLinear));
+            dotRelu.setAttribute('cx', px); dotRelu.setAttribute('cy', yScale(zRelu));
+
+            var same = Math.abs(zLinear - zRelu) < 0.001;
+            readout.textContent = 'Without activation: ' + zLinear.toFixed(2) +
+              '   With ReLU: ' + zRelu.toFixed(2) +
+              (same ? '  — identical here.' : '  — ReLU zeroed the hidden layer, flattening the result.');
+          }
+
+          slider.addEventListener('input', render);
+          render();
+        })();
+      </script>
+
+      <p>
+        For x ≥ −1.5 the hidden layer's raw value is already positive,
+        so ReLU changes nothing and both curves agree exactly. Below
+        that point, ReLU clamps the hidden layer to zero, and the
+        composed output goes flat instead of continuing to fall — a
+        bend a purely linear stack could never produce. That bend is
+        where all of a network's real expressive power comes from.
+      </p>
+
+      <h2>Three common shapes</h2>
+      <p>
+        Chapter 6.1 already used <span class="jargon-term">sigmoid function</span>
+        (Chapter 4.2): squashes anything into (0, 1), useful when the
+        output should read as a probability.
+      </p>
+      <script>initJargonBox("tanh (hyperbolic tangent)",
+        "An S-shaped activation function similar to sigmoid, but squashing its input into (−1, 1) instead of (0, 1) — zero-centered, which often makes it easier for a network to learn with.");</script>
+      <script>initJargonBox("ReLU (Rectified Linear Unit)",
+        "An activation function that outputs 0 for any negative input, and passes positive input straight through unchanged: ReLU(x) = max(0, x). Cheap to compute and the most widely used activation function in modern deep networks.");</script>
+      <p>
+        <span class="jargon-term">tanh</span> is sigmoid's zero-centered
+        cousin, squashing into (−1, 1) instead of (0, 1).
+        <span class="jargon-term">ReLU</span> is the odd one out: it
+        doesn't squash at all — negative inputs become exactly 0,
+        positive inputs pass through completely unchanged. That simplicity
+        is exactly why it's the default choice in most modern networks:
+        it's nearly free to compute, and (unlike sigmoid and tanh) it
+        doesn't flatten out and stop responding for large positive inputs.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          Drag x and watch all three activation functions respond at once.
+        </p>
+
+        <svg id="act-svg" viewBox="0 0 500 320" overflow="hidden" role="img" aria-label="Sigmoid, tanh, and ReLU activation function curves plotted together">
+          <line x1="60" y1="245" x2="435" y2="245" stroke="#30363d" stroke-width="1"></line>
+          <line x1="245" y1="280" x2="245" y2="20" stroke="#30363d" stroke-width="1"></line>
+          <text x="245" y="305" text-anchor="middle" fill="#6e7681" font-size="12">x →</text>
+          <path id="act-sigmoid-path" fill="none" stroke="var(--blue)" stroke-width="2"></path>
+          <path id="act-tanh-path" fill="none" stroke="var(--orange)" stroke-width="2"></path>
+          <path id="act-relu-path" fill="none" stroke="var(--green)" stroke-width="2"></path>
+          <line id="act-marker" x1="0" y1="20" x2="0" y2="280" stroke="#6e7681" stroke-width="1" stroke-dasharray="3,3"></line>
+          <circle id="act-dot-sigmoid" r="5" fill="var(--blue)"></circle>
+          <circle id="act-dot-tanh" r="5" fill="var(--orange)"></circle>
+          <circle id="act-dot-relu" r="5" fill="var(--green)"></circle>
+          <text x="440" y="130" fill="var(--blue)" font-size="11">sigmoid</text>
+          <text x="440" y="175" fill="var(--orange)" font-size="11">tanh</text>
+          <text x="440" y="60" fill="var(--green)" font-size="11">ReLU</text>
+        </svg>
+
+        <div class="demo-controls">
+          <label class="demo-slider-label">x: <span id="act-x-value">0.0</span>
+            <input type="range" id="act-x-slider" min="-4" max="4" step="0.1" value="0">
+          </label>
+        </div>
+        <p id="act-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var xMin = -4, xMax = 4, yMin = -1.5, yMax = 4;
+          var left = 60, right = 435, top = 20, bottom = 280;
+
+          function xScale(x) { return left + (x - xMin) / (xMax - xMin) * (right - left); }
+          function yScale(y) { return bottom - (y - yMin) / (yMax - yMin) * (bottom - top); }
+
+          function sigmoid(x) { return 1 / (1 + Math.exp(-x)); }
+          function tanhFn(x) { return Math.tanh(x); }
+          function relu(x) { return Math.max(0, x); }
+
+          function buildPath(fn) {
+            var d = '';
+            for (var i = 0; i <= 80; i++) {
+              var x = xMin + (xMax - xMin) * i / 80;
+              var y = Math.min(fn(x), yMax);
+              var px = xScale(x), py = yScale(y);
+              d += (i === 0 ? 'M' : 'L') + px + ',' + py + ' ';
+            }
+            return d;
+          }
+
+          document.getElementById('act-sigmoid-path').setAttribute('d', buildPath(sigmoid));
+          document.getElementById('act-tanh-path').setAttribute('d', buildPath(tanhFn));
+          document.getElementById('act-relu-path').setAttribute('d', buildPath(relu));
+
+          var slider = document.getElementById('act-x-slider');
+          var xValue = document.getElementById('act-x-value');
+          var readout = document.getElementById('act-readout');
+          var marker = document.getElementById('act-marker');
+          var dotSigmoid = document.getElementById('act-dot-sigmoid');
+          var dotTanh = document.getElementById('act-dot-tanh');
+          var dotRelu = document.getElementById('act-dot-relu');
+
+          function render() {
+            var x = parseFloat(slider.value);
+            xValue.textContent = x.toFixed(1);
+
+            var s = sigmoid(x), t = tanhFn(x), r = relu(x);
+            var px = xScale(x);
+            marker.setAttribute('x1', px); marker.setAttribute('x2', px);
+            dotSigmoid.setAttribute('cx', px); dotSigmoid.setAttribute('cy', yScale(Math.min(s, yMax)));
+            dotTanh.setAttribute('cx', px); dotTanh.setAttribute('cy', yScale(Math.min(t, yMax)));
+            dotRelu.setAttribute('cx', px); dotRelu.setAttribute('cy', yScale(Math.min(r, yMax)));
+
+            readout.textContent = 'sigmoid(' + x.toFixed(1) + ') = ' + s.toFixed(3) +
+              '   tanh(' + x.toFixed(1) + ') = ' + t.toFixed(3) +
+              '   ReLU(' + x.toFixed(1) + ') = ' + r.toFixed(3);
+          }
+
+          slider.addEventListener('input', render);
+          render();
+        })();
+      </script>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Without a non-linear activation function, stacking any number of layers is mathematically identical to a single layer — depth buys nothing.</li>
+          <li>An activation function is what lets a network compose simple pieces into something genuinely more expressive than any one layer alone.</li>
+          <li>Sigmoid squashes to (0, 1); tanh squashes to (−1, 1), zero-centered; ReLU passes positive values through unchanged and zeroes out negative ones.</li>
+          <li>ReLU is the default in most modern networks — cheap to compute and doesn't flatten out for large positive inputs the way sigmoid and tanh do.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-6-3">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What happens if you stack multiple layers with no activation function between them?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Composing linear functions always produces another linear function — no matter how many layers.">The whole stack collapses to being mathematically equivalent to one single linear layer.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — without a non-linear activation function, extra layers don't add any expressive power at all.">Each additional layer adds real expressive power, activation function or not.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the network would still compute a well-defined output; it's just not any more expressive than one layer.">The network becomes impossible to compute.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. What's different about ReLU compared to sigmoid and tanh?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! ReLU doesn't squash large positive inputs the way sigmoid and tanh do.">It doesn't squash its output into a bounded range — positive inputs pass straight through unchanged.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — ReLU is actually simpler and cheaper to compute than sigmoid or tanh, which both involve exponentials.">It's far more expensive to compute than sigmoid or tanh.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — ReLU is a real, precisely defined function: max(0, x).">It isn't a real mathematical function, just a rough approximation.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. In the two-layer demo (y = 2x + 3, then z = 4y − 1), why did the "no activation" and "with ReLU" curves match for x ≥ −1.5 but diverge below it?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! ReLU only changes anything when its input would have been negative.">Below x = −1.5, the hidden layer's raw value goes negative, and ReLU clamps it to 0 — above that point, the raw value is already positive, so ReLU leaves it untouched.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the two formulas (with and without ReLU) are fixed for this demo; the slider only changes x.">The slider was actually changing the weights, not just x.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the divergence is a real, predictable consequence of how ReLU is defined, not a rendering glitch.">It's a rendering coincidence with no real mathematical explanation.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -553,6 +850,7 @@
   (function () {
     initQuiz(document.getElementById('quiz-6-1'));
     initQuiz(document.getElementById('quiz-6-2'));
+    initQuiz(document.getElementById('quiz-6-3'));
     initProgressTracking();
   })();
 </script>
