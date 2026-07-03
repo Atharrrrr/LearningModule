@@ -26,7 +26,9 @@
     <a class="nav-item" data-chapter-id="5-3" href="#chapter-5-3">
       <span class="nav-dot"></span>5.3 Metrics
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>5.4 Regularization</div>
+    <a class="nav-item" data-chapter-id="5-4" href="#chapter-5-4">
+      <span class="nav-dot"></span>5.4 Regularization
+    </a>
   </nav>
 
   <main>
@@ -795,6 +797,224 @@
 
     </section>
 
+    <section id="chapter-5-4">
+      <div class="chapter-eyebrow">Part V · Chapter 5.4</div>
+      <h1 class="chapter-title">Regularization</h1>
+
+      <p class="lede">
+        Chapter 5.1 showed overfitting happens when a model gets too
+        clever — memorizing noise instead of learning the real pattern.
+        Regularization is the training-time fix: a built-in penalty for
+        cleverness that isn't earning its keep.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🪒 Frame of reference</div>
+        <p>
+          Occam's razor: when two explanations fit the same observations
+          equally well, prefer the simpler one — extra complexity that
+          doesn't buy extra explanatory power is more likely to be
+          chasing noise than capturing something real. Regularization is
+          Occam's razor written directly into a training algorithm: it
+          penalizes unnecessary complexity (large weights) unless the
+          data truly justifies it.
+        </p>
+      </div>
+
+      <h2>A penalty for weights that aren't earning their keep</h2>
+      <script>initJargonBox("regularization",
+        "A technique that adds a penalty for large weights to the training process, discouraging a model from leaning too heavily on any one feature — a direct, practical defense against the overfitting described in Chapter 5.1.");</script>
+      <p>
+        Chapter 4.1 built a house-price model from real features:
+        <span class="jargon-term">weight</span>-carrying inputs like
+        square footage and age. But with enough training data, almost
+        any feature — even a meaningless one — shows some tiny spurious
+        correlation with the target by pure chance, and an unregularized
+        model will happily assign it a nonzero weight anyway.
+        <span class="jargon-term">Regularization</span> fixes this by
+        penalizing large weights during training, so a feature only
+        keeps a sizable weight if it's actually pulling its weight.
+      </p>
+
+      <script>initJargonBox("L1/L2 regularization",
+        "Two common penalty shapes: L1 penalizes the sum of the absolute values of the weights and tends to push unhelpful weights all the way to zero. L2 penalizes the sum of the squared weights and tends to shrink every weight somewhat without necessarily zeroing any out.");</script>
+      <p>
+        The two standard penalty shapes are <span class="jargon-term">L1/L2 regularization</span>.
+        L1 is the more dramatic of the two — it can zero out a weight
+        entirely, effectively removing that feature from the model. L2
+        is gentler, shrinking every weight toward zero without usually
+        eliminating any outright. The demo below uses an L1-style rule
+        (subtract a fixed penalty, floor at zero — a real technique
+        called soft-thresholding) so you can watch weights actually hit
+        zero.
+      </p>
+
+      <h2>Worked example: a red herring in the housing model</h2>
+      <p>
+        Suppose four features go into training a house-price model:
+        square footage, number of bedrooms, house age, and — thrown in
+        as a red herring — the number of vowels in the street name.
+        Before any regularization, imagine training assigned these raw
+        importances: sqft = 85, bedrooms = 60, age = 45, vowels = 12.
+        Vowels-in-street-name is obvious nonsense, but it still has
+        <em>some</em> nonzero importance, purely from noise.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          Increase the regularization strength (λ) and watch each
+          weight shrink toward zero — the least useful feature first.
+        </p>
+
+        <div class="demo-controls">
+          <label class="demo-slider-label">Regularization strength (λ): <span id="reg-lambda-value">0.0</span>
+            <input type="range" id="reg-lambda-slider" min="0" max="10" step="0.1" value="0">
+          </label>
+        </div>
+
+        <div id="reg-bars" style="display:flex; flex-direction:column; gap:10px; margin:16px 0;"></div>
+        <p id="reg-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var features = [
+            { key: 'sqft', label: 'Square footage', importance: 85 },
+            { key: 'bedrooms', label: 'Bedrooms', importance: 60 },
+            { key: 'age', label: 'House age', importance: 45 },
+            { key: 'vowels', label: 'Vowels in street name (irrelevant)', importance: 12 }
+          ];
+          var maxImportance = 85;
+
+          var barsWrap = document.getElementById('reg-bars');
+          var slider = document.getElementById('reg-lambda-slider');
+          var lambdaValue = document.getElementById('reg-lambda-value');
+          var readout = document.getElementById('reg-readout');
+
+          var rows = features.map(function (f) {
+            var row = document.createElement('div');
+
+            var labelEl = document.createElement('div');
+            labelEl.style.fontSize = '13px';
+            labelEl.style.color = '#8b949e';
+            labelEl.style.marginBottom = '4px';
+            row.appendChild(labelEl);
+
+            var track = document.createElement('div');
+            track.style.position = 'relative';
+            track.style.height = '18px';
+            track.style.background = '#161b22';
+            track.style.border = '1px solid #30363d';
+            track.style.borderRadius = '4px';
+            track.style.overflow = 'hidden';
+
+            var fill = document.createElement('div');
+            fill.style.position = 'absolute';
+            fill.style.left = '0';
+            fill.style.top = '0';
+            fill.style.bottom = '0';
+            fill.style.background = f.key === 'vowels' ? 'var(--red)' : 'var(--purple, #bc8cff)';
+            track.appendChild(fill);
+            row.appendChild(track);
+
+            barsWrap.appendChild(row);
+            return { feature: f, labelEl: labelEl, fill: fill };
+          });
+
+          function shrink(importance, lambda) {
+            return Math.max(0, importance - lambda * 10);
+          }
+
+          function render() {
+            var lambda = parseFloat(slider.value);
+            lambdaValue.textContent = lambda.toFixed(1);
+
+            var zeroed = [];
+            rows.forEach(function (r) {
+              var shrunk = shrink(r.feature.importance, lambda);
+              var pct = (shrunk / maxImportance) * 100;
+              r.fill.style.width = pct + '%';
+              r.fill.style.background = shrunk === 0 ? '#484f58' : (r.feature.key === 'vowels' ? 'var(--red)' : '#bc8cff');
+              r.labelEl.textContent = r.feature.label + ': ' + r.feature.importance + ' → ' + Math.round(shrunk);
+              if (shrunk === 0) zeroed.push(r.feature.key);
+            });
+
+            var msg;
+            if (zeroed.length === 0) {
+              msg = 'No regularization — every weight, including the irrelevant one, survives untouched.';
+            } else if (zeroed.length === 1 && zeroed[0] === 'vowels') {
+              msg = 'The irrelevant feature (vowels in street name) has been zeroed out — regularization noticed it wasn\'t pulling its weight.';
+            } else if (zeroed.length === features.length) {
+              msg = 'Every weight is now zero — the model degenerates into predicting the same price no matter what. This is underfitting (Chapter 5.1) taken to its extreme.';
+            } else {
+              msg = 'λ is now zeroing out real signal too, not just the irrelevant feature — a sign it\'s set too high.';
+            }
+            readout.textContent = msg;
+          }
+
+          slider.addEventListener('input', render);
+          render();
+        })();
+      </script>
+
+      <p>
+        Notice the order: the irrelevant feature (vowels) hits zero
+        first, since it started with the least real signal to defend.
+        Push λ far enough and even genuinely useful features — square
+        footage, the strongest real signal — get zeroed out too. That's
+        not a bug; it's the same over/underfitting tradeoff from
+        Chapter 5.1, now with a dial. Too little regularization invites
+        overfitting; too much causes underfitting. Choosing λ is itself
+        a job for the validation set from Chapter 5.2.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Regularization adds a penalty for large weights during training, discouraging the model from leaning too heavily on any one feature.</li>
+          <li>L1 regularization can zero out unhelpful weights entirely; L2 shrinks every weight somewhat without usually eliminating any.</li>
+          <li>Irrelevant features, carrying little real signal, tend to get zeroed out first as regularization strength increases.</li>
+          <li>The regularization strength is a dial on the bias-variance tradeoff (Chapter 5.1): too little risks overfitting, too much causes underfitting.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-5-4">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What is the purpose of regularization?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! A built-in penalty for weights that aren't earning their keep.">To penalize large weights during training, discouraging the model from leaning too heavily on any one feature and helping prevent overfitting.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — regularization changes what's learned, not training speed.">To make training run faster by skipping some of the data.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — regularization typically raises training error slightly, in exchange for generalizing better.">To guarantee 100% accuracy on the training data.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. In the demo, why did "vowels in street name" hit zero before square footage did?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! The features with the least real signal give way first as the penalty increases.">It started with the smallest importance and carried the least real signal, so even a small penalty was enough to zero it out.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo's ordering directly tracks each feature's real usefulness, not randomness.">The demo picked it randomly, with no relationship to its actual usefulness.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — units aren't what determines which weight shrinks first here.">Because square footage happens to be measured in different units.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. What happens if the regularization strength (λ) is set far too high?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Push the penalty too far and even useful signal gets zeroed out — underfitting, from Chapter 5.1.">Every weight gets pushed toward zero, including genuinely useful ones — the model underfits, the same failure mode covered in Chapter 5.1.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — more regularization pulls a model away from overfitting, not deeper into it.">The model starts overfitting even more aggressively.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — λ affects every weight, not just the irrelevant ones.">Nothing changes — λ only ever affects irrelevant features.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -803,6 +1023,7 @@
     initQuiz(document.getElementById('quiz-5-1'));
     initQuiz(document.getElementById('quiz-5-2'));
     initQuiz(document.getElementById('quiz-5-3'));
+    initQuiz(document.getElementById('quiz-5-4'));
     initProgressTracking();
   })();
 </script>
