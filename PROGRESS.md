@@ -1,14 +1,14 @@
 # Progress
 
 ## Status
-In progress. 45 of 98 chapters written. Parts I, II, III, IV, and V are all complete.
+In progress. 46 of 98 chapters written. Parts I, II, III, IV, and V are all complete.
 
 ## Next chapter due
-Part VI, Chapter 6.8 — Dropout & BatchNorm
+Part VI, Chapter 6.9 — Building Your First Network (PyTorch)
 (parts/part-06-neural-networks.html already exists — insert the new
-<section> before </main> and flip 6.8's sidebar entry from unwritten to
-live. No anchor-chapter restriction here — normal batching rules apply.
-Chapters 6.8 and 6.9 remain in Part VI; neither is an anchor.)
+<section> before </main> and flip 6.9's sidebar entry from unwritten to
+live. This is the LAST chapter of Part VI — completing it finishes the
+Part. Not an anchor chapter.)
 
 ## Completed chapters
 - 0.1 How This Book Works — parts/part-00-before-we-begin.html
@@ -56,6 +56,7 @@ Chapters 6.8 and 6.9 remain in Part VI; neither is an anchor.)
 - 6.5 Optimizers (SGD, Adam) — parts/part-06-neural-networks.html
 - 6.6 The Training Toolbox — parts/part-06-neural-networks.html
 - 6.7 Vanishing Gradients & Initialization — parts/part-06-neural-networks.html
+- 6.8 Dropout & BatchNorm — parts/part-06-neural-networks.html
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in

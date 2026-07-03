@@ -38,7 +38,9 @@
     <a class="nav-item" data-chapter-id="6-7" href="#chapter-6-7">
       <span class="nav-dot"></span>6.7 Vanishing Gradients &amp; Initialization
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>6.8 Dropout &amp; BatchNorm</div>
+    <a class="nav-item" data-chapter-id="6-8" href="#chapter-6-8">
+      <span class="nav-dot"></span>6.8 Dropout &amp; BatchNorm
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>6.9 Building Your First Network (PyTorch)</div>
   </nav>
 
@@ -2009,6 +2011,264 @@
 
     </section>
 
+    <section id="chapter-6-8">
+      <div class="chapter-eyebrow">Part VI · Chapter 6.8</div>
+      <h1 class="chapter-title">Dropout &amp; BatchNorm</h1>
+
+      <p class="lede">
+        Two more widely-used, unrelated-sounding techniques that turn
+        out to solve problems this Part has already met head-on: Chapter
+        5.4's overfitting, and Chapter 6.7's unstable signal scale.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">⚽ Frame of reference</div>
+        <p>
+          A sports team preparing for the season. If the coach always
+          fields the exact same star lineup in practice, the team
+          quietly becomes dependent on those specific players — weak
+          everywhere else, and fragile if a star is unavailable on game
+          day. A coach who randomly benches different players each
+          practice forces everyone to develop real, redundant skill. And
+          throughout the season, that same coach keeps recalibrating
+          practice intensity after every drill, so the team's effort
+          stays in a consistent, sustainable range — not exhausted from
+          overdoing one drill, not fizzling out from underdoing the next.
+        </p>
+      </div>
+
+      <h2>Dropout: forcing redundancy</h2>
+      <script>initJargonBox("dropout",
+        "A regularization technique that randomly zeroes out a fraction of a layer's neurons on each training forward pass, forcing the network to avoid over-relying on any single neuron. All neurons are used at test time, with the kept activations rescaled during training to keep the expected total roughly unchanged.");</script>
+      <p>
+        <span class="jargon-term">Dropout</span> is Chapter 5.4's
+        regularization idea — don't let the model lean too heavily on
+        any one thing — aimed at neurons instead of weights. During
+        training, each forward pass randomly zeroes out a fraction of a
+        layer's neurons (a typical dropout rate is 20–50%); the surviving
+        ones get rescaled up to compensate, so the layer's expected
+        total output stays about the same regardless of which neurons
+        got dropped. At test time, dropout is turned off entirely — every
+        neuron participates, using everything the redundant training
+        forced the network to actually learn.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          8 neurons with fixed activations [3, 5, 2, 8, 4, 6, 1, 7],
+          true sum = 36. Each dropout sample zeroes some out and rescales
+          the rest by 1/(1 − rate). Does the average still land near 36?
+        </p>
+
+        <div class="demo-controls">
+          <label class="demo-slider-label">Dropout rate: <span id="do-rate-value">0.50</span>
+            <input type="range" id="do-rate-slider" min="0.10" max="0.70" step="0.05" value="0.50">
+          </label>
+        </div>
+        <div class="demo-actions">
+          <div class="quiz-option" id="do-sample-btn">🎲 Resample once</div>
+          <div class="quiz-option" id="do-trials-btn">▶ Run 2,000 trials</div>
+        </div>
+        <p id="do-sample-readout" class="demo-readout"></p>
+        <p id="do-trials-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var values = [3, 5, 2, 8, 4, 6, 1, 7];
+          var trueSum = values.reduce(function (a, b) { return a + b; }, 0);
+
+          var rateSlider = document.getElementById('do-rate-slider');
+          var rateValue = document.getElementById('do-rate-value');
+          var sampleReadout = document.getElementById('do-sample-readout');
+          var trialsReadout = document.getElementById('do-trials-readout');
+
+          function oneSample(p) {
+            var kept = values.map(function (v) { return Math.random() < p ? 0 : v / (1 - p); });
+            var sum = kept.reduce(function (a, b) { return a + b; }, 0);
+            return { kept: kept, sum: sum };
+          }
+
+          rateSlider.addEventListener('input', function () {
+            rateValue.textContent = parseFloat(rateSlider.value).toFixed(2);
+          });
+
+          document.getElementById('do-sample-btn').addEventListener('click', function () {
+            var p = parseFloat(rateSlider.value);
+            var r = oneSample(p);
+            sampleReadout.textContent = 'This sample: [' + r.kept.map(function (v) { return v.toFixed(1); }).join(', ') +
+              ']  →  sum = ' + r.sum.toFixed(2) + ' (true sum without dropout: ' + trueSum + ')';
+          });
+
+          document.getElementById('do-trials-btn').addEventListener('click', function () {
+            var p = parseFloat(rateSlider.value);
+            var n = 2000, total = 0;
+            for (var i = 0; i < n; i++) total += oneSample(p).sum;
+            var avg = total / n;
+            trialsReadout.textContent = 'Average sum over ' + n + ' random dropout samples at rate ' +
+              p.toFixed(2) + ': ' + avg.toFixed(2) + ' — very close to the true sum of ' + trueSum + '.';
+          });
+        })();
+      </script>
+
+      <p>
+        No matter the dropout rate, the average keeps landing close to
+        36 — the rescaling by 1/(1 − rate) is precisely chosen so that,
+        on average, dropping neurons doesn't change what the next layer
+        typically receives. Individual samples are noisy on purpose;
+        that noise is what prevents over-reliance on any single neuron.
+      </p>
+
+      <h2>BatchNorm: recalibrating after every layer</h2>
+      <script>initJargonBox("batch normalization (BatchNorm)",
+        "A technique that renormalizes a layer's activations back to a stable, consistent scale after every layer, throughout training — not just at initialization. Directly counteracts the signal drift that causes vanishing or exploding gradients (Chapter 6.7).");</script>
+      <p>
+        Chapter 6.7 showed that a poorly-scaled initialization compounds
+        across layers — signals shrinking or exploding purely from
+        repeated multiplication. Good initialization only fixes the
+        <em>starting</em> point; nothing stops the same drift from
+        creeping back in as training changes the weights.
+        <span class="jargon-term">Batch normalization (BatchNorm)</span>
+        is the active, ongoing fix: after every layer, it renormalizes
+        the signal back to a stable scale, every single forward pass —
+        the coach recalibrating practice intensity after every drill,
+        not just on day one.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          Same 10-layer, badly-scaled network as Chapter 6.7. Toggle
+          BatchNorm and watch whether the drift still compounds.
+        </p>
+
+        <div class="demo-controls">
+          <label class="demo-slider-label">Typical starting weight scale: <span id="bn-scale-value">2.00</span>
+            <input type="range" id="bn-scale-slider" min="0.10" max="3.00" step="0.05" value="2.00">
+          </label>
+        </div>
+        <div class="demo-actions" id="bn-toggle-buttons">
+          <div class="quiz-option" data-bn="off">BatchNorm: off</div>
+          <div class="quiz-option" data-bn="on">BatchNorm: on</div>
+        </div>
+        <p id="bn-verdict-readout" class="demo-readout"></p>
+        <table class="data-table" id="bn-table">
+          <thead><tr><th>Layer</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th></tr></thead>
+          <tbody><tr id="bn-row"><td>Signal magnitude</td></tr></tbody>
+        </table>
+      </div>
+
+      <script>
+        (function () {
+          var scaleSlider = document.getElementById('bn-scale-slider');
+          var scaleValue = document.getElementById('bn-scale-value');
+          var verdict = document.getElementById('bn-verdict-readout');
+          var row = document.getElementById('bn-row');
+          var buttons = document.querySelectorAll('#bn-toggle-buttons .quiz-option');
+          var bnOn = false;
+
+          function fmt(n) {
+            if (n >= 1000 || (n > 0 && n < 0.001)) return n.toExponential(2);
+            return n.toFixed(3);
+          }
+
+          function render() {
+            var scale = parseFloat(scaleSlider.value);
+            scaleValue.textContent = scale.toFixed(2);
+
+            row.innerHTML = '<td>Signal magnitude</td>';
+            var mag = 1.0;
+            for (var layer = 1; layer <= 10; layer++) {
+              mag *= scale;
+              if (bnOn) mag = 1.0 * scale;
+              var td = document.createElement('td');
+              td.textContent = fmt(mag);
+              row.appendChild(td);
+            }
+
+            if (bnOn) {
+              verdict.textContent = 'With BatchNorm: every layer resets to the same scale (' + fmt(scale) +
+                ') before the next multiplication — no compounding, no matter how many layers.';
+            } else {
+              var final = Math.pow(scale, 10);
+              verdict.textContent = 'Without BatchNorm: final magnitude after 10 layers = ' + fmt(final) +
+                ' — the same unchecked compounding from Chapter 6.7.';
+            }
+          }
+
+          buttons.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+              buttons.forEach(function (b) { b.classList.remove('correct'); });
+              btn.classList.add('correct');
+              bnOn = btn.getAttribute('data-bn') === 'on';
+              render();
+            });
+          });
+          scaleSlider.addEventListener('input', render);
+
+          buttons[0].classList.add('correct');
+          render();
+        })();
+      </script>
+
+      <p>
+        With BatchNorm off, a starting scale of 2.0 compounds to over
+        1,000× by the tenth layer, exactly as Chapter 6.7 showed. With
+        it on, every layer gets reset before the next multiplication —
+        the scale never gets the chance to compound, regardless of how
+        badly-tuned the original weights were. That's why BatchNorm
+        makes networks dramatically more forgiving of imperfect
+        initialization and lets training tolerate larger learning
+        rates (Chapter 6.5) without diverging.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Dropout randomly zeroes out neurons during training, forcing redundancy so the network doesn't over-rely on any single one — regularization (Chapter 5.4) applied to neurons instead of weights.</li>
+          <li>Dropout's rescaling (dividing surviving activations by 1 − rate) keeps the expected total output roughly unchanged, regardless of dropout rate.</li>
+          <li>BatchNorm renormalizes a layer's activations back to a stable scale after every layer, every forward pass — an ongoing fix, not just a one-time initialization choice.</li>
+          <li>BatchNorm directly counteracts the vanishing/exploding compounding from Chapter 6.7, making networks more tolerant of imperfect initialization and larger learning rates.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-6-8">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What does dropout do during training?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Random zeroing, plus rescaling the survivors to keep the expected output roughly unchanged.">Randomly zeroes out a fraction of a layer's neurons each forward pass, rescaling the rest to compensate.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — dropout is active during training and turned off at test time, not the reverse.">Permanently removes some neurons from the network for good.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the whole point of the rescaling is to keep the expected output close to unchanged.">Doubles every neuron's output to compensate for slower training.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. Why is dropout turned off at test time?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! The randomness was a training-time tool; predictions should use everything the network learned.">The network should use everything it learned for its best possible prediction — the random dropping was only useful as a training-time forcing function.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — turning dropout off has nothing to do with computation speed; it's about using the full trained network.">It has nothing to do with prediction quality — it's purely to make inference run faster.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — dropout genuinely is disabled at test time in standard usage.">Dropout actually stays on at test time too, in standard usage.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. How is BatchNorm different from just using good weight initialization?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Good initialization only sets the starting point; BatchNorm keeps correcting the scale throughout training.">BatchNorm actively renormalizes activations after every layer throughout training, while initialization only sets the starting values once, before training begins.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — they solve closely related problems (unstable signal scale across layers), just at different points in time.">They solve completely unrelated problems with no overlap at all.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo showed BatchNorm has a large, measurable stabilizing effect compared to leaving it off.">BatchNorm and initialization are mathematically identical operations.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -2021,6 +2281,7 @@
     initQuiz(document.getElementById('quiz-6-5'));
     initQuiz(document.getElementById('quiz-6-6'));
     initQuiz(document.getElementById('quiz-6-7'));
+    initQuiz(document.getElementById('quiz-6-8'));
     initProgressTracking();
   })();
 </script>
