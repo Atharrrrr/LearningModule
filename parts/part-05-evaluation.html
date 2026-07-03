@@ -23,7 +23,9 @@
     <a class="nav-item" data-chapter-id="5-2" href="#chapter-5-2">
       <span class="nav-dot"></span>5.2 Train/Val/Test &amp; Cross-Validation
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>5.3 Metrics</div>
+    <a class="nav-item" data-chapter-id="5-3" href="#chapter-5-3">
+      <span class="nav-dot"></span>5.3 Metrics
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>5.4 Regularization</div>
   </nav>
 
@@ -437,6 +439,362 @@
 
     </section>
 
+    <section id="chapter-5-3">
+      <div class="chapter-eyebrow">Part V · Chapter 5.3</div>
+      <h1 class="chapter-title">Metrics (Precision, Recall, F1, ROC-AUC)</h1>
+
+      <p class="lede">
+        Chapter 3.5 showed accuracy can lie: a model that always says
+        "not fraud" scores 99% while catching zero fraud. This chapter
+        gives you the numbers that don't lie — and the machinery to
+        compute them.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🎣 Frame of reference</div>
+        <p>
+          Casting a net into a lake that holds fish, seaweed, and
+          driftwood. <strong>Precision</strong> asks: of everything the
+          net pulled up, how much was actually fish? <strong>Recall</strong>
+          asks: of every fish actually in the lake, how many did the net
+          catch? A net with huge holes catches nearly every fish (great
+          recall) but also hauls up junk (poor precision). A net with a
+          tiny opening catches only what swims right into it (poor
+          recall) but almost nothing else (great precision). Neither
+          number alone tells the whole story.
+        </p>
+      </div>
+
+      <h2>When accuracy lies: precision and recall</h2>
+      <script>initJargonBox("precision",
+        "Of everything the model flagged as positive, what fraction actually was positive: TP / (TP + FP). High precision means few false alarms — a positive prediction can be trusted.");</script>
+      <script>initJargonBox("recall",
+        "Of everything that was actually positive, what fraction did the model catch: TP / (TP + FN). High recall means few real positive cases slip through undetected.");</script>
+      <p>
+        <span class="jargon-term">Precision</span> and <span class="jargon-term">recall</span>
+        are the fishing-net questions turned into arithmetic, using the
+        same true-positive (TP), false-positive (FP), false-negative
+        (FN), and true-negative (TN) counts from Chapter 2.7's Bayes'
+        theorem story and Chapter 3.5's fraud grid:
+      </p>
+      <ul>
+        <li><strong>Precision = TP / (TP + FP)</strong> — of the alarms raised, how many were real?</li>
+        <li><strong>Recall = TP / (TP + FN)</strong> — of the real cases, how many were caught?</li>
+      </ul>
+
+      <h3>Worked example: recomputing Chapter 3.5's fraud detector</h3>
+      <p>
+        Chapter 3.5's "decent" model, scaled to 1,000 transactions (10
+        fraud, 990 legitimate), caught 9 of the 10 fraud cases but
+        flagged 39 legitimate transactions by mistake — landing at 96%
+        accuracy. In TP/FP/FN/TN terms: TP = 9, FN = 1, FP = 39, TN = 951.
+      </p>
+      <ul>
+        <li>Precision = 9 / (9 + 39) = 9 / 48 ≈ <strong>19%</strong> — most alarms were false alarms.</li>
+        <li>Recall = 9 / (9 + 1) = <strong>90%</strong> — it caught almost all the real fraud.</li>
+      </ul>
+      <p>
+        96% accuracy sounded great. 19% precision tells the real story:
+        four out of every five fraud alerts this model raises are wrong.
+        Whether that trade-off is acceptable depends entirely on what a
+        false alarm costs versus what missed fraud costs — a business
+        decision, not a math one.
+      </p>
+
+      <h2>One number that balances both: F1</h2>
+      <script>initJargonBox("F1 score",
+        "The harmonic mean of precision and recall, rewarding models that balance both rather than maximizing one at the other's expense: F1 = 2 × (precision × recall) / (precision + recall).");</script>
+      <p>
+        Optimizing for recall alone is trivial — flag everything, and
+        recall hits 100% (this is exactly the failure mode a huge-holed
+        net has). Optimizing for precision alone is also trivial — flag
+        only the single most obvious case. The <span class="jargon-term">F1 score</span>
+        punishes both extremes by taking the harmonic mean rather than
+        the plain average, which stays low unless precision and recall
+        are <em>both</em> reasonably high.
+      </p>
+      <p>
+        For the fraud example above: F1 = 2 × (0.19 × 0.90) / (0.19 + 0.90)
+        = 0.342 / 1.09 ≈ <strong>31%</strong> — a single number reflecting
+        that recall was strong but precision was weak, pulling the
+        combined score down toward the lower of the two.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          Adjust how aggressive the model is and watch precision, recall,
+          and F1 move in real time, out of 100 transactions.
+        </p>
+
+        <div class="demo-controls">
+          <label class="demo-slider-label">Fraud rate: <span id="m-fraud-value">10</span>%
+            <input type="range" id="m-fraud-slider" min="1" max="30" step="1" value="10">
+          </label>
+          <label class="demo-slider-label">Recall (fraud caught): <span id="m-catch-value">70</span>%
+            <input type="range" id="m-catch-slider" min="0" max="100" step="5" value="70">
+          </label>
+          <label class="demo-slider-label">False alarm rate: <span id="m-false-value">10</span>%
+            <input type="range" id="m-false-slider" min="0" max="50" step="5" value="10">
+          </label>
+        </div>
+
+        <div class="trial-grid" id="m-grid"></div>
+        <p id="m-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var fraudSlider = document.getElementById('m-fraud-slider');
+          var catchSlider = document.getElementById('m-catch-slider');
+          var falseSlider = document.getElementById('m-false-slider');
+          var fraudValue = document.getElementById('m-fraud-value');
+          var catchValue = document.getElementById('m-catch-value');
+          var falseValue = document.getElementById('m-false-value');
+          var grid = document.getElementById('m-grid');
+          var readout = document.getElementById('m-readout');
+
+          for (var i = 0; i < 100; i++) {
+            var sq = document.createElement('div');
+            sq.className = 'trial-square';
+            grid.appendChild(sq);
+          }
+          var squares = grid.querySelectorAll('.trial-square');
+
+          function render() {
+            var fraudPct = parseInt(fraudSlider.value, 10);
+            var catchPct = parseInt(catchSlider.value, 10);
+            var falsePct = parseInt(falseSlider.value, 10);
+            fraudValue.textContent = fraudPct;
+            catchValue.textContent = catchPct;
+            falseValue.textContent = falsePct;
+
+            var fraud = fraudPct;
+            var legit = 100 - fraud;
+            var tp = Math.round(fraud * catchPct / 100);
+            var fn = fraud - tp;
+            var fp = Math.round(legit * falsePct / 100);
+            var tn = legit - fp;
+
+            var categories = [];
+            for (var i = 0; i < tp; i++) categories.push('tp');
+            for (var i = 0; i < fn; i++) categories.push('fn');
+            for (var i = 0; i < fp; i++) categories.push('fp');
+            for (var i = 0; i < tn; i++) categories.push('tn');
+            squares.forEach(function (sq, i) { sq.className = 'trial-square ' + (categories[i] || 'tn'); });
+
+            var precision = (tp + fp) > 0 ? tp / (tp + fp) : 0;
+            var recall = (tp + fn) > 0 ? tp / (tp + fn) : 0;
+            var f1 = (precision + recall) > 0 ? 2 * precision * recall / (precision + recall) : 0;
+
+            readout.textContent = 'TP=' + tp + ' FN=' + fn + ' FP=' + fp + ' TN=' + tn +
+              '  |  Precision: ' + Math.round(precision * 100) + '%' +
+              '  Recall: ' + Math.round(recall * 100) + '%' +
+              '  F1: ' + Math.round(f1 * 100) + '%';
+          }
+
+          fraudSlider.addEventListener('input', render);
+          catchSlider.addEventListener('input', render);
+          falseSlider.addEventListener('input', render);
+          render();
+        })();
+      </script>
+
+      <h2>ROC-AUC: one number across every threshold</h2>
+      <script>initJargonBox("ROC-AUC",
+        "The Area Under the ROC Curve: a single number from 0 to 1 summarizing a classifier's ability to rank actual positives above actual negatives across every possible decision threshold at once, not just one. 0.5 is random guessing; 1.0 is a perfect ranking.");</script>
+      <p>
+        Precision and recall both depend on one specific decision
+        threshold — the cutoff score above which the model shouts
+        "fraud!" Move the threshold and both numbers move too. <span class="jargon-term">ROC-AUC</span>
+        sidesteps that by asking a threshold-free question: across
+        every possible cutoff, how well does the model's score rank
+        real positives above real negatives?
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          10 transactions, each with a model score from 0 to 1. Green
+          dots are actually fraud, gray dots are actually legitimate.
+          Drag the threshold — dots to its right get flagged as fraud.
+        </p>
+
+        <div style="position:relative; height:36px; margin:20px 10px 8px;">
+          <div style="position:absolute; left:0; right:0; top:16px; height:2px; background:#30363d;"></div>
+          <div id="roc-threshold-marker" style="position:absolute; top:0; bottom:0; width:2px; background:var(--orange);"></div>
+          <div id="roc-dots" style="position:relative; height:100%;"></div>
+        </div>
+
+        <div class="demo-controls">
+          <label class="demo-slider-label">Decision threshold: <span id="roc-threshold-value">0.60</span>
+            <input type="range" id="roc-threshold-slider" min="0.10" max="1.00" step="0.01" value="0.60">
+          </label>
+        </div>
+        <p id="roc-readout" class="demo-readout"></p>
+
+        <svg id="roc-svg" viewBox="0 0 320 300" overflow="hidden" role="img" aria-label="ROC curve plotting true positive rate against false positive rate">
+          <line x1="50" y1="270" x2="300" y2="270" stroke="#30363d" stroke-width="1"></line>
+          <line x1="50" y1="270" x2="50" y2="20" stroke="#30363d" stroke-width="1"></line>
+          <text x="175" y="292" text-anchor="middle" fill="#6e7681" font-size="12">False Positive Rate →</text>
+          <text x="20" y="150" text-anchor="middle" fill="#6e7681" font-size="12" transform="rotate(-90 20 150)">↑ True Positive Rate</text>
+          <line x1="50" y1="270" x2="300" y2="20" stroke="#484f58" stroke-width="1" stroke-dasharray="4,4"></line>
+          <polyline id="roc-curve" fill="none" stroke="#bc8cff" stroke-width="2"></polyline>
+          <circle id="roc-current-dot" r="5" fill="var(--orange)" stroke="#0d1117" stroke-width="1.5"></circle>
+        </svg>
+        <p id="auc-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var data = [
+            [0.92, 1], [0.85, 1], [0.78, 0], [0.71, 1], [0.65, 1],
+            [0.58, 0], [0.50, 1], [0.42, 0], [0.30, 0], [0.15, 0]
+          ];
+
+          var dotsWrap = document.getElementById('roc-dots');
+          var markerEl = document.getElementById('roc-threshold-marker');
+          var thresholdSlider = document.getElementById('roc-threshold-slider');
+          var thresholdValue = document.getElementById('roc-threshold-value');
+          var readout = document.getElementById('roc-readout');
+          var aucReadout = document.getElementById('auc-readout');
+          var curveEl = document.getElementById('roc-curve');
+          var currentDot = document.getElementById('roc-current-dot');
+
+          var dotEls = data.map(function (d) {
+            var el = document.createElement('div');
+            el.style.position = 'absolute';
+            el.style.left = (d[0] * 100) + '%';
+            el.style.top = '4px';
+            el.style.width = '10px';
+            el.style.height = '10px';
+            el.style.borderRadius = '50%';
+            el.style.transform = 'translateX(-50%)';
+            el.style.background = d[1] === 1 ? 'var(--green)' : 'var(--border-muted)';
+            el.style.border = '2px solid ' + (d[1] === 1 ? 'var(--green)' : '#6e7681');
+            el.style.boxSizing = 'border-box';
+            dotsWrap.appendChild(el);
+            return el;
+          });
+
+          var marginLeft = 50, marginRight = 300, marginTop = 20, marginBottom = 270;
+          function svgX(fpr) { return marginLeft + fpr * (marginRight - marginLeft); }
+          function svgY(tpr) { return marginBottom - tpr * (marginBottom - marginTop); }
+
+          function computeROCAndAUC() {
+            var sorted = data.slice().sort(function (a, b) { return b[0] - a[0]; });
+            var P = data.filter(function (d) { return d[1] === 1; }).length;
+            var N = data.length - P;
+            var points = [[0, 0]];
+            var tp = 0, fp = 0;
+            sorted.forEach(function (d) {
+              if (d[1] === 1) tp++; else fp++;
+              points.push([fp / N, tp / P]);
+            });
+            var auc = 0;
+            for (var i = 1; i < points.length; i++) {
+              var dx = points[i][0] - points[i - 1][0];
+              auc += dx * (points[i][1] + points[i - 1][1]) / 2;
+            }
+            return { points: points, auc: auc };
+          }
+
+          var roc = computeROCAndAUC();
+          curveEl.setAttribute('points', roc.points.map(function (p) {
+            return svgX(p[0]) + ',' + svgY(p[1]);
+          }).join(' '));
+          aucReadout.textContent = 'AUC ≈ ' + roc.auc.toFixed(2) +
+            ' — computed once, across all thresholds at once (0.5 would be random guessing, 1.0 would be a perfect ranking).';
+
+          function classify(threshold) {
+            var tp = 0, fp = 0, fn = 0, tn = 0;
+            data.forEach(function (d) {
+              var pred = d[0] >= threshold ? 1 : 0;
+              if (pred === 1 && d[1] === 1) tp++;
+              else if (pred === 1 && d[1] === 0) fp++;
+              else if (pred === 0 && d[1] === 1) fn++;
+              else tn++;
+            });
+            return { tp: tp, fp: fp, fn: fn, tn: tn };
+          }
+
+          function render() {
+            var threshold = parseFloat(thresholdSlider.value);
+            thresholdValue.textContent = threshold.toFixed(2);
+            markerEl.style.left = (threshold * 100) + '%';
+
+            dotEls.forEach(function (el, i) {
+              var flagged = data[i][0] >= threshold;
+              el.style.boxShadow = flagged ? '0 0 0 3px rgba(255,166,87,0.6)' : 'none';
+            });
+
+            var c = classify(threshold);
+            var P = data.filter(function (d) { return d[1] === 1; }).length;
+            var N = data.length - P;
+            var fpr = N > 0 ? c.fp / N : 0;
+            var tpr = P > 0 ? c.tp / P : 0;
+            currentDot.setAttribute('cx', svgX(fpr));
+            currentDot.setAttribute('cy', svgY(tpr));
+
+            var precision = (c.tp + c.fp) > 0 ? c.tp / (c.tp + c.fp) : 0;
+            var recall = (c.tp + c.fn) > 0 ? c.tp / (c.tp + c.fn) : 0;
+            readout.textContent = 'At threshold ' + threshold.toFixed(2) + ': TP=' + c.tp +
+              ' FP=' + c.fp + ' FN=' + c.fn + ' TN=' + c.tn +
+              '  |  Precision: ' + Math.round(precision * 100) + '%' +
+              '  Recall: ' + Math.round(recall * 100) + '%';
+          }
+
+          thresholdSlider.addEventListener('input', render);
+          render();
+        })();
+      </script>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Precision = TP/(TP+FP): of the positive predictions, how many were right. Recall = TP/(TP+FN): of the real positives, how many were caught.</li>
+          <li>Neither number alone is the full picture — a model can trivially max out either one at the other's expense.</li>
+          <li>F1 is the harmonic mean of precision and recall, staying low unless both are reasonably high.</li>
+          <li>ROC-AUC summarizes a model's ranking ability across every decision threshold at once, in a single number from 0.5 (random) to 1.0 (perfect).</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-5-3">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. A spam filter flags almost every email as spam, catching 100% of real spam but also blocking tons of real mail. Which metric suffers the most?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Recall is perfect (nothing missed), but almost every flagged email is a false alarm, tanking precision.">Precision — most of what it flags as spam isn't actually spam.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — recall is described as 100% in the scenario, so it isn't suffering.">Recall — it's letting too much real spam through.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — this scenario is specifically about a trade-off, which precision/recall are built to reveal, not hide.">Neither — accuracy already captures this fine.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. Why use F1 instead of just averaging precision and recall?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! The harmonic mean stays low if either number is low, refusing to reward maxing out just one.">The harmonic mean punishes a big gap between the two, whereas a plain average could hide one very weak number behind one very strong one.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — F1 is specifically designed to differ from a plain average, for a good reason.">There's no real difference; F1 is just a simpler way to write the average.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — F1 is a real, well-defined formula, not an arbitrary choice.">It's an arbitrary convention with no mathematical reasoning behind it.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. What makes ROC-AUC different from precision and recall?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! AUC evaluates ranking quality across the full range of cutoffs in one number.">It summarizes performance across every possible decision threshold at once, instead of depending on one specific cutoff.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — AUC is a single specific number, from 0 to 1, not a range.">It isn't a real number — it's just a qualitative description of a curve's shape.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a random classifier actually scores around 0.5 AUC, not 0.">A random-guessing classifier always scores an AUC of exactly 0.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -444,6 +802,7 @@
   (function () {
     initQuiz(document.getElementById('quiz-5-1'));
     initQuiz(document.getElementById('quiz-5-2'));
+    initQuiz(document.getElementById('quiz-5-3'));
     initProgressTracking();
   })();
 </script>
