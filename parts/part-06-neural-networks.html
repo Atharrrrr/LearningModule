@@ -29,7 +29,9 @@
     <a class="nav-item" data-chapter-id="6-4" href="#chapter-6-4">
       <span class="nav-dot"></span>6.4 Backpropagation
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>6.5 Optimizers (SGD, Adam)</div>
+    <a class="nav-item" data-chapter-id="6-5" href="#chapter-6-5">
+      <span class="nav-dot"></span>6.5 Optimizers (SGD, Adam)
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>6.6 The Training Toolbox</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>6.7 Vanishing Gradients &amp; Initialization</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>6.8 Dropout &amp; BatchNorm</div>
@@ -1184,6 +1186,289 @@
 
     </section>
 
+    <section id="chapter-6-5">
+      <div class="chapter-eyebrow">Part VI · Chapter 6.5</div>
+      <h1 class="chapter-title">Optimizers (SGD, Adam)</h1>
+
+      <p class="lede">
+        Backpropagation (Chapter 6.4) computes the gradient — the
+        direction downhill. It never said exactly how to use that
+        direction to update the weights. That's a separate decision,
+        and it turns out to matter enormously.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🎿 Frame of reference</div>
+        <p>
+          Skiing down a narrow, steep-walled valley toward a lake at
+          the bottom. Pointing your skis straight downhill at every
+          instant sends you slamming back and forth between the
+          valley's steep walls, and you barely creep toward the lake at
+          all. A skier who instead builds up speed and momentum in a
+          consistent direction carves a much smoother, faster line to
+          the bottom — even though, at any single instant, "straight
+          downhill" still looked like the obviously correct move.
+        </p>
+      </div>
+
+      <h2>Plain gradient descent's blind spot</h2>
+      <p>
+        Chapter 4.3's gradient descent takes a fixed-size step in
+        whatever direction is downhill <em>right now</em>, with no
+        memory of where it's been. That's fine on a smooth, round bowl.
+        Real loss surfaces are rarely round — they're often steep in
+        some directions and nearly flat in others, exactly like the
+        valley above. Plain gradient descent (sometimes just called
+        SGD, for reasons below) zigzags hard across the steep
+        direction while creeping painfully slowly along the flat one.
+      </p>
+      <script>initJargonBox("stochastic gradient descent (SGD)",
+        "Gradient descent computed on a small random subset of the training data at each step instead of the entire dataset at once — much cheaper per step, and the resulting noise can even help escape shallow traps, at the cost of a noisier path.");</script>
+      <p>
+        The "S" in <span class="jargon-term">stochastic gradient
+        descent (SGD)</span> refers to a related but separate idea:
+        computing the gradient from a small random slice of the
+        training data each step, rather than the whole dataset every
+        time (Chapter 6.6 covers exactly how those slices are chosen).
+        It's cheaper per step, and noisier — but "SGD" is also commonly
+        used loosely just to mean "plain gradient descent," which is
+        how the term is used for the rest of this section.
+      </p>
+
+      <h2>Momentum: carrying speed forward</h2>
+      <script>initJargonBox("momentum",
+        "An optimizer that accumulates a running velocity from past gradients instead of reacting only to the current one — like a ball rolling downhill that keeps some of its speed, smoothing out zigzags and powering through small flat patches.");</script>
+      <p>
+        <span class="jargon-term">Momentum</span> fixes the skiing
+        problem directly: instead of jumping straight to wherever the
+        current gradient points, it keeps a running "velocity" — mostly
+        the old direction, nudged a bit by the newest gradient. Repeated
+        steep-direction reversals cancel out in that running average,
+        while consistent progress in the flat direction keeps
+        compounding. Same information, used with memory instead of
+        without it.
+      </p>
+
+      <h2>Adam: momentum plus a per-weight speed limit</h2>
+      <script>initJargonBox("Adam",
+        "An optimizer combining momentum with a per-parameter adaptive step size, based on how large that parameter's recent gradients have typically been. The most common default optimizer for training neural networks in practice.");</script>
+      <p>
+        <span class="jargon-term">Adam</span> adds one more idea on top
+        of momentum: it also tracks how large each individual
+        parameter's gradients have typically been recently, and shrinks
+        that parameter's effective step size accordingly. A parameter
+        with wildly large gradients (like the steep valley wall) gets
+        automatically reined in; one with small, gentle gradients gets
+        allowed a relatively bigger step. That per-parameter adaptivity
+        is why Adam is the default starting choice for most modern
+        network training — it needs less hand-tuning to behave well.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          A real narrow valley: loss = x² + 10y² (steep in y, shallow in
+          x). All three optimizers start at the same point and run for
+          15 real computed steps. Drag the slider to watch them unfold.
+        </p>
+
+        <svg id="opt-svg" viewBox="0 0 500 320" overflow="hidden" role="img" aria-label="Contour plot of a narrow valley loss surface with three optimizer paths">
+          <line x1="60" y1="280" x2="460" y2="280" stroke="#30363d" stroke-width="1"></line>
+          <line x1="60" y1="280" x2="60" y2="20" stroke="#30363d" stroke-width="1"></line>
+          <g id="opt-contours"></g>
+          <path id="opt-path-gd" fill="none" stroke="var(--red)" stroke-width="2"></path>
+          <path id="opt-path-momentum" fill="none" stroke="var(--blue)" stroke-width="2"></path>
+          <path id="opt-path-adam" fill="none" stroke="var(--green)" stroke-width="2"></path>
+          <circle id="opt-dot-gd" r="5" fill="var(--red)"></circle>
+          <circle id="opt-dot-momentum" r="5" fill="var(--blue)"></circle>
+          <circle id="opt-dot-adam" r="5" fill="var(--green)"></circle>
+          <circle id="opt-target" r="4" fill="none" stroke="#e6edf3" stroke-width="1.5"></circle>
+        </svg>
+        <p style="font-size:12.5px; color:#6e7681; margin-top:-4px;">
+          Red = plain gradient descent. Blue = momentum. Green = Adam. White ring = the minimum.
+        </p>
+
+        <div class="demo-controls">
+          <label class="demo-slider-label">Step: <span id="opt-step-value">0</span> of 15
+            <input type="range" id="opt-step-slider" min="0" max="15" step="1" value="0">
+          </label>
+        </div>
+        <p id="opt-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          function grad(x, y) { return [2 * x, 20 * y]; }
+
+          function runGD(lr, steps) {
+            var x = -4, y = 1, path = [[x, y]];
+            for (var i = 0; i < steps; i++) {
+              var g = grad(x, y);
+              x -= lr * g[0]; y -= lr * g[1];
+              path.push([x, y]);
+            }
+            return path;
+          }
+          function runMomentum(lr, beta, steps) {
+            var x = -4, y = 1, vx = 0, vy = 0, path = [[x, y]];
+            for (var i = 0; i < steps; i++) {
+              var g = grad(x, y);
+              vx = beta * vx - lr * g[0];
+              vy = beta * vy - lr * g[1];
+              x += vx; y += vy;
+              path.push([x, y]);
+            }
+            return path;
+          }
+          function runAdam(lr, steps) {
+            var x = -4, y = 1, mx = 0, my = 0, vx = 0, vy = 0;
+            var beta1 = 0.9, beta2 = 0.999, eps = 1e-8;
+            var path = [[x, y]];
+            for (var i = 1; i <= steps; i++) {
+              var g = grad(x, y);
+              mx = beta1 * mx + (1 - beta1) * g[0];
+              my = beta1 * my + (1 - beta1) * g[1];
+              vx = beta2 * vx + (1 - beta2) * g[0] * g[0];
+              vy = beta2 * vy + (1 - beta2) * g[1] * g[1];
+              var mxh = mx / (1 - Math.pow(beta1, i));
+              var myh = my / (1 - Math.pow(beta1, i));
+              var vxh = vx / (1 - Math.pow(beta2, i));
+              var vyh = vy / (1 - Math.pow(beta2, i));
+              x -= lr * mxh / (Math.sqrt(vxh) + eps);
+              y -= lr * myh / (Math.sqrt(vyh) + eps);
+              path.push([x, y]);
+            }
+            return path;
+          }
+
+          var steps = 15;
+          var pathGD = runGD(0.095, steps);
+          var pathMomentum = runMomentum(0.045, 0.55, steps);
+          var pathAdam = runAdam(0.3, steps);
+
+          var xMin = -4.5, xMax = 1, yMin = -1.3, yMax = 1.3;
+          var left = 60, right = 460, top = 20, bottom = 280;
+          function xScale(x) { return left + (x - xMin) / (xMax - xMin) * (right - left); }
+          function yScale(y) { return bottom - (y - yMin) / (yMax - yMin) * (bottom - top); }
+          var pxPerX = (right - left) / (xMax - xMin);
+          var pxPerY = (bottom - top) / (yMax - yMin);
+
+          var contoursG = document.getElementById('opt-contours');
+          [1, 4, 9, 16].forEach(function (c) {
+            var el = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+            el.setAttribute('cx', xScale(0));
+            el.setAttribute('cy', yScale(0));
+            el.setAttribute('rx', Math.sqrt(c) * pxPerX);
+            el.setAttribute('ry', Math.sqrt(c / 10) * pxPerY);
+            el.setAttribute('fill', 'none');
+            el.setAttribute('stroke', '#30363d');
+            el.setAttribute('stroke-width', '1');
+            contoursG.appendChild(el);
+          });
+          document.getElementById('opt-target').setAttribute('cx', xScale(0));
+          document.getElementById('opt-target').setAttribute('cy', yScale(0));
+
+          function pathToD(pts) {
+            return pts.map(function (p, i) {
+              return (i === 0 ? 'M' : 'L') + xScale(p[0]) + ',' + yScale(p[1]);
+            }).join(' ');
+          }
+
+          var slider = document.getElementById('opt-step-slider');
+          var stepValue = document.getElementById('opt-step-value');
+          var readout = document.getElementById('opt-readout');
+
+          function dist(p) { return Math.sqrt(p[0] * p[0] + p[1] * p[1]); }
+
+          function render() {
+            var n = parseInt(slider.value, 10);
+            stepValue.textContent = n;
+
+            var gdSlice = pathGD.slice(0, n + 1);
+            var mSlice = pathMomentum.slice(0, n + 1);
+            var aSlice = pathAdam.slice(0, n + 1);
+
+            document.getElementById('opt-path-gd').setAttribute('d', pathToD(gdSlice));
+            document.getElementById('opt-path-momentum').setAttribute('d', pathToD(mSlice));
+            document.getElementById('opt-path-adam').setAttribute('d', pathToD(aSlice));
+
+            var gdNow = gdSlice[gdSlice.length - 1];
+            var mNow = mSlice[mSlice.length - 1];
+            var aNow = aSlice[aSlice.length - 1];
+
+            document.getElementById('opt-dot-gd').setAttribute('cx', xScale(gdNow[0]));
+            document.getElementById('opt-dot-gd').setAttribute('cy', yScale(gdNow[1]));
+            document.getElementById('opt-dot-momentum').setAttribute('cx', xScale(mNow[0]));
+            document.getElementById('opt-dot-momentum').setAttribute('cy', yScale(mNow[1]));
+            document.getElementById('opt-dot-adam').setAttribute('cx', xScale(aNow[0]));
+            document.getElementById('opt-dot-adam').setAttribute('cy', yScale(aNow[1]));
+
+            readout.textContent = 'Distance to minimum — GD: ' + dist(gdNow).toFixed(3) +
+              '   Momentum: ' + dist(mNow).toFixed(3) +
+              '   Adam: ' + dist(aNow).toFixed(3);
+          }
+
+          slider.addEventListener('input', render);
+          render();
+        })();
+      </script>
+
+      <p>
+        Drag to the final step and compare: plain gradient descent is
+        still zigzagging its way down, nowhere near the minimum after
+        15 steps. Momentum, tuned well for this particular valley,
+        gets there fastest. Adam lands solidly in between — its real
+        advantage isn't winning every single race, it's needing far
+        less hand-tuning to reliably do well across many different
+        problems, which is exactly why it's most teams' default choice.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>An optimizer decides how to turn backprop's gradient into an actual parameter update — a separate concern from computing the gradient itself.</li>
+          <li>Plain gradient descent reacts only to the current gradient, which zigzags badly on loss surfaces that are steep in some directions and flat in others.</li>
+          <li>Momentum keeps a running velocity from past gradients, smoothing zigzags and accelerating consistent progress.</li>
+          <li>Adam adds a per-parameter adaptive step size on top of momentum, and is the default optimizer choice for most modern training precisely because it needs less tuning.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-6-5">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What problem does momentum specifically fix?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! A running velocity smooths out repeated direction reversals.">Zigzagging on loss surfaces that are steep in one direction and flat in another.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — momentum doesn't change how the gradient itself is computed; that's still backpropagation's job.">It computes the gradient using a different, faster formula.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — momentum is used throughout training, not only at the start.">It only matters for the very first training step.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. What does Adam add on top of plain momentum?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Adam shrinks the step for parameters with historically large gradients, and allows more for parameters with small ones.">A per-parameter adaptive step size, based on how large that parameter's recent gradients have been.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — Adam still relies on the gradients backprop computes; it doesn't replace backpropagation.">A completely different way of computing gradients that skips backpropagation.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — Adam remains one of the more widely used optimizers precisely because it performs well in practice.">Nothing meaningful — it's mathematically identical to plain gradient descent.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. In the demo, why did plain gradient descent lag behind after 15 steps?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Steep in y, flat in x — exactly the shape that punishes a memoryless optimizer.">The valley was steep in one direction and shallow in the other, and gradient descent has no memory to smooth out the resulting zigzag.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — all three optimizers used the exact same real gradient (2x, 20y) computed from the same loss function.">It was using an incorrect gradient formula compared to the other two.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — all three optimizers started from the exact same point.">It started from a much farther point than the other two optimizers.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -1193,6 +1478,7 @@
     initQuiz(document.getElementById('quiz-6-2'));
     initQuiz(document.getElementById('quiz-6-3'));
     initQuiz(document.getElementById('quiz-6-4'));
+    initQuiz(document.getElementById('quiz-6-5'));
     initProgressTracking();
   })();
 </script>

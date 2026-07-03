@@ -1,14 +1,14 @@
 # Progress
 
 ## Status
-In progress. 42 of 98 chapters written. Parts I, II, III, IV, and V are all complete.
+In progress. 43 of 98 chapters written. Parts I, II, III, IV, and V are all complete.
 
 ## Next chapter due
-Part VI, Chapter 6.5 — Optimizers (SGD, Adam)
+Part VI, Chapter 6.6 — The Training Toolbox (epochs, batches, LR schedules)
 (parts/part-06-neural-networks.html already exists — insert the new
-<section> before </main> and flip 6.5's sidebar entry from unwritten to
+<section> before </main> and flip 6.6's sidebar entry from unwritten to
 live. No anchor-chapter restriction here — normal batching rules apply.
-Chapters 6.5 through 6.9 remain in Part VI; none of them are anchors.)
+Chapters 6.6 through 6.9 remain in Part VI; none of them are anchors.)
 
 ## Completed chapters
 - 0.1 How This Book Works — parts/part-00-before-we-begin.html
@@ -53,6 +53,7 @@ Chapters 6.5 through 6.9 remain in Part VI; none of them are anchors.)
 - 6.2 Stacking Neurons (Layers, MLPs) — parts/part-06-neural-networks.html
 - 6.3 Activation Functions — parts/part-06-neural-networks.html
 - 6.4 Backpropagation — parts/part-06-neural-networks.html
+- 6.5 Optimizers (SGD, Adam) — parts/part-06-neural-networks.html
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in
