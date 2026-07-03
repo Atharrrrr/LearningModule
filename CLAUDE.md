@@ -20,6 +20,45 @@ before it and write only up through the chapter immediately prior.
 
 Read PROGRESS.md first, every time, to find what's next.
 
+## The resumable autonomous-loop rule
+This project is worked on in a loop that may span multiple sessions,
+since any session can be cut off by a usage-limit reset at any point,
+including mid-chapter. Every action must be safely resumable.
+
+1. ALWAYS start by reading PROGRESS.md AND running `git status` before
+   doing anything else. PROGRESS.md says what should be done; git status
+   reveals whether the previous session died mid-chapter (uncommitted
+   changes present).
+2. If git status shows uncommitted changes: a previous session was cut
+   off mid-chapter. Inspect it. If the chapter section is complete and
+   coherent, finish verifying and commit it normally. If it's partial or
+   broken, discard it (git checkout -- <file>) and rewrite that chapter
+   cleanly from scratch. Never leave uncommitted work sitting around.
+3. Then loop: write the next chapter -> verify -> update PROGRESS.md and
+   GLOSSARY_TRACKER.md -> commit -> immediately continue to the next
+   chapter. Do not stop for approval between chapters or Parts. Keep
+   looping until either all 98 chapters are done, or you're cut off by a
+   usage-limit reset.
+4. PROGRESS.md and the commit must happen after EVERY individual chapter,
+   never batched at the end — this is what makes steps 1-2 possible. A
+   session that dies mid-batch must still leave PROGRESS.md accurate as
+   of the last fully-committed chapter.
+5. Anchor chapters still get full care in loop mode — continuous
+   operation is not an excuse to rush them.
+6. At the end of every Part, do a quick self-check against the
+   write-book-chapter skill's actual rules (analogy -> concept -> example
+   -> recap -> quiz, jargon boxes) — not just that verify.py passed
+   structurally. Structural checks don't catch quality drift.
+7. If you hit a genuine hard blocker (verification failing repeatedly, a
+   real ambiguity that would corrupt later chapters if guessed wrong),
+   stop, log specifics under "Open issues" in PROGRESS.md, and end your
+   turn rather than guessing.
+
+This rule exists so the identical "resume" prompt can be sent after ANY
+interruption and produce correct continuation with zero context carried
+over from the previous session — all state lives in PROGRESS.md and git,
+never in conversation memory.
+
 ## Where things live
 - CURRICULUM.md — full 98-chapter list with [C]ore/[D]eep-dive tags. Only
   read the entries for the Part you're currently working on.
