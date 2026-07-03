@@ -20,7 +20,9 @@
     <a class="nav-item" data-chapter-id="7-1" href="#chapter-7-1">
       <span class="nav-dot"></span>7.1 Images Are Just Grids of Numbers
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>7.2 Convolutional Neural Networks</div>
+    <a class="nav-item" data-chapter-id="7-2" href="#chapter-7-2">
+      <span class="nav-dot"></span>7.2 Convolutional Neural Networks
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>7.3 The Classic CV Toolbox (SIFT/ORB)</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>7.4 Classification vs. Detection vs. Segmentation</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>7.5 Famous Architectures &amp; Transfer Learning</div>
@@ -297,12 +299,292 @@
 
     </section>
 
+    <section id="chapter-7-2">
+      <div class="chapter-eyebrow">Part VII · Chapter 7.2</div>
+      <h1 class="chapter-title">Convolutional Neural Networks</h1>
+
+      <p class="lede">
+        Feed a whole image into Chapter 6.2's fully-connected layers,
+        and two problems show up immediately: an enormous number of
+        weights, and a network with no built-in sense that nearby
+        pixels are related. Convolution fixes both, using an idea
+        that's already familiar.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🔍 Frame of reference</div>
+        <p>
+          Scanning a whole page of text for the letter "e," using a
+          small magnifying glass. You don't need a different expert
+          stationed at every position on the page — the same small
+          "does this look like an e?" check gets slid across every
+          patch of the page, one small window at a time. The exact
+          same detector, reused everywhere, rather than one giant
+          detector custom-built for the entire page at once.
+        </p>
+      </div>
+
+      <h2>The convolution: a dot product, slid across an image</h2>
+      <script>initJargonBox("kernel (filter)",
+        "A small grid of learnable weights — often 3×3 — that slides across an image, computing a dot product with the patch of pixels underneath it at every position. The same kernel is reused at every position across the entire image.");</script>
+      <script>initJargonBox("convolutional neural network (CNN)",
+        "A neural network built from convolutional layers: small learnable kernels slid across an image (or a previous layer's feature maps), exploiting the fact that useful visual patterns can appear anywhere and are built from nearby pixels.");</script>
+      <p>
+        A <span class="jargon-term">kernel (filter)</span> is a small
+        grid of weights — commonly 3×3. At every position on the image,
+        it multiplies its weights against the pixels underneath it and
+        sums the results: exactly Chapter 2.4's
+        <span class="mono">dot product</span>, computed between the
+        kernel and whatever small patch of the image it's currently
+        sitting over. Slide it across every position, and each dot
+        product becomes one value in a
+        <span class="jargon-term">feature map</span> — a
+        <span class="jargon-term">convolutional neural network (CNN)</span>
+        is built from layers of exactly this operation.
+      </p>
+      <script>initJargonBox("feature map",
+        "The output of sliding a kernel across an input: a grid where each value is the dot product of the kernel with the image patch at that position. High values mean the kernel's pattern was strongly present there.");</script>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          Chapter 7.1's 8×8 plus sign, convolved with a real 3×3 kernel.
+          Pick a kernel, then click a feature-map cell to see its exact
+          dot-product computation.
+        </p>
+
+        <div class="demo-actions" id="cnn-kernel-buttons">
+          <div class="quiz-option" data-k="v">Vertical-edge kernel</div>
+          <div class="quiz-option" data-k="h">Horizontal-edge kernel</div>
+        </div>
+
+        <div style="display:flex; gap:32px; flex-wrap:wrap; margin-top:16px;">
+          <div>
+            <p style="margin:0 0 6px; font-size:12px; color:#6e7681; text-transform:uppercase;">Input image (8×8)</p>
+            <div id="cnn-input-grid" style="display:grid; grid-template-columns:repeat(8, 28px); gap:1px;"></div>
+          </div>
+          <div>
+            <p style="margin:0 0 6px; font-size:12px; color:#6e7681; text-transform:uppercase;">Kernel (3×3)</p>
+            <div id="cnn-kernel-grid" style="display:grid; grid-template-columns:repeat(3, 28px); gap:1px;"></div>
+          </div>
+          <div>
+            <p style="margin:0 0 6px; font-size:12px; color:#6e7681; text-transform:uppercase;">Feature map (6×6) — click a cell</p>
+            <div id="cnn-output-grid" style="display:grid; grid-template-columns:repeat(6, 28px); gap:1px;"></div>
+          </div>
+        </div>
+        <p id="cnn-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var img = [
+            [230, 230, 230, 60, 60, 230, 230, 230],
+            [230, 230, 230, 60, 60, 230, 230, 230],
+            [230, 230, 230, 60, 60, 230, 230, 230],
+            [60, 60, 60, 60, 60, 60, 60, 60],
+            [60, 60, 60, 60, 60, 60, 60, 60],
+            [230, 230, 230, 60, 60, 230, 230, 230],
+            [230, 230, 230, 60, 60, 230, 230, 230],
+            [230, 230, 230, 60, 60, 230, 230, 230]
+          ];
+          var kernels = {
+            v: [[-1, 0, 1], [-1, 0, 1], [-1, 0, 1]],
+            h: [[-1, -1, -1], [0, 0, 0], [1, 1, 1]]
+          };
+          var maxAbs = 510;
+
+          var inputGrid = document.getElementById('cnn-input-grid');
+          var kernelGrid = document.getElementById('cnn-kernel-grid');
+          var outputGrid = document.getElementById('cnn-output-grid');
+          var readout = document.getElementById('cnn-readout');
+          var buttons = document.querySelectorAll('#cnn-kernel-buttons .quiz-option');
+
+          var inputCells = [];
+          img.forEach(function (row, r) {
+            row.forEach(function (v, c) {
+              var cell = document.createElement('div');
+              cell.style.width = '28px'; cell.style.height = '28px';
+              cell.style.background = 'rgb(' + v + ',' + v + ',' + v + ')';
+              inputGrid.appendChild(cell);
+              inputCells.push({ el: cell, r: r, c: c });
+            });
+          });
+
+          var kernelCells = [];
+          for (var i = 0; i < 3; i++) {
+            for (var j = 0; j < 3; j++) {
+              var kcell = document.createElement('div');
+              kcell.style.width = '28px'; kcell.style.height = '28px';
+              kcell.style.display = 'flex'; kcell.style.alignItems = 'center'; kcell.style.justifyContent = 'center';
+              kcell.style.fontSize = '11px'; kcell.style.background = '#161b22'; kcell.style.border = '1px solid #30363d';
+              kernelGrid.appendChild(kcell);
+              kernelCells.push(kcell);
+            }
+          }
+
+          function convolveAt(kernel, r, c) {
+            var sum = 0, terms = [];
+            for (var i = 0; i < 3; i++) {
+              for (var j = 0; j < 3; j++) {
+                var pixelVal = img[r + i][c + j];
+                var kv = kernel[i][j];
+                sum += pixelVal * kv;
+                terms.push(pixelVal + '×' + kv);
+              }
+            }
+            return { sum: sum, terms: terms };
+          }
+
+          function colorFor(v) {
+            var t = Math.max(-1, Math.min(1, v / maxAbs));
+            if (t >= 0) return 'rgba(88,166,255,' + (0.15 + t * 0.75) + ')';
+            return 'rgba(255,166,87,' + (0.15 + -t * 0.75) + ')';
+          }
+
+          var outputCells = [];
+          var currentKernel = 'v';
+
+          function buildOutputGrid() {
+            outputGrid.innerHTML = '';
+            outputCells = [];
+            for (var r = 0; r <= 5; r++) {
+              for (var c = 0; c <= 5; c++) {
+                (function (r, c) {
+                  var cell = document.createElement('div');
+                  cell.style.width = '28px'; cell.style.height = '28px';
+                  cell.style.cursor = 'pointer';
+                  cell.addEventListener('click', function () {
+                    inputCells.forEach(function (ic) {
+                      var inPatch = ic.r >= r && ic.r < r + 3 && ic.c >= c && ic.c < c + 3;
+                      ic.el.style.outline = inPatch ? '2px solid var(--purple)' : 'none';
+                    });
+                    var result = convolveAt(kernels[currentKernel], r, c);
+                    readout.textContent = 'Position (' + r + ',' + c + '): ' + result.terms.join(' + ') +
+                      ' = ' + result.sum + ' (a 9-term dot product, Chapter 2.4).';
+                  });
+                  outputGrid.appendChild(cell);
+                  outputCells.push({ el: cell, r: r, c: c });
+                })(r, c);
+              }
+            }
+          }
+
+          function render() {
+            var kernel = kernels[currentKernel];
+            kernelCells.forEach(function (kc, idx) {
+              var i = Math.floor(idx / 3), j = idx % 3;
+              kc.textContent = kernel[i][j];
+            });
+            outputCells.forEach(function (oc) {
+              var result = convolveAt(kernel, oc.r, oc.c);
+              oc.el.style.background = colorFor(result.sum);
+            });
+            inputCells.forEach(function (ic) { ic.el.style.outline = 'none'; });
+            readout.textContent = 'Click a feature-map cell to see its computation.';
+          }
+
+          buttons.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+              buttons.forEach(function (b) { b.classList.remove('correct'); });
+              btn.classList.add('correct');
+              currentKernel = btn.getAttribute('data-k');
+              render();
+            });
+          });
+
+          buttons[0].classList.add('correct');
+          buildOutputGrid();
+          render();
+        })();
+      </script>
+
+      <p>
+        The vertical-edge kernel lights up wherever brightness changes
+        left-to-right — the plus sign's left and right edges — and goes
+        completely flat (zero) down the middle and outer columns, where
+        nothing changes horizontally. The horizontal-edge kernel does
+        the mirror opposite, lighting up the plus sign's top and bottom
+        edges. Same operation, different weights, different feature
+        detected — this is the entire idea a CNN's early layers learn
+        automatically, rather than needing a human to hand-pick "detect
+        vertical edges" as a rule.
+      </p>
+
+      <h2>Why not just use a fully-connected layer?</h2>
+      <p>
+        A fully-connected layer (Chapter 6.2) mapping this 8×8 = 64-pixel
+        image to a 6×6 = 36-value output would need a separate weight
+        for every input-output pair: 64 × 36 = 2,304 weights. The
+        convolution above produced that same 36-value output using just
+        9 weights — the kernel — reused at all 36 positions. That
+        weight sharing is the whole efficiency story: a pattern worth
+        detecting in one corner of an image is usually just as worth
+        detecting anywhere else, so the same small detector gets reused
+        everywhere instead of learned separately, over and over, per
+        position.
+      </p>
+      <p>
+        Stack several convolutional layers and something else emerges:
+        early layers detect simple things like edges (exactly what's
+        shown above); layers built on top of those combine edges into
+        corners and textures; layers built on top of <em>those</em>
+        combine textures into parts and shapes. Chapter 7.5 tours the
+        famous architectures built this way.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>A kernel is a small grid of weights that computes a dot product with the image patch underneath it, at every position.</li>
+          <li>Sliding a kernel across an image produces a feature map, showing where that kernel's pattern is strongly present.</li>
+          <li>The same kernel is reused at every position (weight sharing), using far fewer parameters than a fully-connected layer over the same input.</li>
+          <li>Stacked convolutional layers build up from simple features (edges) to increasingly complex ones (textures, parts, shapes).</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-7-2">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What operation does a kernel perform at each position?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! The kernel's weights and the image patch underneath it, multiplied and summed — Chapter 2.4's dot product.">A dot product between the kernel's weights and the image patch currently underneath it.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a kernel computes one combined number (a dot product) at each position, not a full copy of the patch.">It copies the underlying pixels directly into the feature map, unchanged.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a kernel's weights stay fixed while sliding across a single image; they only change during training.">It picks a completely different random set of weights at each position.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. Why does convolution use far fewer weights than a fully-connected layer over the same image?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! One small kernel, reused everywhere, instead of a unique weight for every input-output pair.">The same small kernel is reused at every position, instead of learning a separate weight for every input-output pair.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo's feature map is a genuinely full 6×6 grid of real computed values, not a shortcut.">Convolution only computes a small fraction of the output values and leaves the rest blank.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the 8×8 input contains real, distinct pixel values throughout, not mostly duplicates.">The input image happens to contain a lot of duplicate information.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. What did stacking convolutional layers build toward, according to this chapter?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Edges, then textures and corners, then parts and shapes — increasing complexity with depth.">Increasingly complex features — from simple edges, to textures and corners, to parts and shapes.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — deeper layers build toward more complex, not simpler, features.">Progressively simpler and simpler patterns, the deeper the network goes.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — each layer's feature maps are genuinely different, capturing different levels of pattern complexity.">The exact same feature map, repeated identically at every layer.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
 <script>
   (function () {
     initQuiz(document.getElementById('quiz-7-1'));
+    initQuiz(document.getElementById('quiz-7-2'));
     initProgressTracking();
   })();
 </script>
