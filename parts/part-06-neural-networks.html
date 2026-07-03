@@ -32,7 +32,9 @@
     <a class="nav-item" data-chapter-id="6-5" href="#chapter-6-5">
       <span class="nav-dot"></span>6.5 Optimizers (SGD, Adam)
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>6.6 The Training Toolbox</div>
+    <a class="nav-item" data-chapter-id="6-6" href="#chapter-6-6">
+      <span class="nav-dot"></span>6.6 The Training Toolbox
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>6.7 Vanishing Gradients &amp; Initialization</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>6.8 Dropout &amp; BatchNorm</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>6.9 Building Your First Network (PyTorch)</div>
@@ -1469,6 +1471,280 @@
 
     </section>
 
+    <section id="chapter-6-6">
+      <div class="chapter-eyebrow">Part VI · Chapter 6.6</div>
+      <h1 class="chapter-title">The Training Toolbox</h1>
+
+      <p class="lede">
+        Backpropagation (6.4) computes gradients; optimizers (6.5) turn
+        them into updates. What's left is the practical scaffolding
+        around the training loop itself — how much data goes into each
+        update, how many times to go through the whole dataset, and
+        whether the learning rate should stay fixed the entire time.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🗂️ Frame of reference</div>
+        <p>
+          Studying a thick stack of flashcards for an exam. You don't
+          update your understanding after every single card — too
+          noisy, one weird card would throw you off. You also don't
+          wait until you've seen the entire stack once before adjusting
+          anything — too slow, and the stack might not even fit in your
+          head at once. Instead you review a handful at a time,
+          adjusting after each handful, and you go through the full
+          stack repeatedly across many study sessions — skimming fast
+          early on, then slowing down for careful, precise review as
+          the exam gets closer.
+        </p>
+      </div>
+
+      <h2>Batches and epochs</h2>
+      <script>initJargonBox("batch",
+        "The chunk of training examples used to compute one gradient and take one optimizer step. Also called a mini-batch. Small compared to the full dataset — a middle ground between using one example at a time and the entire dataset at once.");</script>
+      <script>initJargonBox("epoch",
+        "One complete pass through the entire training dataset. A model is typically trained for many epochs, seeing every training example repeatedly.");</script>
+      <p>
+        A <span class="jargon-term">batch</span> is that "handful of
+        flashcards": a small chunk of training examples used to compute
+        one gradient (Chapter 6.4) and take one optimizer step (Chapter
+        6.5) — Chapter 6.5's "SGD" was exactly this. An
+        <span class="jargon-term">epoch</span> is one full pass through
+        every training example, handful by handful. Train for multiple
+        epochs, and the model sees the entire dataset — and every
+        individual example — over and over.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          A real (rounding-aware) calculation: how many gradient steps
+          does a training run actually take?
+        </p>
+
+        <div class="demo-controls">
+          <label class="demo-slider-label">Dataset size: <span id="tt-dataset-value">1000</span> examples
+            <input type="range" id="tt-dataset-slider" min="100" max="5000" step="50" value="1000">
+          </label>
+          <label class="demo-slider-label">Batch size: <span id="tt-batch-value">50</span>
+            <input type="range" id="tt-batch-slider" min="1" max="500" step="1" value="50">
+          </label>
+          <label class="demo-slider-label">Epochs: <span id="tt-epochs-value">10</span>
+            <input type="range" id="tt-epochs-slider" min="1" max="50" step="1" value="10">
+          </label>
+        </div>
+        <p id="tt-calc-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          function $(id) { return document.getElementById(id); }
+          var datasetSlider = $('tt-dataset-slider'), batchSlider = $('tt-batch-slider'), epochsSlider = $('tt-epochs-slider');
+          var datasetValue = $('tt-dataset-value'), batchValue = $('tt-batch-value'), epochsValue = $('tt-epochs-value');
+          var readout = $('tt-calc-readout');
+
+          function render() {
+            var dataset = parseInt(datasetSlider.value, 10);
+            var batch = parseInt(batchSlider.value, 10);
+            var epochs = parseInt(epochsSlider.value, 10);
+            datasetValue.textContent = dataset;
+            batchValue.textContent = batch;
+            epochsValue.textContent = epochs;
+
+            var stepsPerEpoch = Math.ceil(dataset / batch);
+            var lastBatchSize = dataset % batch === 0 ? batch : dataset % batch;
+            var totalSteps = stepsPerEpoch * epochs;
+
+            readout.textContent = stepsPerEpoch + ' steps per epoch (last batch: ' + lastBatchSize +
+              ' examples)  ×  ' + epochs + ' epochs  =  ' + totalSteps.toLocaleString() + ' total gradient updates.';
+          }
+
+          [datasetSlider, batchSlider, epochsSlider].forEach(function (s) { s.addEventListener('input', render); });
+          render();
+        })();
+      </script>
+
+      <p>
+        Batch size is itself a real trade-off: a bigger batch gives a
+        smoother, more reliable gradient estimate (averaged over more
+        examples) but takes more memory and computes fewer, more
+        expensive steps per epoch. A smaller batch is cheaper and noisier
+        per step, but takes more steps — and that noise sometimes even
+        helps escape shallow traps, as Chapter 6.5 mentioned.
+      </p>
+
+      <h2>Learning rate schedules: not fixed forever</h2>
+      <script>initJargonBox("learning rate schedule",
+        "A plan for changing the learning rate over the course of training, instead of holding it fixed — typically starting higher, for fast early progress, and decreasing over time for careful, stable convergence.");</script>
+      <p>
+        Chapter 4.3 introduced the <span class="jargon-term">learning
+        rate</span> as a single fixed number. In practice, one fixed
+        value rarely serves both jobs training needs: a rate big enough
+        for fast early progress is often <em>too</em> big once training
+        gets close to a good answer, causing exactly the kind of
+        oscillation the narrow-valley demo in Chapter 6.5 showed. A
+        <span class="jargon-term">learning rate schedule</span> starts
+        higher and shrinks the rate over training — fast early skimming,
+        careful late review.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          Same narrow valley as Chapter 6.5 (loss = x² + 10y²), same
+          aggressive starting learning rate (0.13) — held fixed for one
+          line, decayed for the other. Watch what a fixed aggressive
+          rate does versus a decaying one.
+        </p>
+
+        <svg id="lrs-svg" viewBox="0 0 500 320" overflow="hidden" role="img" aria-label="Comparison of a fixed learning rate diverging versus a decaying learning rate converging on the same loss surface">
+          <line x1="60" y1="150" x2="460" y2="150" stroke="#30363d" stroke-width="1"></line>
+          <line x1="60" y1="280" x2="60" y2="20" stroke="#30363d" stroke-width="1"></line>
+          <text x="260" y="305" text-anchor="middle" fill="#6e7681" font-size="12">x →</text>
+          <path id="lrs-path-fixed" fill="none" stroke="var(--red)" stroke-width="2"></path>
+          <path id="lrs-path-decay" fill="none" stroke="var(--green)" stroke-width="2"></path>
+          <circle id="lrs-dot-fixed" r="5" fill="var(--red)"></circle>
+          <circle id="lrs-dot-decay" r="5" fill="var(--green)"></circle>
+        </svg>
+        <p style="font-size:12.5px; color:#6e7681; margin-top:-4px;">
+          Red = fixed learning rate 0.13 the whole time. Green = starts at 0.13, decays ×0.8 each step.
+        </p>
+
+        <div class="demo-controls">
+          <label class="demo-slider-label">Step: <span id="lrs-step-value">0</span> of 8
+            <input type="range" id="lrs-step-slider" min="0" max="8" step="1" value="0">
+          </label>
+        </div>
+        <p id="lrs-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          function grad(x, y) { return [2 * x, 20 * y]; }
+
+          function runFixed(lr, steps) {
+            var x = -4, y = 1, path = [[x, y]];
+            for (var i = 0; i < steps; i++) {
+              var g = grad(x, y);
+              x -= lr * g[0]; y -= lr * g[1];
+              path.push([x, y]);
+            }
+            return path;
+          }
+          function runDecay(lr0, decay, steps) {
+            var x = -4, y = 1, path = [[x, y]];
+            for (var i = 0; i < steps; i++) {
+              var lr = lr0 * Math.pow(decay, i);
+              var g = grad(x, y);
+              x -= lr * g[0]; y -= lr * g[1];
+              path.push([x, y]);
+            }
+            return path;
+          }
+
+          var steps = 8;
+          var pathFixed = runFixed(0.13, steps);
+          var pathDecay = runDecay(0.13, 0.8, steps);
+
+          var xMin = -4.5, xMax = 1, yMin = -8, yMax = 8;
+          var left = 60, right = 460, top = 20, bottom = 280;
+          function xScale(x) { return left + (x - xMin) / (xMax - xMin) * (right - left); }
+          function yScale(y) { return 150 - (y - 0) / (yMax - yMin) * (bottom - top); }
+
+          function pathToD(pts) {
+            return pts.map(function (p, i) {
+              return (i === 0 ? 'M' : 'L') + xScale(p[0]) + ',' + yScale(p[1]);
+            }).join(' ');
+          }
+
+          var slider = document.getElementById('lrs-step-slider');
+          var stepValue = document.getElementById('lrs-step-value');
+          var readout = document.getElementById('lrs-readout');
+
+          function render() {
+            var n = parseInt(slider.value, 10);
+            stepValue.textContent = n;
+
+            var fSlice = pathFixed.slice(0, n + 1);
+            var dSlice = pathDecay.slice(0, n + 1);
+
+            document.getElementById('lrs-path-fixed').setAttribute('d', pathToD(fSlice));
+            document.getElementById('lrs-path-decay').setAttribute('d', pathToD(dSlice));
+
+            var fNow = fSlice[fSlice.length - 1];
+            var dNow = dSlice[dSlice.length - 1];
+            document.getElementById('lrs-dot-fixed').setAttribute('cx', xScale(fNow[0]));
+            document.getElementById('lrs-dot-fixed').setAttribute('cy', yScale(fNow[1]));
+            document.getElementById('lrs-dot-decay').setAttribute('cx', xScale(dNow[0]));
+            document.getElementById('lrs-dot-decay').setAttribute('cy', yScale(dNow[1]));
+
+            var currentLr = (0.13 * Math.pow(0.8, n)).toFixed(4);
+            readout.textContent = 'Fixed: y = ' + fNow[1].toFixed(2) + (Math.abs(fNow[1]) > 7 ? ' (off the chart!)' : '') +
+              '   Decaying: y = ' + dNow[1].toFixed(3) + ', current rate ≈ ' + currentLr;
+          }
+
+          slider.addEventListener('input', render);
+          render();
+        })();
+      </script>
+
+      <p>
+        The fixed rate was aggressive enough to make fast early
+        progress — but that same aggressiveness makes it overshoot the
+        narrow valley wall a little further each step, and by step 8
+        it's diverging, not converging. The decaying schedule made the
+        same fast start, then reined itself in before that runaway
+        overshoot could take hold, settling near the valley floor
+        instead. A schedule lets you be aggressive early without
+        committing to that aggression for the rest of training.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>A batch is the chunk of examples used for one gradient update; an epoch is one full pass through the entire training dataset.</li>
+          <li>Batch size trades off gradient smoothness and memory against how many (cheaper) steps fit in an epoch.</li>
+          <li>A fixed learning rate rarely suits both early training (wants speed) and late training (wants stability) equally well.</li>
+          <li>A learning rate schedule starts higher and decreases over training, enabling fast early progress without the divergence risk of staying aggressive the whole time.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-6-6">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What is an epoch?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! One epoch means every training example has been used once.">One complete pass through the entire training dataset.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that's a batch, which is typically much smaller than the whole dataset.">A single gradient update using one small chunk of data.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — an epoch is a full pass through the training data, not a change to the optimizer.">A change made to the learning rate partway through training.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. With a dataset of 1,000 examples and a batch size of 50, how many gradient steps happen in one epoch?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! 1,000 ÷ 50 = 20 steps to see every example once.">20 steps.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that would only be true if the batch size were 1.">1,000 steps.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that would only be true if the entire dataset were used in a single batch.">1 step.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. Why did the fixed learning rate diverge in the demo while the decaying one didn't?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Shrinking the rate over time reined in the overshoot before it could compound out of control.">The fixed rate stayed aggressive enough to keep overshooting the narrow valley wall by more each step, while the decaying rate shrank before that overshoot could compound.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — both lines used the exact same starting learning rate and the exact same loss surface.">The two lines were run on different loss surfaces entirely.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — both lines started from the exact same point.">The decaying line simply started closer to the minimum.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -1479,6 +1755,7 @@
     initQuiz(document.getElementById('quiz-6-3'));
     initQuiz(document.getElementById('quiz-6-4'));
     initQuiz(document.getElementById('quiz-6-5'));
+    initQuiz(document.getElementById('quiz-6-6'));
     initProgressTracking();
   })();
 </script>
