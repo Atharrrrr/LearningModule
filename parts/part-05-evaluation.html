@@ -20,7 +20,9 @@
     <a class="nav-item" data-chapter-id="5-1" href="#chapter-5-1">
       <span class="nav-dot"></span>5.1 Why Models Fail
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>5.2 Train/Val/Test &amp; Cross-Validation</div>
+    <a class="nav-item" data-chapter-id="5-2" href="#chapter-5-2">
+      <span class="nav-dot"></span>5.2 Train/Val/Test &amp; Cross-Validation
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>5.3 Metrics</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>5.4 Regularization</div>
   </nav>
@@ -244,12 +246,204 @@
 
     </section>
 
+    <section id="chapter-5-2">
+      <div class="chapter-eyebrow">Part V · Chapter 5.2</div>
+      <h1 class="chapter-title">Train/Val/Test &amp; Cross-Validation</h1>
+
+      <p class="lede">
+        Chapter 5.1 showed that low training error can be a trap. The
+        only honest fix is evaluating a model on data it has never seen —
+        and doing that requires real discipline about which data gets
+        used for what.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">📝 Frame of reference</div>
+        <p>
+          Studying for an exam: the practice problems are what you learn
+          from. A practice test, taken before the real thing, checks your
+          understanding and helps you adjust your studying — but seeing
+          it too many times just teaches you those specific questions.
+          The final exam, taken exactly once, is what actually determines
+          your grade. Peeking at the final exam early would make your
+          score meaningless. A model's data needs the exact same three
+          roles.
+        </p>
+      </div>
+
+      <h2>Three sets, three jobs</h2>
+      <script>initJargonBox("train/validation/test split",
+        "Dividing a dataset into three parts: a training set the model learns from, a validation set used to tune choices and catch overfitting during development, and a test set touched only once, at the very end, for an honest final performance estimate.");</script>
+      <p>
+        The <span class="jargon-term">train/validation/test split</span>
+        mirrors the exam analogy exactly: the training set is the
+        practice problems the model actually learns from. The validation
+        set is the practice test — used repeatedly during development to
+        tune choices and catch overfitting (Chapter 5.1), but never used
+        to fit parameters directly. The test set is the final exam:
+        touched exactly once, at the very end, for an honest read on how
+        the model will really perform.
+      </p>
+
+      <h2>Cross-validation: several practice tests instead of one</h2>
+      <script>initJargonBox("cross-validation",
+        "A technique that splits the training data into k folds, rotating which fold is held out as validation each round, training k times and averaging the results — a more robust estimate than a single validation split, especially useful with limited data.");</script>
+      <p>
+        A single validation split might, by luck, cover exactly the
+        material you know best — or worst. <span class="jargon-term">Cross-validation</span>
+        fixes this by splitting the training data into k folds, training
+        k separate times, each time holding out a different fold as
+        validation, then averaging all k results — several practice
+        tests instead of relying on just one.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+
+        <p style="margin-top:0; font-size:13px; color:#6e7681; text-transform:uppercase; letter-spacing:0.04em;">A typical split</p>
+        <div id="split-grid" style="display:flex; flex-wrap:wrap; gap:4px; max-width:340px; margin:8px 0;"></div>
+        <div class="demo-actions"><div class="quiz-option" id="split-shuffle-btn">🔀 Shuffle new split</div></div>
+        <p id="split-readout" class="demo-readout"></p>
+
+        <p style="margin-top:24px; font-size:13px; color:#6e7681; text-transform:uppercase; letter-spacing:0.04em;">5-fold cross-validation</p>
+        <div id="fold-grid" style="display:flex; flex-direction:column; gap:4px; max-width:340px; margin:8px 0;"></div>
+        <div class="demo-actions"><div class="quiz-option" id="fold-rotate-btn">↻ Rotate to next fold</div></div>
+        <p id="fold-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var splitGrid = document.getElementById('split-grid');
+          var splitReadout = document.getElementById('split-readout');
+          var shuffleBtn = document.getElementById('split-shuffle-btn');
+
+          var splitCells = [];
+          for (var i = 0; i < 20; i++) {
+            var d = document.createElement('div');
+            d.className = 'trial-square';
+            d.style.width = '20px';
+            d.style.height = '20px';
+            splitGrid.appendChild(d);
+            splitCells.push(d);
+          }
+
+          function shuffleSplit() {
+            var labels = [];
+            for (var i = 0; i < 14; i++) labels.push('train');
+            for (var i = 0; i < 3; i++) labels.push('val');
+            for (var i = 0; i < 3; i++) labels.push('test');
+            for (var i = labels.length - 1; i > 0; i--) {
+              var j = Math.floor(Math.random() * (i + 1));
+              var tmp = labels[i]; labels[i] = labels[j]; labels[j] = tmp;
+            }
+            var colors = { train: 'rgba(188,140,255,0.6)', val: 'var(--orange)', test: 'var(--blue)' };
+            splitCells.forEach(function (cell, i) {
+              cell.style.background = colors[labels[i]];
+              cell.style.borderColor = colors[labels[i]];
+            });
+            splitReadout.textContent = '14 examples for training (purple), 3 for validation (orange), 3 for test (blue) — reshuffled.';
+          }
+
+          shuffleBtn.addEventListener('click', shuffleSplit);
+          shuffleSplit();
+
+          var foldGrid = document.getElementById('fold-grid');
+          var foldReadout = document.getElementById('fold-readout');
+          var rotateBtn = document.getElementById('fold-rotate-btn');
+          var currentFold = 0;
+
+          var foldRows = [];
+          for (var f = 0; f < 5; f++) {
+            var row = document.createElement('div');
+            row.style.display = 'flex';
+            row.style.gap = '4px';
+            var cells = [];
+            for (var c = 0; c < 4; c++) {
+              var d = document.createElement('div');
+              d.className = 'trial-square';
+              d.style.width = '20px';
+              d.style.height = '20px';
+              row.appendChild(d);
+              cells.push(d);
+            }
+            foldGrid.appendChild(row);
+            foldRows.push(cells);
+          }
+
+          function renderFolds() {
+            foldRows.forEach(function (cells, f) {
+              var isVal = f === currentFold;
+              cells.forEach(function (cell) {
+                cell.style.background = isVal ? 'var(--orange)' : 'rgba(63,185,80,0.5)';
+                cell.style.borderColor = isVal ? 'var(--orange)' : 'var(--green)';
+              });
+            });
+            foldReadout.textContent = 'Round ' + (currentFold + 1) + ' of 5: fold ' + (currentFold + 1) +
+              ' held out as validation (orange), training on the other 4 folds (green).';
+          }
+
+          rotateBtn.addEventListener('click', function () {
+            currentFold = (currentFold + 1) % 5;
+            renderFolds();
+          });
+
+          renderFolds();
+        })();
+      </script>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>A training set fits the model's parameters; a validation set tunes choices during development; a test set is touched only once, for an honest final estimate.</li>
+          <li>Never let test-set performance influence development decisions — that quietly inflates apparent results.</li>
+          <li>Cross-validation splits training data into k folds, rotating which fold is validation, training k times and averaging.</li>
+          <li>This is the practical machinery behind catching Chapter 5.1's overfitting before it's too late.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-5-2">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What is the test set for?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! One honest look, at the very end.">An honest final performance estimate, touched only once at the very end.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that's the validation set's job.">Tuning the model's hyperparameters during development.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that's the training set's job.">The main data the model's parameters are fit to.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. Why shouldn't you look at test-set performance repeatedly during development?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Repeated peeking lets you unconsciously fit the test set, defeating its whole purpose.">Because doing so lets you unconsciously tune choices to fit the test set, inflating your apparent results dishonestly.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — you certainly could evaluate it repeatedly; the issue is that doing so undermines what it's for.">Because the test set is physically impossible to evaluate more than once.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — there's a real statistical reason: repeated peeking makes the estimate dishonest.">There's no real reason; it's just an old-fashioned convention.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. What does k-fold cross-validation do?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Several rotating practice tests, averaged, instead of just one.">Splits training data into k folds, rotating which fold is held out as validation, training k times and averaging the results.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — cross-validation specifically trains multiple times across different folds.">Trains the model exactly once, on the entire dataset with no splits at all.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — no data is discarded; every fold gets used for both training and validation across the rounds.">Deletes k% of the dataset to make training faster.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
 <script>
   (function () {
     initQuiz(document.getElementById('quiz-5-1'));
+    initQuiz(document.getElementById('quiz-5-2'));
     initProgressTracking();
   })();
 </script>

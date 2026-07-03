@@ -1,11 +1,11 @@
 # Progress
 
 ## Status
-In progress. 35 of 98 chapters written. Parts I, II, III, and IV are all complete.
+In progress. 36 of 98 chapters written. Parts I, II, III, and IV are all complete.
 
 ## Next chapter due
-Part V, Chapter 5.2 — Train/Val/Test & Cross-Validation
-(parts/part-05-evaluation.html already exists — insert the new <section> before </main> and flip 5.2's sidebar entry from unwritten to live)
+Part V, Chapter 5.3 — Metrics (precision/recall/F1/ROC-AUC)
+(parts/part-05-evaluation.html already exists — insert the new <section> before </main> and flip 5.3's sidebar entry from unwritten to live)
 
 ## Completed chapters
 - 0.1 How This Book Works — parts/part-00-before-we-begin.html
@@ -43,6 +43,7 @@ Part V, Chapter 5.2 — Train/Val/Test & Cross-Validation
 - 4.8 Clustering (K-means) — parts/part-04-classical-ml.html
 - 4.9 Dimensionality Reduction (PCA/t-SNE) — parts/part-04-classical-ml.html
 - 5.1 Why Models Fail (over/underfitting, bias-variance) — parts/part-05-evaluation.html
+- 5.2 Train/Val/Test & Cross-Validation — parts/part-05-evaluation.html
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in
