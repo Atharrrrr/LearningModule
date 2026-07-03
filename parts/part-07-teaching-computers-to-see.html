@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Part VII — Teaching Computers to See | AI/ML From Zero to Job-Ready</title>
+<link rel="stylesheet" href="../assets/styles.css">
+<script src="../assets/components.js"></script>
+</head>
+<body>
+<div class="book-shell">
+
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">AI/ML: Zero to Job-Ready</div>
+    </div>
+    <div class="progress-bar-track"><div class="progress-bar-fill"></div></div>
+
+    <div class="sidebar-part">Part VII — Teaching Computers to See</div>
+    <a class="nav-item" data-chapter-id="7-1" href="#chapter-7-1">
+      <span class="nav-dot"></span>7.1 Images Are Just Grids of Numbers
+    </a>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>7.2 Convolutional Neural Networks</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>7.3 The Classic CV Toolbox (SIFT/ORB)</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>7.4 Classification vs. Detection vs. Segmentation</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>7.5 Famous Architectures &amp; Transfer Learning</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>7.6 Evaluating Vision Models (IoU/mAP)</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>7.7 Meet YOLO</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>7.8 Meet SuperPoint</div>
+  </nav>
+
+  <main>
+
+    <section id="chapter-7-1">
+      <div class="chapter-eyebrow">Part VII · Chapter 7.1</div>
+      <h1 class="chapter-title">Images Are Just Grids of Numbers</h1>
+
+      <p class="lede">
+        Everything in this Part — recognizing cats, detecting cars,
+        matching keypoints between photos — is built on one simple
+        fact: a computer never actually sees a picture. It sees a grid
+        of numbers, and nothing else.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🏟️ Frame of reference</div>
+        <p>
+          A stadium card display, where thousands of fans each hold up
+          a single colored card on cue. From high in the stands, it
+          resolves into a giant picture. Walk down onto the field,
+          though, and the picture disappears — all you see is one
+          person holding one card with one specific color. The picture
+          was never actually "in" the display; it only ever existed as
+          many individually addressable colors, arranged in a grid. A
+          digital image works exactly the same way.
+        </p>
+      </div>
+
+      <h2>The pixel: one number (or three)</h2>
+      <script>initJargonBox("pixel",
+        "The smallest unit of a digital image — one single cell in the grid, holding one number (grayscale brightness) or three numbers (a red, green, and blue value for color).");</script>
+      <p>
+        A <span class="jargon-term">pixel</span> is one cell in that
+        grid. In a grayscale image, each pixel is a single number from
+        0 (black) to 255 (white), with everything in between a shade of
+        gray. Stack pixels into rows and columns and you get exactly
+        Chapter 2.3's <span class="mono">matrix</span>: one row per
+        image row, one column per image column, one number per pixel.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          An 8×8 grayscale image — a real numeric grid, rendered as
+          shaded squares. Toggle the numbers, or click a pixel to
+          inspect it.
+        </p>
+
+        <div class="demo-actions">
+          <div class="quiz-option" id="px-toggle-btn">🔢 Show pixel values</div>
+        </div>
+        <div id="px-grid" style="display:grid; grid-template-columns:repeat(8, 40px); gap:2px; margin:12px 0;"></div>
+        <p id="px-readout" class="demo-readout">Click any pixel to see its exact value.</p>
+      </div>
+
+      <script>
+        (function () {
+          var data = [
+            [230, 230, 230, 60, 60, 230, 230, 230],
+            [230, 230, 230, 60, 60, 230, 230, 230],
+            [230, 230, 230, 60, 60, 230, 230, 230],
+            [60, 60, 60, 60, 60, 60, 60, 60],
+            [60, 60, 60, 60, 60, 60, 60, 60],
+            [230, 230, 230, 60, 60, 230, 230, 230],
+            [230, 230, 230, 60, 60, 230, 230, 230],
+            [230, 230, 230, 60, 60, 230, 230, 230]
+          ];
+
+          var grid = document.getElementById('px-grid');
+          var readout = document.getElementById('px-readout');
+          var toggleBtn = document.getElementById('px-toggle-btn');
+          var showValues = false;
+          var cells = [];
+
+          data.forEach(function (row, r) {
+            row.forEach(function (v, c) {
+              var cell = document.createElement('div');
+              cell.style.width = '40px';
+              cell.style.height = '40px';
+              cell.style.display = 'flex';
+              cell.style.alignItems = 'center';
+              cell.style.justifyContent = 'center';
+              cell.style.fontSize = '9px';
+              cell.style.cursor = 'pointer';
+              cell.style.background = 'rgb(' + v + ',' + v + ',' + v + ')';
+              cell.style.color = v > 150 ? '#000' : '#fff';
+              cell.addEventListener('click', function () {
+                readout.textContent = 'Pixel at row ' + r + ', column ' + c + ': value = ' + v +
+                  ' (' + (v > 150 ? 'light' : 'dark') + ').';
+              });
+              grid.appendChild(cell);
+              cells.push({ el: cell, v: v });
+            });
+          });
+
+          function render() {
+            cells.forEach(function (c) { c.el.textContent = showValues ? c.v : ''; });
+            toggleBtn.textContent = showValues ? '🖼️ Hide pixel values' : '🔢 Show pixel values';
+          }
+
+          toggleBtn.addEventListener('click', function () {
+            showValues = !showValues;
+            render();
+          });
+
+          render();
+        })();
+      </script>
+
+      <p>
+        With the numbers hidden, this reads as a picture — a plus sign.
+        Reveal them, and it's obviously just a grid of two numbers, 230
+        and 60, arranged in a pattern. Nothing about the image "knows"
+        it's a plus sign; that's a pattern a human — or, as the rest of
+        this Part shows, a trained model — recognizes in the numbers.
+      </p>
+
+      <h2>Color: three grids stacked together</h2>
+      <script>initJargonBox("channel",
+        "One of the separate grids that make up a color image — typically red, green, and blue. Each channel is itself just a grayscale grid of numbers; a color image is three of them stacked together, exactly matching Chapter 2.11's definition of a tensor.");</script>
+      <p>
+        A color image adds two more grids. Each <span class="jargon-term">channel</span>
+        — red, green, and blue — is its own grayscale grid, exactly like
+        the plus sign above. Combine the three channels' values at each
+        position, and you get a color. This is precisely Chapter 2.11's
+        <span class="mono">tensor</span>: height × width × 3 stacked
+        matrices, one per channel.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          A 4×4 color image, built from three separate channel grids.
+          View each channel alone, or combined into true color.
+        </p>
+
+        <div class="demo-actions" id="ch-buttons">
+          <div class="quiz-option" data-ch="combined">Combined (true color)</div>
+          <div class="quiz-option" data-ch="r">Red channel</div>
+          <div class="quiz-option" data-ch="g">Green channel</div>
+          <div class="quiz-option" data-ch="b">Blue channel</div>
+        </div>
+        <div id="ch-grid" style="display:grid; grid-template-columns:repeat(4, 50px); gap:2px; margin:12px 0;"></div>
+        <p id="ch-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var R = [
+            [255, 255, 0, 0],
+            [255, 255, 0, 0],
+            [0, 0, 255, 255],
+            [0, 0, 255, 255]
+          ];
+          var G = [
+            [0, 0, 255, 255],
+            [0, 0, 255, 255],
+            [0, 0, 255, 255],
+            [0, 0, 255, 255]
+          ];
+          var B = [
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+            [255, 255, 0, 0],
+            [255, 255, 0, 0]
+          ];
+
+          var grid = document.getElementById('ch-grid');
+          var readout = document.getElementById('ch-readout');
+          var buttons = document.querySelectorAll('#ch-buttons .quiz-option');
+          var cells = [];
+
+          for (var r = 0; r < 4; r++) {
+            for (var c = 0; c < 4; c++) {
+              var cell = document.createElement('div');
+              cell.style.width = '50px';
+              cell.style.height = '50px';
+              grid.appendChild(cell);
+              cells.push({ el: cell, r: r, c: c });
+            }
+          }
+
+          function render(mode) {
+            cells.forEach(function (cell) {
+              var rv = R[cell.r][cell.c], gv = G[cell.r][cell.c], bv = B[cell.r][cell.c];
+              if (mode === 'combined') {
+                cell.el.style.background = 'rgb(' + rv + ',' + gv + ',' + bv + ')';
+              } else if (mode === 'r') {
+                cell.el.style.background = 'rgb(' + rv + ',' + rv + ',' + rv + ')';
+              } else if (mode === 'g') {
+                cell.el.style.background = 'rgb(' + gv + ',' + gv + ',' + gv + ')';
+              } else if (mode === 'b') {
+                cell.el.style.background = 'rgb(' + bv + ',' + bv + ',' + bv + ')';
+              }
+            });
+
+            var labels = { combined: 'Combined: each cell\'s true color, from all 3 channels together.',
+              r: 'Red channel alone: just a grayscale grid of red intensities — 255 where red contributes, 0 where it doesn\'t.',
+              g: 'Green channel alone: just a grayscale grid of green intensities.',
+              b: 'Blue channel alone: just a grayscale grid of blue intensities.' };
+            readout.textContent = labels[mode];
+          }
+
+          buttons.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+              buttons.forEach(function (b) { b.classList.remove('correct'); });
+              btn.classList.add('correct');
+              render(btn.getAttribute('data-ch'));
+            });
+          });
+
+          buttons[0].classList.add('correct');
+          render('combined');
+        })();
+      </script>
+
+      <p>
+        Notice each channel alone is just another grayscale grid — the
+        same idea as the plus sign, three times over. "Combined" isn't
+        a different kind of data; it's the same three grids, read
+        together at every position.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>A pixel is one cell in an image's grid, holding one number (grayscale) or three (color).</li>
+          <li>A grayscale image is exactly Chapter 2.3's matrix: one number per pixel, arranged in rows and columns.</li>
+          <li>A color image is three grayscale grids (red, green, blue channels) stacked together — exactly Chapter 2.11's tensor.</li>
+          <li>A computer never "sees" a picture directly; every operation in this Part works on these numbers.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-7-1">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What is a pixel?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! One cell, one number (grayscale) or three (color).">One cell in an image's grid, holding a single brightness number or a trio of red/green/blue numbers.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a pixel is a single cell, not an entire row or column.">An entire row of an image's grid.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a channel is one entire grid (like all the red values); a pixel is a single cell within it.">Another name for a color channel.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. How does a color image relate to Chapter 2.11's tensor?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Height × width × 3 channels is exactly a 3D tensor.">A color image is three stacked grayscale grids (channels) — precisely a 3D tensor: height × width × channels.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a color image is genuinely a stack of three 2D grids, not a single flattened list.">A color image has nothing to do with tensors; it's just a single flat list of colors.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that describes a grayscale image, which needs only one grid, not three.">It's a 2D tensor, since only one grid of numbers is needed.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. What does a single color channel, viewed alone, actually look like?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Each channel is its own grid of intensity numbers, just like a grayscale image.">A grayscale image — just a grid of intensity numbers for that one color.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a single channel alone has no other channels to combine with, so it reads as grayscale intensity, not full color.">The full-color image, unchanged.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a channel is exactly as much a real grid of numbers as the combined image is.">Nothing meaningful — channels aren't real data on their own.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+</div>
+
+<script>
+  (function () {
+    initQuiz(document.getElementById('quiz-7-1'));
+    initProgressTracking();
+  })();
+</script>
+</body>
+</html>

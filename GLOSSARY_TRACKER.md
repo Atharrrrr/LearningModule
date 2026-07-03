@@ -110,3 +110,5 @@ instead of repeating it.
 | batch normalization (BatchNorm) | 6.8 Dropout & BatchNorm | A technique that renormalizes a layer's activations back to a stable, consistent scale after every layer, throughout training — not just at initialization. Directly counteracts the signal drift that causes vanishing or exploding gradients (Chapter 6.7). |
 
 Note: Chapter 6.9 (Building Your First Network, PyTorch) introduced no new jargon terms — it mapped Chapters 6.1–6.8's existing vocabulary onto real PyTorch code.
+| pixel | 7.1 Images Are Just Grids of Numbers | The smallest unit of a digital image — one single cell in the grid, holding one number (grayscale brightness) or three numbers (a red, green, and blue value for color). |
+| channel | 7.1 Images Are Just Grids of Numbers | One of the separate grids that make up a color image — typically red, green, and blue. Each channel is itself just a grayscale grid of numbers; a color image is three of them stacked together, exactly matching Chapter 2.11's definition of a tensor. |
