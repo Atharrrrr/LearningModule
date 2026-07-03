@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Part VI — Neural Networks | AI/ML From Zero to Job-Ready</title>
+<link rel="stylesheet" href="../assets/styles.css">
+<script src="../assets/components.js"></script>
+</head>
+<body>
+<div class="book-shell">
+
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">AI/ML: Zero to Job-Ready</div>
+    </div>
+    <div class="progress-bar-track"><div class="progress-bar-fill"></div></div>
+
+    <div class="sidebar-part">Part VI — Neural Networks</div>
+    <a class="nav-item" data-chapter-id="6-1" href="#chapter-6-1">
+      <span class="nav-dot"></span>6.1 The Neuron
+    </a>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>6.2 Stacking Neurons (Layers, MLPs)</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>6.3 Activation Functions</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>6.4 Backpropagation</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>6.5 Optimizers (SGD, Adam)</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>6.6 The Training Toolbox</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>6.7 Vanishing Gradients &amp; Initialization</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>6.8 Dropout &amp; BatchNorm</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>6.9 Building Your First Network (PyTorch)</div>
+  </nav>
+
+  <main>
+
+    <section id="chapter-6-1">
+      <div class="chapter-eyebrow">Part VI · Chapter 6.1</div>
+      <h1 class="chapter-title">The Neuron</h1>
+
+      <p class="lede">
+        You already built one of these back in Chapter 4.2 — you just
+        didn't call it by its real name. This chapter gives it a name,
+        a diagram, and the vocabulary the rest of Part VI builds on.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🚪 Frame of reference</div>
+        <p>
+          A bouncer deciding whether to let someone into a club. They
+          weigh several pieces of evidence — is the ID clearly real? Are
+          they on the guest list? Are they dressed for the venue? — and
+          each piece of evidence matters a different amount. The bouncer
+          adds up the weighted evidence in their head, compares it to
+          their own personal threshold for "convincing enough," and
+          decides: let them in, or not.
+        </p>
+      </div>
+
+      <h2>The same weighted sum, with a new name</h2>
+      <script>initJargonBox("neuron",
+        "A single computational unit: it multiplies each input by its own weight, adds a bias term, sums everything up, and passes the result through an activation function to produce one output. The basic building block of a neural network.");</script>
+      <p>
+        A <span class="jargon-term">neuron</span> takes several inputs,
+        multiplies each one by its own <span class="jargon-term">weight</span>
+        (Chapter 4.1), adds them all up, and adds one more adjustable
+        number called the <strong>bias term</strong> — not to be confused
+        with either the data/model fairness "bias" from Chapter 3.7 or
+        the statistical "bias" from Chapter 5.1's bias-variance tradeoff.
+        A neuron's bias term is just an offset, the same role the "+50000"
+        played in Chapter 4.1's housing formula. That combined number
+        then passes through an <strong>activation function</strong>
+        (Chapter 6.3 covers the options) to produce the neuron's output.
+      </p>
+      <p>
+        If that sounds familiar, it should: Chapter 4.2's logistic
+        regression — weighted sum, plus bias, through the
+        <span class="jargon-term">sigmoid function</span> — <em>is</em>
+        a single neuron. Logistic regression was a neuron all along.
+        What's new in this Part is connecting many of them together.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          Should you bring an umbrella? Adjust the weights and bias and
+          watch the neuron decide, live.
+        </p>
+
+        <svg id="neuron-svg" viewBox="0 0 500 260" overflow="hidden" role="img" aria-label="Diagram of a single neuron with three weighted inputs producing one output">
+          <line id="neuron-line-1" x1="90" y1="40" x2="260" y2="130" stroke="#6e7681" stroke-width="2"></line>
+          <line id="neuron-line-2" x1="90" y1="130" x2="260" y2="130" stroke="#6e7681" stroke-width="2"></line>
+          <line id="neuron-line-3" x1="90" y1="220" x2="260" y2="130" stroke="#6e7681" stroke-width="2"></line>
+          <line x1="260" y1="130" x2="410" y2="130" stroke="#6e7681" stroke-width="2"></line>
+
+          <rect x="10" y="20" width="150" height="40" rx="6" fill="#161b22" stroke="#30363d"></rect>
+          <text x="85" y="45" text-anchor="middle" fill="#e6edf3" font-size="13">Rain chance</text>
+          <rect x="10" y="110" width="150" height="40" rx="6" fill="#161b22" stroke="#30363d"></rect>
+          <text x="85" y="135" text-anchor="middle" fill="#e6edf3" font-size="13">Wind speed</text>
+          <rect x="10" y="200" width="150" height="40" rx="6" fill="#161b22" stroke="#30363d"></rect>
+          <text x="85" y="225" text-anchor="middle" fill="#e6edf3" font-size="13">Temperature</text>
+
+          <text id="neuron-label-1" x="175" y="78" fill="#bc8cff" font-size="12">w1</text>
+          <text id="neuron-label-2" x="175" y="122" fill="#bc8cff" font-size="12">w2</text>
+          <text id="neuron-label-3" x="175" y="185" fill="#bc8cff" font-size="12">w3</text>
+
+          <circle id="neuron-core" cx="260" cy="130" r="42" fill="#1c2128" stroke="var(--purple)" stroke-width="2"></circle>
+          <text x="260" y="126" text-anchor="middle" fill="#e6edf3" font-size="11">z = Σ + bias</text>
+          <text id="neuron-z-text" x="260" y="142" text-anchor="middle" fill="#8b949e" font-size="11"></text>
+
+          <rect x="410" y="105" width="80" height="50" rx="6" fill="#161b22" stroke="var(--green)"></rect>
+          <text x="450" y="127" text-anchor="middle" fill="#e6edf3" font-size="11">output</text>
+          <text id="neuron-output-text" x="450" y="144" text-anchor="middle" fill="var(--green)" font-size="13"></text>
+        </svg>
+
+        <div class="demo-controls">
+          <label class="demo-slider-label">Rain chance: <span id="n-rain-value">50</span>%
+            <input type="range" id="n-rain-slider" min="0" max="100" step="5" value="50">
+          </label>
+          <label class="demo-slider-label">Wind speed: <span id="n-wind-value">10</span> mph
+            <input type="range" id="n-wind-slider" min="0" max="30" step="1" value="10">
+          </label>
+          <label class="demo-slider-label">Temperature: <span id="n-temp-value">60</span>°F
+            <input type="range" id="n-temp-slider" min="30" max="90" step="1" value="60">
+          </label>
+        </div>
+        <div class="demo-controls">
+          <label class="demo-slider-label">Weight on rain (w1): <span id="n-w1-value">0.06</span>
+            <input type="range" id="n-w1-slider" min="-0.10" max="0.10" step="0.01" value="0.06">
+          </label>
+          <label class="demo-slider-label">Weight on wind (w2): <span id="n-w2-value">0.05</span>
+            <input type="range" id="n-w2-slider" min="-0.10" max="0.10" step="0.01" value="0.05">
+          </label>
+          <label class="demo-slider-label">Weight on temperature (w3): <span id="n-w3-value">-0.01</span>
+            <input type="range" id="n-w3-slider" min="-0.10" max="0.10" step="0.01" value="-0.01">
+          </label>
+          <label class="demo-slider-label">Bias: <span id="n-bias-value">-3.0</span>
+            <input type="range" id="n-bias-slider" min="-5" max="5" step="0.1" value="-3.0">
+          </label>
+        </div>
+
+        <p id="neuron-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          function $(id) { return document.getElementById(id); }
+          var rainSlider = $('n-rain-slider'), windSlider = $('n-wind-slider'), tempSlider = $('n-temp-slider');
+          var w1Slider = $('n-w1-slider'), w2Slider = $('n-w2-slider'), w3Slider = $('n-w3-slider'), biasSlider = $('n-bias-slider');
+          var rainValue = $('n-rain-value'), windValue = $('n-wind-value'), tempValue = $('n-temp-value');
+          var w1Value = $('n-w1-value'), w2Value = $('n-w2-value'), w3Value = $('n-w3-value'), biasValue = $('n-bias-value');
+          var readout = $('neuron-readout');
+          var zText = $('neuron-z-text'), outputText = $('neuron-output-text'), core = $('neuron-core');
+          var line1 = $('neuron-line-1'), line2 = $('neuron-line-2'), line3 = $('neuron-line-3');
+
+          function sigmoid(x) { return 1 / (1 + Math.exp(-x)); }
+
+          function render() {
+            var rain = parseFloat(rainSlider.value);
+            var wind = parseFloat(windSlider.value);
+            var temp = parseFloat(tempSlider.value);
+            var w1 = parseFloat(w1Slider.value);
+            var w2 = parseFloat(w2Slider.value);
+            var w3 = parseFloat(w3Slider.value);
+            var bias = parseFloat(biasSlider.value);
+
+            rainValue.textContent = rain; windValue.textContent = wind; tempValue.textContent = temp;
+            w1Value.textContent = w1.toFixed(2); w2Value.textContent = w2.toFixed(2);
+            w3Value.textContent = w3.toFixed(2); biasValue.textContent = bias.toFixed(1);
+
+            var z = w1 * rain + w2 * wind + w3 * temp + bias;
+            var output = sigmoid(z);
+
+            zText.textContent = 'z = ' + z.toFixed(2);
+            outputText.textContent = (output * 100).toFixed(0) + '%';
+
+            var glow = Math.round(output * 255);
+            core.setAttribute('stroke', 'rgb(' + (188 - Math.round(output * 60)) + ',' + (140 + Math.round(output * 60)) + ',255)');
+            [line1, line2, line3].forEach(function (l) {
+              l.setAttribute('stroke-width', String(1 + output * 3));
+            });
+
+            var decision = output >= 0.5 ? 'Bring an umbrella.' : 'Leave it at home.';
+            readout.textContent = 'z = ' + z.toFixed(2) + '  →  sigmoid(z) = ' + (output * 100).toFixed(1) +
+              '%  →  ' + decision;
+          }
+
+          [rainSlider, windSlider, tempSlider, w1Slider, w2Slider, w3Slider, biasSlider].forEach(function (s) {
+            s.addEventListener('input', render);
+          });
+          render();
+        })();
+      </script>
+
+      <p>
+        Notice the shape of the computation never changes as you drag
+        sliders — only the numbers do. That's the whole idea of a
+        neuron: a fixed, simple recipe (weighted sum, add bias, squash
+        through an activation function) whose behavior is entirely
+        controlled by its weights and bias. Training a neural network
+        (Chapter 6.4 onward) means searching for good values for exactly
+        those numbers — nothing more exotic than that.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>A neuron multiplies each input by its own weight, sums the results, adds a bias term, then passes the total through an activation function.</li>
+          <li>Chapter 4.2's logistic regression is exactly one neuron using the sigmoid activation function.</li>
+          <li>A neuron's "bias term" is an adjustable offset — a different meaning of "bias" than data/model fairness (Chapter 3.7) or the statistical bias-variance tradeoff (Chapter 5.1).</li>
+          <li>All of a neuron's behavior lives in its weights and bias; training means searching for good values for them.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-6-1">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What does a neuron compute, in order?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Weighted sum, plus bias, through an activation function.">Multiply each input by its weight, sum the results, add a bias term, then pass the total through an activation function.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a neuron's inputs are weighted individually before being combined.">Average all the inputs together with no weighting at all.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the activation function comes after the weighted sum, not before.">Pass each input through an activation function first, then multiply them together.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. Which earlier chapter's technique turns out to already be a single neuron?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Weighted sum plus bias, through sigmoid — exactly one neuron.">Chapter 4.2's logistic regression.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — k-Nearest Neighbors has no weights or bias at all; it just looks at nearby points.">Chapter 4.4's k-Nearest Neighbors.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — k-means has no weighted sum or activation function; it's about clustering.">Chapter 4.8's k-means clustering.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. A neuron's "bias term" refers to which idea?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Just an adjustable offset, unrelated to fairness or statistical bias.">An adjustable offset added to the weighted sum — unrelated to data fairness or the bias-variance tradeoff.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that's the data/model fairness sense of \"bias\" from Chapter 3.7, a different meaning.">A systematic unfairness in the training data.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that's the statistical sense of \"bias\" from Chapter 5.1's bias-variance tradeoff, a different meaning.">How consistently wrong a model is in the same direction.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+</div>
+
+<script>
+  (function () {
+    initQuiz(document.getElementById('quiz-6-1'));
+    initProgressTracking();
+  })();
+</script>
+</body>
+</html>
