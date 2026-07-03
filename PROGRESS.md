@@ -1,11 +1,11 @@
 # Progress
 
 ## Status
-In progress. 33 of 98 chapters written. Parts I, II, and III are all complete.
+In progress. 34 of 98 chapters written. Parts I, II, III, and IV are all complete.
 
 ## Next chapter due
-Part IV, Chapter 4.9 — Dimensionality Reduction (PCA/t-SNE)
-(parts/part-04-classical-ml.html already exists — insert the new <section> before </main> and flip 4.9's sidebar entry from unwritten to live; this is the last chapter of Part IV)
+Part V, Chapter 5.1 — Why Models Fail (over/underfitting, bias-variance)
+(first chapter of parts/part-05-evaluation.html — create the file with a full sidebar TOC for Part V's 4 chapters)
 
 ## Completed chapters
 - 0.1 How This Book Works — parts/part-00-before-we-begin.html
@@ -41,6 +41,7 @@ Part IV, Chapter 4.9 — Dimensionality Reduction (PCA/t-SNE)
 - 4.6 Random Forests & Boosting — parts/part-04-classical-ml.html
 - 4.7 SVM & Naive Bayes [D] — parts/part-04-classical-ml.html
 - 4.8 Clustering (K-means) — parts/part-04-classical-ml.html
+- 4.9 Dimensionality Reduction (PCA/t-SNE) — parts/part-04-classical-ml.html
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in

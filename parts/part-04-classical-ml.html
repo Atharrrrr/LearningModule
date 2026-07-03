@@ -41,7 +41,9 @@
     <a class="nav-item" data-chapter-id="4-8" href="#chapter-4-8">
       <span class="nav-dot"></span>4.8 Clustering (K-means)
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>4.9 Dimensionality Reduction (PCA/t-SNE)</div>
+    <a class="nav-item" data-chapter-id="4-9" href="#chapter-4-9">
+      <span class="nav-dot"></span>4.9 Dimensionality Reduction (PCA/t-SNE)
+    </a>
   </nav>
 
   <main>
@@ -1489,6 +1491,220 @@
 
     </section>
 
+    <section id="chapter-4-9">
+      <div class="chapter-eyebrow">Part IV · Chapter 4.9</div>
+      <h1 class="chapter-title">Dimensionality Reduction (PCA/t-SNE)</h1>
+
+      <p class="lede">
+        Real datasets often have dozens or hundreds of features — far too
+        many to plot (Chapter 2.12). This chapter compresses them down to
+        a handful, without throwing away what matters most.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🔦 Frame of reference</div>
+        <p>
+          Hold a wire sculpture up to a light and it casts a 2D shadow on
+          the wall. Rotate it, and some angles produce a shadow that
+          barely looks like anything — a thin sliver. Other angles cast a
+          shadow that captures the sculpture's real shape surprisingly
+          well. Finding that best angle — the one preserving the most
+          real information in fewer dimensions — is exactly what
+          dimensionality reduction does with data.
+        </p>
+      </div>
+
+      <h2>PCA: finding the best angle automatically</h2>
+      <script>initJargonBox("dimensionality reduction",
+        "Compressing data with many features (high dimensions) down into fewer dimensions, while preserving as much important structure as possible.");</script>
+      <script>initJargonBox("PCA (Principal Component Analysis)",
+        "A dimensionality reduction technique that finds the direction (or directions) of greatest spread in the data and projects points onto them — like finding the shadow angle that best preserves a shape.");</script>
+      <p>
+        <span class="jargon-term">Dimensionality reduction</span>
+        compresses high-dimensional data into fewer dimensions while
+        keeping as much important structure as possible.
+        <span class="jargon-term">PCA</span> does this by finding the
+        direction with the greatest spread in the data and projecting
+        every point onto it — the mathematical version of finding the
+        best shadow angle. You'll search for that angle by hand below;
+        PCA finds it automatically, the same way gradient descent (4.3)
+        automated manual line-fitting.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">Rotate the projection line and watch the spread of the projected points change.</p>
+
+        <svg id="pca-chart" viewBox="0 0 500 380" overflow="hidden" role="img" aria-label="A cloud of points being projected onto a rotatable line, illustrating PCA">
+          <line id="pca-line" stroke="#ffa657" stroke-width="2"></line>
+          <g id="pca-connectors"></g>
+          <g id="pca-points"></g>
+          <g id="pca-projections"></g>
+        </svg>
+
+        <div class="demo-controls">
+          <label class="demo-slider-label">Projection angle: <span id="pca-angle-value">90</span>°
+            <input type="range" id="pca-angle-slider" min="0" max="175" step="5" value="90">
+          </label>
+        </div>
+        <div class="demo-actions">
+          <div class="quiz-option" id="pca-best-btn">✓ Find the best angle</div>
+        </div>
+        <p id="pca-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var points = [[110, 295], [140, 270], [130, 310], [170, 250], [190, 230], [180, 265], [220, 210], [240, 190], [230, 225], [270, 170], [290, 150], [280, 185], [320, 130], [350, 100], [340, 140]];
+          var cx = points.reduce(function (s, p) { return s + p[0]; }, 0) / points.length;
+          var cy = points.reduce(function (s, p) { return s + p[1]; }, 0) / points.length;
+
+          var pointsGroup = document.getElementById('pca-points');
+          var projGroup = document.getElementById('pca-projections');
+          var connGroup = document.getElementById('pca-connectors');
+          var lineEl = document.getElementById('pca-line');
+          var slider = document.getElementById('pca-angle-slider');
+          var angleValue = document.getElementById('pca-angle-value');
+          var readout = document.getElementById('pca-readout');
+          var bestBtn = document.getElementById('pca-best-btn');
+
+          points.forEach(function (p) {
+            var c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            c.setAttribute('cx', p[0]);
+            c.setAttribute('cy', p[1]);
+            c.setAttribute('r', '5');
+            c.setAttribute('fill', '#bc8cff');
+            pointsGroup.appendChild(c);
+          });
+
+          var projCircles = points.map(function () {
+            var c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            c.setAttribute('r', '3.5');
+            c.setAttribute('fill', '#3fb950');
+            projGroup.appendChild(c);
+            return c;
+          });
+
+          var connLines = points.map(function () {
+            var l = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            l.setAttribute('stroke', '#30363d');
+            l.setAttribute('stroke-width', '1');
+            l.setAttribute('stroke-dasharray', '2,2');
+            connGroup.appendChild(l);
+            return l;
+          });
+
+          function spreadAtAngle(angleDeg) {
+            var rad = angleDeg * Math.PI / 180;
+            var d = [Math.cos(rad), Math.sin(rad)];
+            var scalars = points.map(function (p) { return (p[0] - cx) * d[0] + (p[1] - cy) * d[1]; });
+            var mean = scalars.reduce(function (a, b) { return a + b; }, 0) / scalars.length;
+            var variance = scalars.reduce(function (a, b) { return a + (b - mean) * (b - mean); }, 0) / scalars.length;
+            return { d: d, scalars: scalars, spread: Math.sqrt(variance) };
+          }
+
+          function update(angleDeg) {
+            angleValue.textContent = Math.round(angleDeg);
+            var result = spreadAtAngle(angleDeg);
+            var d = result.d;
+
+            lineEl.setAttribute('x1', cx - d[0] * 220);
+            lineEl.setAttribute('y1', cy - d[1] * 220);
+            lineEl.setAttribute('x2', cx + d[0] * 220);
+            lineEl.setAttribute('y2', cy + d[1] * 220);
+
+            points.forEach(function (p, i) {
+              var s = result.scalars[i];
+              var px = cx + d[0] * s, py = cy + d[1] * s;
+              projCircles[i].setAttribute('cx', px);
+              projCircles[i].setAttribute('cy', py);
+              connLines[i].setAttribute('x1', p[0]);
+              connLines[i].setAttribute('y1', p[1]);
+              connLines[i].setAttribute('x2', px);
+              connLines[i].setAttribute('y2', py);
+            });
+
+            readout.textContent = 'Spread of projected points at ' + Math.round(angleDeg) + '°: ' + result.spread.toFixed(1) + '.';
+            return result.spread;
+          }
+
+          slider.addEventListener('input', function () { update(parseFloat(slider.value)); });
+
+          bestBtn.addEventListener('click', function () {
+            var best = { angle: 0, spread: -1 };
+            for (var a = 0; a <= 175; a += 5) {
+              var s = spreadAtAngle(a).spread;
+              if (s > best.spread) best = { angle: a, spread: s };
+            }
+            slider.value = best.angle;
+            update(best.angle);
+            readout.textContent += ' This is the angle PCA would find automatically — the direction of greatest spread.';
+          });
+
+          update(90);
+        })();
+      </script>
+
+      <h2>t-SNE: built for visualization</h2>
+      <script>initJargonBox("t-SNE",
+        "A nonlinear dimensionality reduction technique especially suited for visualization: it prioritizes keeping points that were close together in high dimensions still close together in the result, even if that distorts overall distances.");</script>
+      <p>
+        <span class="jargon-term">t-SNE</span> takes a different approach.
+        Instead of preserving overall spread like PCA, it prioritizes
+        keeping nearby points nearby — points that were close together in
+        high-dimensional space stay close together in the 2D result, even
+        if that distorts the bigger picture. This tends to produce
+        visually clean clusters, which is why t-SNE is a favorite for
+        plotting things like word embeddings (Chapter 8.3) in two
+        dimensions for humans to actually look at.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Dimensionality reduction compresses high-dimensional data into fewer dimensions while preserving important structure.</li>
+          <li>PCA finds the direction(s) of greatest spread and projects points onto them — like finding the best shadow angle.</li>
+          <li>t-SNE is nonlinear and prioritizes keeping nearby points nearby, favored for visualization.</li>
+          <li>Both make it possible to plot and understand data that would otherwise have too many dimensions to visualize directly.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-4-9">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What does dimensionality reduction do?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Fewer dimensions, as little important structure lost as possible.">Compresses high-dimensional data into fewer dimensions while preserving important structure.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that's feature engineering (Chapter 3.4), which typically adds features rather than reducing their count.">Adds new engineered features to a dataset.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that's Chapter 3.2's cleaning process, unrelated to dimensionality reduction.">Deletes all data points that are outliers.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. What is PCA looking for when it picks a projection direction?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! The direction where the projected points spread out the most.">The direction that preserves the most spread (variance) in the data.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — PCA's choice of direction has nothing to do with point count.">The direction with the fewest data points.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — PCA specifically searches for the best direction, not a random one.">A completely random direction, chosen without regard to the data.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. Why is t-SNE especially popular for visualization, compared to PCA?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Keeping close points close tends to produce visually clean, readable clusters.">It specifically prioritizes keeping nearby points nearby in the low-dimensional result, producing visually clean clusters.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — t-SNE is nonlinear, and works on high-dimensional data, not just 2D inputs.">It's a linear technique that only works on 2D data to begin with.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — t-SNE requires real computation, just like PCA.">It requires no computation at all, unlike PCA.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -1502,6 +1718,7 @@
     initQuiz(document.getElementById('quiz-4-6'));
     initQuiz(document.getElementById('quiz-4-7'));
     initQuiz(document.getElementById('quiz-4-8'));
+    initQuiz(document.getElementById('quiz-4-9'));
     initProgressTracking();
   })();
 </script>
