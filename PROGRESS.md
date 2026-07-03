@@ -1,16 +1,16 @@
 # Progress
 
 ## Status
-In progress. 51 of 98 chapters written. Parts I, II, III, IV, V, and VI
+In progress. 52 of 98 chapters written. Parts I, II, III, IV, V, and VI
 are all complete.
 
 ## Next chapter due
-Part VII, Chapter 7.5 — Famous Architectures & Transfer Learning
+Part VII, Chapter 7.6 — Evaluating Vision Models (IoU/mAP)
 (parts/part-07-teaching-computers-to-see.html already exists — insert the
-new <section> before </main> and flip 7.5's sidebar entry from unwritten
-to live. Note: 7.7 Meet YOLO and 7.8 Meet SuperPoint are anchor chapters
-— must each be written alone, one per turn. A batch reaching 7.7 should
-stop right before it, after 7.6.)
+new <section> before </main> and flip 7.6's sidebar entry from unwritten
+to live. IMPORTANT: 7.7 Meet YOLO, right after this one, is an anchor
+chapter — must be written alone, one per turn. A batch should stop after
+7.6, right before 7.7.)
 
 ## Completed chapters
 - 0.1 How This Book Works — parts/part-00-before-we-begin.html
@@ -64,6 +64,7 @@ stop right before it, after 7.6.)
 - 7.2 Convolutional Neural Networks — parts/part-07-teaching-computers-to-see.html
 - 7.3 The Classic CV Toolbox (SIFT/ORB) — parts/part-07-teaching-computers-to-see.html
 - 7.4 Classification vs. Detection vs. Segmentation — parts/part-07-teaching-computers-to-see.html
+- 7.5 Famous Architectures & Transfer Learning — parts/part-07-teaching-computers-to-see.html
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in

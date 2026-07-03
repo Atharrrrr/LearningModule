@@ -29,7 +29,9 @@
     <a class="nav-item" data-chapter-id="7-4" href="#chapter-7-4">
       <span class="nav-dot"></span>7.4 Classification vs. Detection vs. Segmentation
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>7.5 Famous Architectures &amp; Transfer Learning</div>
+    <a class="nav-item" data-chapter-id="7-5" href="#chapter-7-5">
+      <span class="nav-dot"></span>7.5 Famous Architectures &amp; Transfer Learning
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>7.6 Evaluating Vision Models (IoU/mAP)</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>7.7 Meet YOLO</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>7.8 Meet SuperPoint</div>
@@ -1039,6 +1041,216 @@
 
     </section>
 
+    <section id="chapter-7-5">
+      <div class="chapter-eyebrow">Part VII · Chapter 7.5</div>
+      <h1 class="chapter-title">Famous Architectures &amp; Transfer Learning</h1>
+
+      <p class="lede">
+        CNNs (Chapter 7.2) got dramatically deeper and more capable
+        over a roughly 15-year stretch — and one architecture in
+        particular solved a problem this book already met head-on.
+        That same history also explains why almost nobody trains a
+        vision model completely from scratch anymore.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">👨‍🍳 Frame of reference</div>
+        <p>
+          Hiring an experienced chef instead of training a new cook
+          from absolute zero. An experienced chef already has years of
+          general technique — knife skills, heat control, seasoning
+          instinct — that transfers to almost any cuisine. Teaching
+          them your restaurant's specific menu takes an afternoon, not
+          years. Only a total beginner needs to relearn how to hold a
+          knife from scratch.
+        </p>
+      </div>
+
+      <h2>A short, famous timeline</h2>
+      <p>
+        A few architectures marked real turning points:
+      </p>
+      <ul>
+        <li><strong>LeNet (1998)</strong> — one of the first real CNNs, reading handwritten digits. Small by today's standards, but proof the idea worked.</li>
+        <li><strong>AlexNet (2012)</strong> — a much deeper CNN, trained on GPUs, that dramatically beat every non-deep-learning approach on ImageNet (a huge labeled image dataset). This is widely seen as deep learning's breakout moment for vision.</li>
+        <li><strong>VGG (2014)</strong> — showed that stacking many small 3×3 kernels (Chapter 7.2), rather than a few large ones, reliably improved results as depth increased.</li>
+        <li><strong>ResNet (2015)</strong> — pushed depth further still (over 100 layers), by directly fixing the vanishing gradient problem from Chapter 6.7.</li>
+      </ul>
+
+      <h2>ResNet's fix: give the gradient a shortcut</h2>
+      <script>initJargonBox("residual connection (skip connection)",
+        "A shortcut path in a network that adds a layer's input directly to its output — output = f(x) + x — instead of only passing through the layer's learned transformation. Lets the gradient flow backward through the \"+x\" shortcut even when the learned path's own gradient is small, directly countering vanishing gradients (Chapter 6.7).");</script>
+      <p>
+        A plain layer computes <span class="mono">y = f(x)</span>. A
+        <span class="jargon-term">residual connection (skip connection)</span>
+        instead computes <span class="mono">y = f(x) + x</span> — the
+        input skips straight past the layer and gets added back in.
+        That "+x" matters enormously for backpropagation: the gradient
+        of <span class="mono">y</span> with respect to
+        <span class="mono">x</span> becomes
+        <span class="mono">f'(x) + 1</span> instead of just
+        <span class="mono">f'(x)</span>. Even if the learned path's
+        gradient is small, adding 1 keeps the total gradient from
+        collapsing toward zero.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          Chapter 6.7's exact sigmoid-derivative scenario (factor 0.25
+          per layer), compared plain vs. with residual connections.
+        </p>
+
+        <div class="demo-controls">
+          <label class="demo-slider-label">Network depth: <span id="res-depth-value">10</span> layers
+            <input type="range" id="res-depth-slider" min="1" max="20" step="1" value="10">
+          </label>
+        </div>
+        <p id="res-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var slider = document.getElementById('res-depth-slider');
+          var depthValue = document.getElementById('res-depth-value');
+          var readout = document.getElementById('res-readout');
+
+          function render() {
+            var depth = parseInt(slider.value, 10);
+            depthValue.textContent = depth;
+            var plain = Math.pow(0.25, depth);
+            var residual = Math.pow(1 + 0.25, depth);
+            readout.textContent = 'At ' + depth + ' layers — plain: ' + plain.toExponential(3) +
+              ' (vanished)   with residual connections: ' + residual.toFixed(2) + ' (healthy).';
+          }
+
+          slider.addEventListener('input', render);
+          render();
+        })();
+      </script>
+
+      <p>
+        At 20 layers, the plain network's gradient has collapsed to
+        about 9×10⁻¹³ — completely vanished, exactly Chapter 6.7's
+        story. The residual version's gradient is still around 87 —
+        nowhere close to vanishing. That one structural change is what
+        let networks go from tens of layers to hundreds.
+      </p>
+
+      <h2>Transfer learning: reusing what a network already knows</h2>
+      <script>initJargonBox("transfer learning",
+        "Starting from a model already trained on a large, general dataset, then reusing most of its learned weights for a new, related task — instead of training a new network from scratch.");</script>
+      <script>initJargonBox("fine-tuning",
+        "The training step in transfer learning where a pretrained model's weights are further adjusted (often only in the later layers) on a smaller, task-specific dataset.");</script>
+      <p>
+        Chapter 7.2 showed early CNN layers learn simple, generic
+        features like edges; later layers combine those into
+        increasingly task-specific patterns. That generic-to-specific
+        progression is exactly what makes
+        <span class="jargon-term">transfer learning</span> work: take a
+        model already trained on a huge, general dataset, keep its
+        early layers exactly as they are (they've already learned
+        generically useful features), and only
+        <span class="jargon-term">fine-tune</span> the later layers for
+        a new, specific task. The "experienced chef" doesn't relearn
+        knife skills for a new menu.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          A 5-layer pretrained network with real parameter counts per
+          layer. Freeze the early layers and see how few parameters
+          actually need retraining.
+        </p>
+
+        <div class="demo-controls">
+          <label class="demo-slider-label">Freeze the first <span id="tl-freeze-value">4</span> layers
+            <input type="range" id="tl-freeze-slider" min="0" max="4" step="1" value="4">
+          </label>
+        </div>
+        <p id="tl-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var params = [1792, 36928, 147584, 590080, 4097];
+          var total = params.reduce(function (a, b) { return a + b; }, 0);
+
+          var slider = document.getElementById('tl-freeze-slider');
+          var freezeValue = document.getElementById('tl-freeze-value');
+          var readout = document.getElementById('tl-readout');
+
+          function render() {
+            var n = parseInt(slider.value, 10);
+            freezeValue.textContent = n;
+            var frozen = params.slice(0, n).reduce(function (a, b) { return a + b; }, 0);
+            var trainable = total - frozen;
+            var pct = (trainable / total * 100);
+            readout.textContent = 'Frozen (reused as-is): ' + frozen.toLocaleString() + ' params.  Trainable: ' +
+              trainable.toLocaleString() + ' params (' + pct.toFixed(2) + '% of the network\'s ' + total.toLocaleString() + ' total).';
+          }
+
+          slider.addEventListener('input', render);
+          render();
+        })();
+      </script>
+
+      <p>
+        Freeze all 4 early layers, and fine-tuning only touches the
+        final layer — under 1% of the network's total parameters, yet
+        often enough to reach strong performance on a new task with far
+        less data and training time than starting from scratch. Chapter
+        7.6 covers how to actually measure whether a vision model — from
+        scratch or fine-tuned — is any good.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Famous CNN architectures (LeNet, AlexNet, VGG, ResNet) trace a path toward greater depth and capability.</li>
+          <li>A residual connection adds a layer's input directly to its output, giving the gradient a "+1" shortcut that keeps it from vanishing (Chapter 6.7) even in very deep networks.</li>
+          <li>Transfer learning reuses a pretrained model's early, general-purpose layers, fine-tuning only the later, task-specific layers on new data.</li>
+          <li>Freezing early layers can reduce the number of parameters that need retraining to a small fraction of the total network.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-7-5">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What problem did ResNet's residual connections solve?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! The +1 term from the skip connection keeps the gradient from collapsing toward zero.">Vanishing gradients in very deep networks, by giving the gradient a shortcut path that doesn't depend on the learned layer's own (possibly small) derivative.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — residual connections are a structural fix for training deep networks, not a data-labeling technique.">The high cost of labeling segmentation training data.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — residual connections don't change what a kernel computes; they add a shortcut path around entire layers.">The number of weights a single convolutional kernel needs.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. Why does transfer learning usually only fine-tune the later layers of a pretrained network?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Generic early features transfer well; only the more task-specific later layers typically need adjustment.">Early layers learn generic, broadly useful features (like edges) that transfer well to new tasks; later layers are more task-specific and benefit most from retraining.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — early layers are deliberately kept, not discarded, since their generic features are still useful.">Early layers are always broken and need to be discarded entirely.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo showed a real, computed reduction using actual per-layer parameter counts, not a coincidence.">There's no real technical reason — it's just a common convention with no benefit.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. What's the main practical benefit of transfer learning?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Reusing already-learned general features means far less data and compute for a new task.">It can reach strong performance on a new task with far less training data and compute than training a network from scratch.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — transfer learning is specifically about reusing weights from a different, already-trained model.">It guarantees a model will never need any further training.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo showed transfer learning still requires training the later layers; it isn't training-free.">It removes the need for backpropagation entirely.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -1048,6 +1260,7 @@
     initQuiz(document.getElementById('quiz-7-2'));
     initQuiz(document.getElementById('quiz-7-3'));
     initQuiz(document.getElementById('quiz-7-4'));
+    initQuiz(document.getElementById('quiz-7-5'));
     initProgressTracking();
   })();
 </script>
