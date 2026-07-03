@@ -35,7 +35,9 @@
     <a class="nav-item" data-chapter-id="6-6" href="#chapter-6-6">
       <span class="nav-dot"></span>6.6 The Training Toolbox
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>6.7 Vanishing Gradients &amp; Initialization</div>
+    <a class="nav-item" data-chapter-id="6-7" href="#chapter-6-7">
+      <span class="nav-dot"></span>6.7 Vanishing Gradients &amp; Initialization
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>6.8 Dropout &amp; BatchNorm</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>6.9 Building Your First Network (PyTorch)</div>
   </nav>
@@ -1745,6 +1747,268 @@
 
     </section>
 
+    <section id="chapter-6-7">
+      <div class="chapter-eyebrow">Part VI · Chapter 6.7</div>
+      <h1 class="chapter-title">Vanishing Gradients &amp; Initialization</h1>
+
+      <p class="lede">
+        Chapter 6.4's backward pass multiplied local derivatives
+        together, link by link, back through the network. That
+        multiplication has a dark side: multiply enough numbers smaller
+        than 1 together, and the product collapses toward zero — fast.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">📢 Frame of reference</div>
+        <p>
+          A message passed backward down a long line of people, each
+          one repeating it only at 25% volume. After a few people, it's
+          quiet but audible. After ten, it's inaudible — not because
+          any single person did anything wrong, but because a small
+          reduction, repeated over and over, compounds into nothing.
+          The exact same shrinkage happens to a gradient passed backward
+          through many layers, if each layer's individual link in the
+          chain shrinks the signal even a little.
+        </p>
+      </div>
+
+      <h2>Why depth alone can make gradients vanish</h2>
+      <script>initJargonBox("vanishing gradient",
+        "A gradient that shrinks toward zero as it's propagated backward through many layers, because each layer's local derivative is a fraction less than 1, and those fractions multiply together. Early layers end up with almost no gradient at all, and stop learning.");</script>
+      <p>
+        Chapter 6.4's worked example computed <span class="mono">dh/dz1 = h(1 − h)</span>
+        — one link in the chain, worth about 0.235 there. Sigmoid's
+        derivative never exceeds 0.25, anywhere. Stack ten sigmoid
+        layers, and a gradient passing through all of them gets
+        multiplied by roughly ten numbers no bigger than 0.25 — that's
+        where a <span class="jargon-term">vanishing gradient</span>
+        comes from. Early layers, buried under all those multiplications,
+        end up with a gradient so close to zero that gradient descent
+        (Chapter 4.3) can barely move them. They effectively stop
+        learning, even while later layers keep training normally.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          A gradient's magnitude after passing back through N layers,
+          assuming each layer contributes its activation function's
+          derivative. Sigmoid's best case (0.25) vs. ReLU's for an
+          active neuron (exactly 1).
+        </p>
+
+        <svg id="vg-svg" viewBox="0 0 500 320" overflow="hidden" role="img" aria-label="Chart of gradient magnitude on a log scale versus network depth for sigmoid and ReLU">
+          <line x1="60" y1="280" x2="460" y2="280" stroke="#30363d" stroke-width="1"></line>
+          <line x1="60" y1="280" x2="60" y2="20" stroke="#30363d" stroke-width="1"></line>
+          <text x="260" y="305" text-anchor="middle" fill="#6e7681" font-size="12">network depth →</text>
+          <text x="20" y="150" text-anchor="middle" fill="#6e7681" font-size="12" transform="rotate(-90 20 150)">log₁₀(gradient magnitude)</text>
+          <path id="vg-path-sigmoid" fill="none" stroke="var(--blue)" stroke-width="2"></path>
+          <path id="vg-path-relu" fill="none" stroke="var(--green)" stroke-width="2"></path>
+          <line id="vg-marker" x1="0" y1="20" x2="0" y2="280" stroke="var(--orange)" stroke-width="1" stroke-dasharray="3,3"></line>
+          <circle id="vg-dot-sigmoid" r="5" fill="var(--blue)"></circle>
+          <circle id="vg-dot-relu" r="5" fill="var(--green)"></circle>
+        </svg>
+        <p style="font-size:12.5px; color:#6e7681; margin-top:-4px;">
+          Blue = sigmoid (factor 0.25/layer). Green = ReLU, active neuron (factor 1/layer).
+        </p>
+
+        <div class="demo-controls">
+          <label class="demo-slider-label">Network depth: <span id="vg-depth-value">10</span> layers
+            <input type="range" id="vg-depth-slider" min="1" max="20" step="1" value="10">
+          </label>
+        </div>
+        <p id="vg-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var xMin = 1, xMax = 20, yMin = -13, yMax = 1;
+          var left = 60, right = 460, top = 20, bottom = 280;
+          function xScale(x) { return left + (x - xMin) / (xMax - xMin) * (right - left); }
+          function yScale(y) { return bottom - (y - yMin) / (yMax - yMin) * (bottom - top); }
+
+          function buildPath(factor) {
+            var d = '';
+            for (var depth = 1; depth <= 20; depth++) {
+              var mag = Math.pow(factor, depth);
+              var logMag = Math.log10(mag);
+              var px = xScale(depth), py = yScale(Math.max(logMag, yMin));
+              d += (depth === 1 ? 'M' : 'L') + px + ',' + py + ' ';
+            }
+            return d;
+          }
+
+          document.getElementById('vg-path-sigmoid').setAttribute('d', buildPath(0.25));
+          document.getElementById('vg-path-relu').setAttribute('d', buildPath(1.0));
+
+          var slider = document.getElementById('vg-depth-slider');
+          var depthValue = document.getElementById('vg-depth-value');
+          var readout = document.getElementById('vg-readout');
+          var marker = document.getElementById('vg-marker');
+          var dotSigmoid = document.getElementById('vg-dot-sigmoid');
+          var dotRelu = document.getElementById('vg-dot-relu');
+
+          function render() {
+            var depth = parseInt(slider.value, 10);
+            depthValue.textContent = depth;
+
+            var sigMag = Math.pow(0.25, depth);
+            var reluMag = Math.pow(1.0, depth);
+            var px = xScale(depth);
+            marker.setAttribute('x1', px); marker.setAttribute('x2', px);
+            dotSigmoid.setAttribute('cx', px); dotSigmoid.setAttribute('cy', yScale(Math.max(Math.log10(sigMag), yMin)));
+            dotRelu.setAttribute('cx', px); dotRelu.setAttribute('cy', yScale(Math.log10(reluMag)));
+
+            readout.textContent = 'At ' + depth + ' layers — sigmoid: ' + sigMag.toExponential(3) +
+              '   ReLU (active): ' + reluMag.toFixed(3);
+          }
+
+          slider.addEventListener('input', render);
+          render();
+        })();
+      </script>
+
+      <p>
+        By 10 layers, sigmoid's gradient has shrunk to about
+        0.00000095 of its original size — for practical purposes, zero.
+        ReLU's derivative is exactly 1 for any active neuron, so
+        1 raised to any depth stays exactly 1: no shrinkage at all from
+        the activation function itself. That's a major reason ReLU
+        (Chapter 6.3) became the default for deep networks.
+      </p>
+
+      <h2>Initialization: the problem starts before training even begins</h2>
+      <script>initJargonBox("weight initialization",
+        "The choice of starting values for a network's weights before training begins. Poorly scaled initial weights can cause signals to shrink toward zero or explode toward infinity as they pass through layers, even before any learning happens.");</script>
+      <p>
+        A good activation function alone doesn't fully solve this.
+        <span class="jargon-term">Weight initialization</span> — the
+        starting values weights are given before training even begins —
+        matters just as much. If every weight starts around a typical
+        magnitude of 2.0, signals roughly double at each layer; by 10
+        layers they've grown to over 1,000× their original size. Start
+        around 0.3, and by 10 layers a signal has shrunk to a
+        millionth of itself. Neither extreme has anything to do with
+        the activation function — it's purely a consequence of what
+        the weights happened to start at.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          A signal of magnitude 1.0 entering a 10-layer network, where
+          every weight starts at roughly the same typical scale. Watch
+          how far off "1.0 per layer" a network can get in ten stacked
+          multiplications.
+        </p>
+
+        <div class="demo-controls">
+          <label class="demo-slider-label">Typical starting weight scale: <span id="init-scale-value">1.00</span>
+            <input type="range" id="init-scale-slider" min="0.10" max="3.00" step="0.05" value="1.00">
+          </label>
+        </div>
+        <p id="init-verdict-readout" class="demo-readout"></p>
+        <table class="data-table" id="init-table">
+          <thead><tr><th>Layer</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th></tr></thead>
+          <tbody><tr id="init-row"><td>Signal magnitude</td></tr></tbody>
+        </table>
+      </div>
+
+      <script>
+        (function () {
+          var slider = document.getElementById('init-scale-slider');
+          var scaleValue = document.getElementById('init-scale-value');
+          var verdict = document.getElementById('init-verdict-readout');
+          var row = document.getElementById('init-row');
+
+          function fmt(n) {
+            if (n >= 1000 || (n > 0 && n < 0.001)) return n.toExponential(2);
+            return n.toFixed(3);
+          }
+
+          function render() {
+            var scale = parseFloat(slider.value);
+            scaleValue.textContent = scale.toFixed(2);
+
+            row.innerHTML = '<td>Signal magnitude</td>';
+            var mag = 1.0;
+            for (var layer = 1; layer <= 10; layer++) {
+              mag *= scale;
+              var td = document.createElement('td');
+              td.textContent = fmt(mag);
+              row.appendChild(td);
+            }
+
+            var final = Math.pow(scale, 10);
+            var verdictText;
+            if (final < 0.01) verdictText = 'Vanishing — the signal is nearly gone by the output layer.';
+            else if (final > 100) verdictText = 'Exploding — the signal has blown up far past a usable range.';
+            else verdictText = 'Stable — the signal stays in a reasonable range end to end.';
+            verdict.textContent = 'Final magnitude after 10 layers: ' + fmt(final) + '.  ' + verdictText;
+          }
+
+          slider.addEventListener('input', render);
+          render();
+        })();
+      </script>
+
+      <p>
+        The target scale is almost always close to 1.0 per layer — not
+        because 1.0 is a magic number, but because it's the one value
+        that neither shrinks nor grows a signal, no matter how many
+        layers it passes through. Real initialization schemes (Xavier /
+        Glorot for sigmoid and tanh, He initialization for ReLU) are
+        principled ways of picking random starting weights whose
+        typical scale lands close to that sweet spot automatically,
+        based on how many inputs and outputs each layer has.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Backpropagation multiplies local derivatives together across layers; if each is smaller than 1, the product shrinks toward zero as depth increases — a vanishing gradient.</li>
+          <li>Sigmoid's derivative maxes out at 0.25, making deep sigmoid networks especially prone to vanishing gradients; ReLU's derivative of exactly 1 (for active neurons) avoids that particular shrinkage.</li>
+          <li>Weight initialization is a separate, equally important cause: a typical starting weight scale far from 1.0 makes signals shrink or explode across layers before training even begins.</li>
+          <li>Principled initialization schemes (Xavier/Glorot, He) choose starting weight scales designed to keep signals stable across many layers.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-6-7">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What causes a vanishing gradient?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Numbers smaller than 1, multiplied together many times, shrink toward zero fast.">Multiplying many local derivatives smaller than 1 together across layers during backpropagation, shrinking the product toward zero.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the loss function itself isn't the cause; the repeated multiplication through many layers is.">Using the wrong loss function during training.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a vanishing gradient can happen with any dataset size; it's a structural property of depth and activation choice.">Having too little training data.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. Why is ReLU less prone to vanishing gradients than sigmoid?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! 1 raised to any depth is still exactly 1 — no shrinkage from the activation function itself.">ReLU's derivative is exactly 1 for active neurons, so it doesn't shrink the gradient at all when multiplied through layers, unlike sigmoid's derivative, which never exceeds 0.25.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — ReLU is actually simpler and cheaper to compute than sigmoid, not slower.">ReLU is simply a slower, more careful version of sigmoid.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — ReLU networks still use ordinary backpropagation and the chain rule.">ReLU networks don't use backpropagation at all.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. Why does weight initialization matter separately from the activation function choice?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! A typical weight scale away from about 1.0 compounds across layers and causes trouble regardless of activation function.">Even with a good activation function, a starting weight scale far from about 1.0 will still cause signals to shrink or explode across many layers, purely from repeated multiplication.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — initialization only sets the starting point; training still adjusts the weights afterward via gradient descent.">Initialization permanently fixes the weights for the rest of training.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo showed initialization scale has a large, measurable effect on signal magnitude across layers.">It doesn't actually matter in practice — only the activation function choice matters.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -1756,6 +2020,7 @@
     initQuiz(document.getElementById('quiz-6-4'));
     initQuiz(document.getElementById('quiz-6-5'));
     initQuiz(document.getElementById('quiz-6-6'));
+    initQuiz(document.getElementById('quiz-6-7'));
     initProgressTracking();
   })();
 </script>
