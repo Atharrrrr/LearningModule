@@ -23,7 +23,9 @@
     <a class="nav-item" data-chapter-id="12-2" href="#chapter-12-2">
       <span class="nav-dot"></span>12.2 Q-Learning, Simply Explained
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>12.3 Policy Gradients &amp; Exploration/Exploitation</div>
+    <a class="nav-item" data-chapter-id="12-3" href="#chapter-12-3">
+      <span class="nav-dot"></span>12.3 Policy Gradients &amp; Exploration/Exploitation
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>12.4 Deep RL &amp; RLHF Revisited</div>
   </nav>
 
@@ -412,6 +414,282 @@
 
     </section>
 
+    <section id="chapter-12-3">
+      <div class="chapter-eyebrow">Part XII · Chapter 12.3</div>
+      <h1 class="chapter-title">Policy Gradients &amp; Exploration/Exploitation</h1>
+
+      <p class="lede">
+        Chapter 12.2's Q-learning learns a table of values, then picks
+        whichever action scores highest. Policy gradients skip the
+        table entirely and adjust action probabilities directly. Both
+        approaches also share a problem this chapter names explicitly:
+        deciding when to try something new versus sticking with what's
+        already worked.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🎤 Frame of reference</div>
+        <p>
+          A stand-up comedian doesn't assign each joke a precise numeric
+          rating before deciding what to perform. They just notice: that
+          joke got a big laugh — tell it more often. That one fell flat
+          — tell it less. Over many shows, the mix of jokes they
+          actually perform shifts toward whatever's been landing,
+          without ever writing down an exact score for each one. That's
+          the spirit of a policy gradient: adjust how often you do
+          something, directly, based on how it went.
+        </p>
+      </div>
+
+      <h2>Policy gradients: adjust probabilities directly</h2>
+      <script>initJargonBox("policy gradient",
+        "A reinforcement learning method that directly adjusts a policy's action probabilities — typically via softmax (Chapter 8.4) over learnable scores — instead of learning Q-values first and picking the best one. After an action's real outcome is observed, its probability is nudged up if the outcome was better than expected, and down if worse, via gradient ascent.");</script>
+      <p>
+        A <span class="jargon-term">policy gradient</span> method keeps
+        a learnable score for each action, converts those scores into
+        probabilities with softmax (Chapter 8.4), and after sampling an
+        action and observing its real reward, nudges that action's
+        score up or down depending on whether the reward beat what was
+        typically expected. Chapter 9.4's RLHF policy update was already
+        a real example of exactly this — reward-model scores nudging an
+        LLM's token probabilities — applied there to text generation
+        instead of a small, fixed set of actions.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          The same 3 hidden-probability arms from Chapter 12.1 (A=0.3,
+          B=0.7, C=0.5), learned this time via a real policy gradient:
+          sample an action from the current policy, observe a real
+          reward, and nudge that action's score by
+          lr·(reward − running-average baseline). No Q-table at all —
+          just probabilities shifting directly.
+        </p>
+        <div class="demo-actions">
+          <div class="quiz-option" id="pg-run1-btn">▶ Run 1 episode</div>
+          <div class="quiz-option" id="pg-run50-btn">▶▶ Run 50 episodes</div>
+          <div class="quiz-option" id="pg-reset-btn">↺ Reset</div>
+        </div>
+        <table class="data-table" id="pg-table">
+          <thead><tr><th>Action</th><th>True hidden probability</th><th>Current policy probability</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p id="pg-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var trueProbs = { A: 0.3, B: 0.7, C: 0.5 };
+          var lr = 0.3;
+          var logits, baseline, baselineCount, episodeCount;
+
+          function softmax() {
+            var keys = Object.keys(logits);
+            var vals = keys.map(function (k) { return logits[k]; });
+            var max = Math.max.apply(null, vals);
+            var exps = vals.map(function (v) { return Math.exp(v - max); });
+            var sum = exps.reduce(function (a, b) { return a + b; }, 0);
+            var dist = {};
+            keys.forEach(function (k, i) { dist[k] = exps[i] / sum; });
+            return dist;
+          }
+
+          function sampleAction(dist) {
+            var r = Math.random(), cum = 0;
+            var keys = Object.keys(dist);
+            for (var i = 0; i < keys.length; i++) { cum += dist[keys[i]]; if (r <= cum) return keys[i]; }
+            return keys[keys.length - 1];
+          }
+
+          function reset() {
+            logits = { A: 0, B: 0, C: 0 };
+            baseline = 0; baselineCount = 0; episodeCount = 0;
+            render();
+            document.getElementById('pg-readout').textContent = 'Policy reset to uniform (33.3% each). No episodes run yet.';
+          }
+
+          function runEpisode() {
+            var dist = softmax();
+            var action = sampleAction(dist);
+            var reward = Math.random() < trueProbs[action] ? 1 : 0;
+            baselineCount++;
+            baseline += (reward - baseline) / baselineCount;
+            var advantage = reward - baseline;
+            logits[action] += lr * advantage;
+            episodeCount++;
+          }
+
+          function render() {
+            var dist = softmax();
+            var tbody = document.querySelector('#pg-table tbody');
+            tbody.innerHTML = '';
+            ['A', 'B', 'C'].forEach(function (a) {
+              var tr = document.createElement('tr');
+              tr.innerHTML = '<td>' + a + '</td><td>' + trueProbs[a].toFixed(1) + '</td><td>' + (dist[a] * 100).toFixed(1) + '%</td>';
+              tbody.appendChild(tr);
+            });
+          }
+
+          document.getElementById('pg-run1-btn').addEventListener('click', function () {
+            runEpisode();
+            render();
+            document.getElementById('pg-readout').textContent = episodeCount + ' episode' + (episodeCount > 1 ? 's' : '') + ' run so far.';
+          });
+          document.getElementById('pg-run50-btn').addEventListener('click', function () {
+            for (var i = 0; i < 50; i++) runEpisode();
+            render();
+            document.getElementById('pg-readout').textContent = episodeCount + ' episodes run so far — probabilities are converging.';
+          });
+          document.getElementById('pg-reset-btn').addEventListener('click', reset);
+
+          reset();
+        })();
+      </script>
+
+      <p>
+        Click "Run 50 episodes" a few times: the policy's probability
+        for action B climbs from an equal 33.3% toward well over 90%,
+        purely from real sampled rewards nudging its score upward more
+        often than A's or C's. No table of Q-values was ever built —
+        the policy itself is the thing being learned, directly.
+      </p>
+
+      <h2>Exploration vs. exploitation</h2>
+      <script>initJargonBox("exploitation",
+        "Choosing whatever action currently looks best, based on estimates learned so far, to maximize immediate expected reward.");</script>
+      <script>initJargonBox("exploration",
+        "Deliberately trying an action that doesn't currently look best, specifically to learn more about it — at the cost of possibly earning less reward right now.");</script>
+      <p>
+        Chapter 12.1's bandit already raised this tension without naming
+        it: always picking whatever action currently looks best is
+        <span class="jargon-term">exploitation</span>; deliberately
+        trying something else to learn more is
+        <span class="jargon-term">exploration</span>. Too much
+        exploitation risks locking onto an action that only looked good
+        due to limited early evidence, never discovering something
+        genuinely better. Too much exploration wastes reward on actions
+        already known to be worse.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          The same 3 arms, run with pure exploitation (always pick the
+          best estimate so far, starting from zero information) versus
+          pure exploration (always pick randomly), 200 real pulls each.
+          Watch what pure exploitation actually does when it starts with
+          no information at all.
+        </p>
+        <div class="demo-actions">
+          <div class="quiz-option" id="ee-exploit-btn">▶ Run 200 pulls: pure exploitation</div>
+          <div class="quiz-option" id="ee-explore-btn">▶ Run 200 pulls: pure exploration</div>
+        </div>
+        <p id="ee-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var trueProbs = { A: 0.3, B: 0.7, C: 0.5 };
+          var arms = ['A', 'B', 'C'];
+
+          function runStrategy(mode, numPulls) {
+            var estimates = { A: 0, B: 0, C: 0 };
+            var counts = { A: 0, B: 0, C: 0 };
+            var totalReward = 0;
+            for (var t = 0; t < numPulls; t++) {
+              var arm;
+              if (mode === 'explore') {
+                arm = arms[Math.floor(Math.random() * 3)];
+              } else {
+                arm = arms.reduce(function (best, a) { return estimates[a] > estimates[best] ? a : best; }, arms[0]);
+              }
+              var reward = Math.random() < trueProbs[arm] ? 1 : 0;
+              counts[arm]++;
+              estimates[arm] += (reward - estimates[arm]) / counts[arm];
+              totalReward += reward;
+            }
+            return { totalReward: totalReward, counts: counts };
+          }
+
+          document.getElementById('ee-exploit-btn').addEventListener('click', function () {
+            var r = runStrategy('exploit', 200);
+            document.getElementById('ee-readout').textContent =
+              'Pure exploitation: total reward = ' + r.totalReward + '/200. Pulls per arm: A=' + r.counts.A + ', B=' + r.counts.B + ', C=' + r.counts.C +
+              (r.counts.B === 0 && r.counts.C === 0 ? ' — got permanently stuck on Arm A and never even tried B or C, since ties always favor the first arm and A never looked worse than untried arms starting at zero.' : '.');
+          });
+
+          document.getElementById('ee-explore-btn').addEventListener('click', function () {
+            var r = runStrategy('explore', 200);
+            document.getElementById('ee-readout').textContent =
+              'Pure exploration: total reward = ' + r.totalReward + '/200. Pulls per arm: A=' + r.counts.A + ', B=' + r.counts.B + ', C=' + r.counts.C + '.';
+          });
+        })();
+      </script>
+
+      <p>
+        Click "pure exploitation": with every estimate starting at zero
+        and ties always breaking toward the first arm, it pulls Arm A —
+        and only Arm A — for all 200 pulls, every single time you run
+        it, since it never has a reason to try B or C once A has any
+        estimate at all. That locks in roughly 30% average reward
+        (Arm A's true rate) for the entire run, permanently missing
+        Arm B's 70%. Click "pure exploration": total reward varies
+        pull to pull, but it's spread across all three arms and
+        typically lands noticeably higher than pure exploitation's
+        30% — not because exploring is always better, but because
+        this particular exploitation strategy has no way to ever
+        discover it's missing something better. Balancing the two —
+        mostly exploiting, but occasionally still exploring — is what
+        real reinforcement learning algorithms are built to do.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>A policy gradient method learns action probabilities directly, nudging them up or down based on whether real observed rewards beat what was typically expected — no Q-value table required.</li>
+          <li>Chapter 9.4's RLHF was already a real-world example of a policy gradient update, applied to LLM text generation.</li>
+          <li>Exploitation means picking whatever currently looks best; exploration means deliberately trying something else to learn more.</li>
+          <li>Pure exploitation can get permanently stuck on an early, suboptimal choice if it never has a reason to try alternatives — a real risk the demo showed directly, not just a theoretical concern.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-12-3">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What does a policy gradient method learn, instead of a table of Q-values?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Action scores are nudged up or down directly based on real observed rewards, then converted to probabilities via softmax.">Action probabilities directly — typically as learnable scores converted to probabilities via softmax, nudged based on real observed rewards.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a policy gradient method specifically avoids building a Q-value table; that's Chapter 12.2's separate approach.">The exact same Q-value table Chapter 12.2's Q-learning builds.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a policy gradient's whole point is learning from real experienced rewards; it isn't given the environment's exact reward probabilities directly.">The environment's true hidden reward probabilities, handed to it directly.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. In the demo, why did "pure exploitation" pull Arm A for all 200 pulls, every single time it's run?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! With all estimates starting at zero and ties broken toward the first arm, Arm A always wins the very first pull and never gets a reason to be replaced.">All three arms start with an estimate of zero, ties are broken toward the first arm (A), and once A has any real pulls, it's never revisited away from — B and C are never even tried.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the true hidden probabilities are fixed constants used to generate rewards; pure exploitation never gets to see them directly.">Pure exploitation is secretly told which arm has the highest true probability in advance.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — this outcome is a deterministic consequence of zero-initialization and the tie-breaking rule, not luck; it happens the same way on every run.">It's random chance, and pure exploitation would pull a different arm on most runs.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. What's the actual risk of relying purely on exploitation, according to this chapter?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Without ever trying alternatives, exploitation has no mechanism for discovering that a better option exists.">It can permanently lock onto an early, suboptimal action and never discover a better one, since it never has a reason to try alternatives.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the chapter's point is the opposite: pure exploitation can perform poorly precisely because it never tries alternatives, not because it computes too slowly.">Exploitation takes too much computation time to ever finish running.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo shows pure exploitation earning noticeably less total reward (around 30%) than exploration in this specific example, not that the two strategies are interchangeable.">There's no real difference between exploitation and exploration in practice.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -419,6 +697,7 @@
   (function () {
     initQuiz(document.getElementById('quiz-12-1'));
     initQuiz(document.getElementById('quiz-12-2'));
+    initQuiz(document.getElementById('quiz-12-3'));
     initProgressTracking();
   })();
 </script>
