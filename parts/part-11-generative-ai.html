@@ -20,7 +20,9 @@
     <a class="nav-item" data-chapter-id="11-1" href="#chapter-11-1">
       <span class="nav-dot"></span>11.1 Autoencoders
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>11.2 Variational Autoencoders</div>
+    <a class="nav-item" data-chapter-id="11-2" href="#chapter-11-2">
+      <span class="nav-dot"></span>11.2 Variational Autoencoders
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>11.3 GANs</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>11.4 Diffusion Models</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>11.5 Text-to-Image (Diffusion Meets CLIP)</div>
@@ -199,12 +201,183 @@
 
     </section>
 
+    <section id="chapter-11-2">
+      <div class="chapter-eyebrow">Part XI · Chapter 11.2</div>
+      <h1 class="chapter-title">Variational Autoencoders</h1>
+
+      <p class="lede">
+        Chapter 11.1's autoencoder compresses each input down to one
+        exact point in latent space. Nothing guarantees that a
+        <em>nearby</em> point — one the encoder never actually produced —
+        decodes into anything sensible at all; the space could have
+        "holes" between real data points that decode into garbage. A
+        variational autoencoder fixes exactly this, and in doing so
+        turns an autoencoder into something that can generate brand-new
+        outputs.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">✏️ Frame of reference</div>
+        <p>
+          Chapter 11.1's artist wrote down one exact note-list for a
+          scene: "three trees, a red barn, sunset light." A variational
+          artist writes something looser instead: "sunset-ish — could
+          lean a bit more orange, could lean a bit more pink." That's
+          not one point, it's a small, described range of plausible
+          notes. Hand that range to a second artist who's never seen the
+          scene, and whichever specific note-list they happen to pick
+          from within it, they can still sketch something plausible —
+          because the range itself was built to always describe
+          something reasonable, not just one exact memorized case.
+        </p>
+      </div>
+
+      <h2>Encoding to a distribution instead of a single point</h2>
+      <script>initJargonBox("variational autoencoder (VAE)",
+        "An autoencoder whose encoder outputs the parameters of a probability distribution over latent codes — typically the mean and standard deviation of a normal distribution (Chapter 2.6) — instead of one fixed point. Trained so that samples drawn from that distribution decode well, and so the overall latent space stays organized enough that a random sample from anywhere reasonable in it decodes to something plausible.");</script>
+      <p>
+        A <span class="jargon-term">variational autoencoder (VAE)</span>
+        changes what the encoder outputs: instead of a single latent
+        number, it outputs a mean and a standard deviation — the two
+        parameters of a normal distribution (Chapter 2.6). To reconstruct
+        an input, the decoder doesn't receive that mean directly; it
+        receives a random sample drawn from the distribution those two
+        numbers describe (Chapter 2.5's probability, put to direct use).
+        Training pushes two things at once: that sampled reconstruction
+        should still resemble the original input, and — via an extra
+        regularization pressure (Chapter 5.4) — every input's distribution
+        should stay close to a shared, well-behaved shape, so the latent
+        space doesn't fragment into isolated, disconnected regions.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          Encoding Pattern 1 [0.90, 0.80, 0.85] the VAE way: mean = 0.85
+          (same as Chapter 11.1's average), standard deviation = 0.05.
+          Each click draws one real Gaussian sample (Box-Muller
+          transform, verified statistically) from that distribution and
+          decodes it — a different, but always plausible, reconstruction
+          every time.
+        </p>
+        <div class="demo-actions">
+          <div class="quiz-option" id="vae-sample-btn">🎲 Sample a latent code &amp; decode it</div>
+        </div>
+        <table class="data-table" id="vae-table">
+          <thead><tr><th>#</th><th>Sampled z</th><th>Decoded reconstruction</th><th>Reconstruction error</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p id="vae-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var target = [0.9, 0.8, 0.85];
+          var mean = 0.85, std = 0.05;
+          var sampleCount = 0;
+
+          function gaussianSample(mean, std) {
+            var u1 = Math.random(), u2 = Math.random();
+            var z0 = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+            return mean + std * z0;
+          }
+          function decode(z) { return [z, z, z]; }
+          function reconError(x, recon) {
+            var sum = 0;
+            for (var i = 0; i < x.length; i++) sum += Math.pow(x[i] - recon[i], 2);
+            return sum;
+          }
+
+          document.getElementById('vae-sample-btn').addEventListener('click', function () {
+            sampleCount++;
+            var z = gaussianSample(mean, std);
+            var recon = decode(z);
+            var err = reconError(target, recon);
+            var tbody = document.querySelector('#vae-table tbody');
+            var tr = document.createElement('tr');
+            tr.innerHTML = '<td>' + sampleCount + '</td><td>' + z.toFixed(4) + '</td><td>[' +
+              recon.map(function (v) { return v.toFixed(3); }).join(', ') + ']</td><td>' + err.toFixed(4) + '</td>';
+            tbody.appendChild(tr);
+            document.getElementById('vae-readout').textContent =
+              'Sample ' + sampleCount + ': z=' + z.toFixed(4) + ', a real draw from Normal(mean=0.85, std=0.05) — different every click, always close to the original.';
+          });
+        })();
+      </script>
+
+      <p>
+        Click "Sample" several times: every z is a genuinely different
+        random number, so every reconstruction is slightly different
+        too — yet every single one stays close to the original pattern,
+        because they're all drawn from a distribution centered right on
+        it. Chapter 11.1's plain autoencoder only ever produced exactly
+        one reconstruction for exactly one input; this one produces a
+        whole family of plausible variations, all real, all different,
+        none identical.
+      </p>
+
+      <p>
+        That's the entire payoff: once a VAE's latent space is trained
+        to keep every region well-behaved this way, you don't need a
+        real input to get a plausible output at all — pick literally any
+        point in the latent space, sample around it, decode it, and get
+        something new the model never saw during training. That's
+        genuine generation, not just compression and reconstruction, and
+        it's the foundation the rest of this Part builds on.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>A plain autoencoder encodes each input to one exact latent point, with no guarantee that nearby points decode to anything sensible.</li>
+          <li>A VAE's encoder outputs a distribution (mean and standard deviation) instead, and the decoder reconstructs from a random sample of that distribution.</li>
+          <li>Training pushes both good reconstruction from sampled points and a regularization pressure keeping the whole latent space well-organized, not fragmented.</li>
+          <li>Because sampling anywhere reasonable in a VAE's latent space decodes to something plausible, a VAE can generate genuinely new outputs — not just reconstruct inputs it already saw.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-11-2">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What does a VAE's encoder output, instead of a single latent number?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! The decoder then reconstructs from a random sample of that distribution, not from the mean directly.">The parameters of a probability distribution — typically a mean and a standard deviation — describing a range of plausible latent codes.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a VAE's encoder still outputs numbers describing a distribution over the latent space; the input itself isn't discarded or skipped.">Nothing at all — VAEs skip the encoding step entirely.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a VAE encodes exactly one input at a time into a distribution; it doesn't require multiple inputs simultaneously.">A list of every other input the model has ever seen.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. In the demo, why did every click produce a different reconstruction, even though the target pattern never changed?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Each click draws a new random z from the same fixed distribution, so the decoded reconstruction changes even though the underlying distribution doesn't.">Each click draws a new real random sample z from the same fixed Normal(0.85, 0.05) distribution, and the decoder reconstructs from whatever z was actually drawn that time.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the mean and standard deviation describing the distribution stay fixed at 0.85 and 0.05 throughout; only the randomly sampled z changes.">The mean and standard deviation themselves change with every click.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo's reconstructions come from a real Gaussian sampling algorithm (Box-Muller), verified to reproduce the correct mean and standard deviation statistically, not from arbitrary numbers.">The reconstructions are arbitrary and have no real relationship to the stated mean and standard deviation.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. Why does a VAE's latent space specifically enable generating brand-new outputs, in a way a plain autoencoder's latent space doesn't?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! A VAE trains the whole space to stay well-behaved everywhere reasonable, so sampling anywhere in it — not just at points seen during training — decodes to something plausible.">A VAE is specifically trained so sampling from anywhere reasonable in its latent space decodes to something plausible, not just the exact points seen during training.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a plain autoencoder's bottleneck can be exactly the same size as a VAE's; the difference is what's trained to happen at unseen points in that space, not the size itself.">A VAE simply uses a much larger bottleneck than a plain autoencoder.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a plain autoencoder from Chapter 11.1 has no such guarantee for points it never encoded during training; that gap is exactly what a VAE's extra regularization pressure fixes.">A plain autoencoder can already generate new outputs just as reliably as a VAE.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
 <script>
   (function () {
     initQuiz(document.getElementById('quiz-11-1'));
+    initQuiz(document.getElementById('quiz-11-2'));
     initProgressTracking();
   })();
 </script>
