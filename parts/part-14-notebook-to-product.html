@@ -29,7 +29,9 @@
     <a class="nav-item" data-chapter-id="14-4" href="#chapter-14-4">
       <span class="nav-dot"></span>14.4 Distributed &amp; Parallel Training
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>14.5 Serving a Model</div>
+    <a class="nav-item" data-chapter-id="14-5" href="#chapter-14-5">
+      <span class="nav-dot"></span>14.5 Serving a Model
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>14.6 Containers &amp; Reproducibility</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>14.7 Monitoring &amp; Drift</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>14.8 A Real Pipeline, Start to Finish</div>
@@ -674,6 +676,157 @@
 
     </section>
 
+    <section id="chapter-14-5">
+      <div class="chapter-eyebrow">Part XIV · Chapter 14.5</div>
+      <h1 class="chapter-title">Serving a Model</h1>
+
+      <p class="lede">
+        Every chapter on training has assumed the goal is producing a
+        good model. Once that model exists, a different job begins:
+        answering real, live requests from real users, fast enough and
+        cheaply enough to actually run as a product.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🚕 Frame of reference</div>
+        <p>
+          A taxi leaves the instant one passenger is ready — the fastest
+          possible trip for that one rider, but the vehicle's capacity
+          for extra passengers goes unused. A bus waits a few minutes to
+          collect a full load of passengers before departing — any one
+          passenger waits a little longer to leave, but the vehicle
+          carries far more people per trip. Serving a trained model
+          faces exactly this choice, request by request, all day long.
+        </p>
+      </div>
+
+      <h2>Inference: using the model, not training it</h2>
+      <script>initJargonBox("inference",
+        "Using an already-trained model to produce a prediction on a new, live input — as opposed to training (Chapter 4.3), the earlier process that produced the model's weights in the first place.");</script>
+      <script>initJargonBox("latency",
+        "The time between a single request arriving and its response being returned — what an individual user actually experiences waiting for an answer.");</script>
+      <script>initJargonBox("throughput",
+        "The total number of requests a system can process per unit of time overall — what matters for serving many users at once, as opposed to any single user's individual wait.");</script>
+      <p>
+        <span class="jargon-term">Inference</span> is running a
+        finished, trained model forward to get a prediction — the same
+        forward pass (Chapter 6.2) used throughout training, just
+        without backpropagation or a weight update afterward. Serving
+        inference at scale means balancing two different things:
+        <span class="jargon-term">latency</span>, how long one request
+        waits for its answer, and <span class="jargon-term">throughput</span>,
+        how many requests the whole system handles per second.
+      </p>
+
+      <h2>Batching requests: the same tradeoff as the taxi and the bus</h2>
+      <p>
+        Chapter 6.6's training batches group examples together for
+        efficiency; serving does the same thing to incoming requests.
+        Answering each request the instant it arrives (batch size 1)
+        minimizes that request's own latency, but wastes most of a
+        GPU's parallel capacity (Chapter 14.3) — it can process many
+        requests in the same single forward pass for barely more time
+        than processing one. Waiting briefly to collect several requests
+        into one batch adds a small amount of latency, but multiplies
+        how many requests get answered per second.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          A real computation: one forward pass takes a fixed 50ms,
+          regardless of batch size, up to hardware capacity (Chapter
+          14.3's parallelism). Batching waits up to 20ms to collect a
+          fuller batch first. Compare real latency and throughput at
+          different batch sizes.
+        </p>
+        <div class="demo-controls">
+          <label class="demo-slider-label">Batch size: <span id="serve-b-value">1</span>
+            <input type="range" id="serve-b-slider" min="1" max="32" step="1" value="1">
+          </label>
+        </div>
+        <p id="serve-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var forwardPassMs = 50;
+          var maxWaitMs = 20;
+          var slider = document.getElementById('serve-b-slider');
+          var bValue = document.getElementById('serve-b-value');
+          var readout = document.getElementById('serve-readout');
+
+          function render() {
+            var b = parseInt(slider.value, 10);
+            bValue.textContent = b;
+            var waitMs = b === 1 ? 0 : maxWaitMs;
+            var latencyMs = waitMs + forwardPassMs;
+            var throughput = (b * 1000) / latencyMs;
+            readout.textContent = 'Batch size ' + b + ': latency = ' + latencyMs + 'ms (wait ' + waitMs + 'ms + forward pass ' +
+              forwardPassMs + 'ms), throughput = ' + throughput.toFixed(2) + ' requests/second.';
+          }
+
+          slider.addEventListener('input', render);
+          render();
+        })();
+      </script>
+
+      <p>
+        Slide from batch size 1 to 32: latency only rises from 50ms to
+        70ms — a small, fixed wait added once — while throughput climbs
+        from 20 requests/second all the way to over 450. A tiny, bounded
+        increase in each request's wait buys a roughly 23× increase in
+        how many requests the whole system can serve per second. That's
+        the entire tradeoff real serving systems are built to balance,
+        computed directly rather than just described.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Inference is running a trained model forward on a new input, without backpropagation or a weight update — a different job from training.</li>
+          <li>Latency measures one request's wait time; throughput measures the whole system's total request-handling capacity.</li>
+          <li>Serving one request at a time minimizes its individual latency but wastes most of a GPU's parallel capacity.</li>
+          <li>Batching several requests together adds a small, bounded amount of latency but multiplies throughput, since the same forward-pass time serves many more requests at once.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-14-5">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What's the difference between latency and throughput?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Latency is what one individual request experiences; throughput is the total system-wide processing capacity.">Latency measures how long one individual request waits for its response; throughput measures the total number of requests the whole system handles per second.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo shows these two quantities changing very differently as batch size increases (latency barely rises, throughput rises dramatically); they measure different things.">They're two different names for exactly the same measurement.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — both latency and throughput are real, computed values that change meaningfully with batch size in the demo.">Neither one actually changes based on how a serving system is configured.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. In the demo, why did throughput increase so much faster than latency as batch size grew?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! The forward pass takes the same 50ms whether it processes 1 request or 32, so a bigger batch serves far more requests within nearly the same total time.">The forward pass takes the same fixed time regardless of batch size (up to hardware capacity), so processing many requests in that one fixed-time pass serves far more requests without adding proportional time.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo caps the added wait at a fixed 20ms regardless of how large the batch gets; it doesn't keep growing with batch size.">Latency actually decreases as batch size increases in the demo.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — both latency and throughput are computed from the same real, fixed formulas (wait time + forward-pass time, and batch size divided by latency) at every batch size.">The demo computes throughput using a completely different, unrelated formula than latency.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. What does inference specifically not involve, unlike training?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Inference only runs the forward pass to produce a prediction; there's no backward pass or weight update involved.">Backpropagation or a weight update — inference only runs the forward pass to produce a prediction.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — inference is specifically the process of using an already-trained model, which absolutely still involves running it forward.">Running the model at all.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — inference works on brand-new, live inputs the model wasn't necessarily trained on; that's the entire point of serving it.">Processing any new input the model hasn't seen before.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -683,6 +836,7 @@
     initQuiz(document.getElementById('quiz-14-2'));
     initQuiz(document.getElementById('quiz-14-3'));
     initQuiz(document.getElementById('quiz-14-4'));
+    initQuiz(document.getElementById('quiz-14-5'));
     initProgressTracking();
   })();
 </script>
