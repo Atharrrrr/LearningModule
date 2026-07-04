@@ -1,17 +1,17 @@
 # Progress
 
 ## Status
-In progress. 68 of 98 chapters written. Parts I, II, III, IV, V, VI, VII,
-and VIII are all complete. Part IX is in progress (7 of 9 chapters done).
+In progress. 69 of 98 chapters written. Parts I, II, III, IV, V, VI, VII,
+and VIII are all complete. Part IX is in progress (8 of 9 chapters done).
 
 ## Next chapter due
-Part IX, Chapter 9.8 — Agents & Tool Use
+Part IX, Chapter 9.9 — Hallucination & Evaluation
 (parts/part-09-language-models.html already exists — insert the new
-<section> before </main> and flip 9.8's sidebar entry from unwritten to
-live. Not an anchor chapter — chapters 9.8-9.9 (the rest of Part IX) are
-all non-anchor and can be batched per the normal 2-3-chapters-per-turn
-rule. Part IX self-check is due once 9.9 is complete, per the
-resumable-autonomous-loop rule.)
+<section> before </main> and flip 9.9's sidebar entry from unwritten to
+live. Not an anchor chapter. This is also the LAST chapter of Part IX —
+completing it finishes the Part, so do the write-book-chapter skill
+self-check afterward per the resumable-autonomous-loop rule, then
+continue into Part X per CURRICULUM.md.)
 
 ## Part VIII self-check (write-book-chapter skill compliance)
 Reviewed all 6 chapters (8.1–8.6) against the required rhythm: every
@@ -109,6 +109,7 @@ issues found.
 - 9.5 Efficient Fine-Tuning (LoRA, quantization) — parts/part-09-language-models.html
 - 9.6 Prompting & In-Context Learning — parts/part-09-language-models.html
 - 9.7 Retrieval-Augmented Generation (RAG) — parts/part-09-language-models.html
+- 9.8 Agents & Tool Use — parts/part-09-language-models.html
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in

@@ -38,7 +38,9 @@
     <a class="nav-item" data-chapter-id="9-7" href="#chapter-9-7">
       <span class="nav-dot"></span>9.7 Retrieval-Augmented Generation (RAG)
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>9.8 Agents &amp; Tool Use</div>
+    <a class="nav-item" data-chapter-id="9-8" href="#chapter-9-8">
+      <span class="nav-dot"></span>9.8 Agents &amp; Tool Use
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>9.9 Hallucination &amp; Evaluation</div>
   </nav>
 
@@ -1885,6 +1887,183 @@
 
     </section>
 
+    <section id="chapter-9-8">
+      <div class="chapter-eyebrow">Part IX · Chapter 9.8</div>
+      <h1 class="chapter-title">Agents &amp; Tool Use</h1>
+
+      <p class="lede">
+        Chapter 9.7 fixed one gap in an LLM's knowledge — retrieving
+        documents it was never trained on. But even with perfect
+        retrieval, an LLM is still fundamentally a next-token predictor
+        (Chapter 9.2): it has no built-in way to run real code, check a
+        live webpage, or multiply two large numbers reliably. Agents
+        close that gap by letting an LLM ask for help from tools outside
+        itself.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🛠️ Frame of reference</div>
+        <p>
+          A sharp analyst asked to multiply two large numbers in their
+          head might guess something plausible-sounding but wrong. Hand
+          them a calculator instead, and they'll know exactly when to
+          reach for it, punch in the real numbers, read off the real
+          answer, and use that in their final response — instead of
+          bluffing through the arithmetic themselves. The analyst didn't
+          get smarter; they just recognized a task better suited to a
+          tool than to memory, and used the tool's real answer.
+        </p>
+      </div>
+
+      <h2>The agent loop: think, act, observe, repeat</h2>
+      <script>initJargonBox("agent",
+        "An LLM used in a loop where, instead of just answering directly, it can choose to call an external tool, wait for that tool's real result, and decide what to do next — repeating this cycle until it has enough information to give a final answer.");</script>
+      <script>initJargonBox("tool use (function calling)",
+        "Describing available external tools (a calculator, a search engine, a code interpreter) in the prompt (Chapter 9.6), and having the LLM output a structured request to call one with specific arguments. The tool actually runs outside the model; its real output gets inserted back into the prompt as new context before the model continues.");</script>
+      <p>
+        An <span class="jargon-term">agent</span> wraps an LLM in a
+        loop instead of asking for one single response. At each step,
+        the model can either answer directly, or use <span class="jargon-term">
+        tool use (function calling)</span>: emit a structured request
+        naming a specific tool and specific arguments, instead of a
+        final answer. That request is intercepted, the named tool
+        actually runs — for real, outside the model entirely — and its
+        genuine output gets fed back into the prompt as new context,
+        exactly like Chapter 9.7's retrieved chunks. The model then
+        continues, now with a real result available to reason from.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          Enter two numbers and step through a real agent trace:
+          the "thought," the tool call, and the observation all update
+          live, and the calculator tool actually multiplies your two
+          numbers for real — no pre-baked answer.
+        </p>
+        <div class="demo-controls">
+          <label class="demo-slider-label">a:
+            <input type="number" id="agent-a-input" value="47" style="margin-left:8px; width:80px; background:#0d1117; color:#e6edf3; border:1px solid #30363d; border-radius:6px; padding:4px 8px; font-family:inherit;">
+          </label>
+          <label class="demo-slider-label">b:
+            <input type="number" id="agent-b-input" value="89" style="margin-left:8px; width:80px; background:#0d1117; color:#e6edf3; border:1px solid #30363d; border-radius:6px; padding:4px 8px; font-family:inherit;">
+          </label>
+        </div>
+        <div class="demo-actions">
+          <div class="quiz-option" id="agent-step-btn">▶ Next step</div>
+          <div class="quiz-option" id="agent-reset-btn">↺ Reset</div>
+        </div>
+        <pre id="agent-trace" class="demo-readout" style="white-space:pre-wrap; line-height:1.7;"></pre>
+      </div>
+
+      <script>
+        (function () {
+          var trace = document.getElementById('agent-trace');
+          var stepNum;
+
+          function currentAB() {
+            var a = parseFloat(document.getElementById('agent-a-input').value);
+            var b = parseFloat(document.getElementById('agent-b-input').value);
+            return { a: a, b: b };
+          }
+
+          function render() {
+            var ab = currentAB();
+            var lines = [];
+            lines.push('Question: What is ' + ab.a + ' × ' + ab.b + '?');
+            if (stepNum >= 1) lines.push('\nThought: I shouldn\'t trust my own arithmetic on numbers this size — I\'ll use the calculator tool.');
+            if (stepNum >= 2) lines.push('\nAction: calculator(' + ab.a + ', ' + ab.b + ')');
+            if (stepNum >= 3) {
+              var result = ab.a * ab.b;
+              lines.push('\nObservation: ' + result + '  (the calculator tool actually computed this, just now, for real)');
+            }
+            if (stepNum >= 4) {
+              var result2 = ab.a * ab.b;
+              lines.push('\nFinal answer: ' + ab.a + ' × ' + ab.b + ' = ' + result2);
+            }
+            trace.textContent = lines.join('\n');
+          }
+
+          document.getElementById('agent-step-btn').addEventListener('click', function () {
+            if (stepNum < 4) stepNum++;
+            render();
+          });
+          document.getElementById('agent-reset-btn').addEventListener('click', function () {
+            stepNum = 0;
+            render();
+          });
+          document.getElementById('agent-a-input').addEventListener('input', function () { stepNum = 0; render(); });
+          document.getElementById('agent-b-input').addEventListener('input', function () { stepNum = 0; render(); });
+
+          stepNum = 0;
+          render();
+        })();
+      </script>
+
+      <p>
+        Try changing a or b, then step through again: the observation
+        always shows the real product of whatever two numbers are
+        currently in the boxes, computed by actual multiplication, not
+        the model guessing. That's the entire value of tool use in one
+        small example — offload the part a frozen next-token predictor
+        is unreliable at, to something that just is reliable at it.
+      </p>
+
+      <p>
+        Real agents extend this same loop to far more capable tools:
+        running actual code, querying a live database, calling a web
+        search API, sending an email — each one an external system that
+        does something an LLM's own weights fundamentally cannot, with
+        its real result folded back into context for the model to
+        reason over next.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>An LLM alone can only predict tokens — it can't run real code, check live information, or reliably do large arithmetic.</li>
+          <li>An agent wraps an LLM in a loop: think, optionally call a tool, observe the tool's real result, repeat, until a final answer is ready.</li>
+          <li>Tool use (function calling) means the model emits a structured request naming a tool and arguments; the tool actually executes outside the model, and its real output becomes new context, the same mechanism Chapter 9.7 used for retrieved documents.</li>
+          <li>Tools are valuable precisely because they're reliable at things a next-token predictor isn't — a calculator always multiplies correctly, where a model might just produce a plausible-looking wrong number.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-9-8">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. Why would an agent choose to call a calculator tool instead of just computing a multiplication itself?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! A next-token predictor can produce a fluent-sounding wrong answer on large arithmetic; a calculator is reliably correct.">An LLM's next-token prediction isn't reliable at large arithmetic, while a calculator tool is guaranteed to compute the real, correct result.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the calculator tool's whole purpose is producing a real, verifiably correct number; it isn't there just for show.">Calling a tool is purely decorative and doesn't affect the correctness of the final answer.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo's calculator tool genuinely computes the real product of whatever numbers are entered, live, every time.">The calculator tool's result is pre-written and doesn't depend on the actual numbers entered.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. What happens to a tool's output once it runs, in the agent loop?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! The tool's real output becomes new context for the model, the same mechanism Chapter 9.7 used for retrieved document chunks.">It gets fed back into the prompt as new context, so the model can use that real result when producing its next step or final answer.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the tool's output is specifically returned to the model as context; it isn't simply thrown away.">The tool's output is discarded and has no effect on the model's final answer.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the agent loop's whole design is about incorporating a real tool result, not the model's own weights changing.">The tool's output directly updates the model's weights, similar to fine-tuning.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. What's the key difference between an agent and a plain LLM answering a question directly?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! An agent can pause, call a real external tool, and incorporate its real result before producing a final answer.">An agent can choose to call external tools and incorporate their real results across multiple steps, rather than producing one direct response from the prompt alone.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — an agent uses the exact same underlying LLM (Chapter 9.2); it isn't a fundamentally different kind of model.">An agent is a completely different type of neural network architecture than an LLM.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — an agent's tool calls involve genuinely executing external tools with real effects, like running code or a search; nothing here is only for visual effect.">An agent only differs in its visual presentation, with no actual change in behavior.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -1897,6 +2076,7 @@
     initQuiz(document.getElementById('quiz-9-5'));
     initQuiz(document.getElementById('quiz-9-6'));
     initQuiz(document.getElementById('quiz-9-7'));
+    initQuiz(document.getElementById('quiz-9-8'));
     initProgressTracking();
   })();
 </script>
