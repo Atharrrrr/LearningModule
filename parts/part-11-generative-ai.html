@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Part XI — Generative AI | AI/ML From Zero to Job-Ready</title>
+<link rel="stylesheet" href="../assets/styles.css">
+<script src="../assets/components.js"></script>
+</head>
+<body>
+<div class="book-shell">
+
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">AI/ML: Zero to Job-Ready</div>
+    </div>
+    <div class="progress-bar-track"><div class="progress-bar-fill"></div></div>
+
+    <div class="sidebar-part">Part XI — Generative AI</div>
+    <a class="nav-item" data-chapter-id="11-1" href="#chapter-11-1">
+      <span class="nav-dot"></span>11.1 Autoencoders
+    </a>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>11.2 Variational Autoencoders</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>11.3 GANs</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>11.4 Diffusion Models</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>11.5 Text-to-Image (Diffusion Meets CLIP)</div>
+  </nav>
+
+  <main>
+
+    <section id="chapter-11-1">
+      <div class="chapter-eyebrow">Part XI · Chapter 11.1</div>
+      <h1 class="chapter-title">Autoencoders</h1>
+
+      <p class="lede">
+        Every model so far has learned to map an input to some other
+        useful output — a label, a caption, a next token. An
+        autoencoder does something stranger-sounding at first: it learns
+        to map an input back to itself, through a deliberately narrow
+        bottleneck. That constraint turns out to force something
+        genuinely useful to emerge.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">✏️ Frame of reference</div>
+        <p>
+          An artist studies a complex scene, then jots down a short list
+          of essential notes — "three trees, a red barn, sunset light" —
+          without looking at the scene again. Later, working only from
+          that short list, they sketch the scene from memory. If the
+          sketch is close to the original, the short list genuinely
+          captured what mattered. The shorter that list can be while
+          still allowing a good sketch, the more efficiently the scene's
+          real structure has been captured.
+        </p>
+      </div>
+
+      <h2>A network trained to reproduce its own input</h2>
+      <script>initJargonBox("autoencoder",
+        "A neural network trained to reconstruct its own input, split into an encoder that compresses the input down to a much smaller vector, and a decoder that reconstructs the original input from that small vector alone. Trained by minimizing reconstruction error (Chapter 4.3) between the input and the decoder's output.");</script>
+      <script>initJargonBox("latent representation (bottleneck)",
+        "The small, compressed vector at an autoencoder's narrowest point, sitting between the encoder and decoder. Forced to be much smaller than the input, it can only capture the input's essential structure — whatever's needed to reconstruct it reasonably well.");</script>
+      <p>
+        An <span class="jargon-term">autoencoder</span> has two halves:
+        an encoder that compresses an input down into a
+        <span class="jargon-term">latent representation</span> — a
+        vector far smaller than the input itself — and a decoder that
+        reconstructs the original input from that small vector alone.
+        Training minimizes reconstruction error (Chapter 4.3): how
+        different the decoder's output is from the original input,
+        using gradient descent same as ever. The narrow bottleneck is
+        the entire point — it's what forces the encoder to discard
+        anything inessential and keep only what the decoder actually
+        needs.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          A real, working (if simple) autoencoder: encoder(x) = the
+          average of x's 3 numbers (compressing 3 numbers into 1);
+          decoder(z) = [z, z, z] (broadcasting that 1 number back into
+          3). Real reconstruction error, computed live, for 5 different
+          input patterns.
+        </p>
+        <table class="data-table" id="ae-table">
+          <thead><tr><th>Input pattern</th><th>Bottleneck (1 number)</th><th>Reconstruction</th><th>Reconstruction error</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p id="ae-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var patterns = {
+            'Pattern 1 [0.90, 0.80, 0.85]': [0.9, 0.8, 0.85],
+            'Pattern 2 [0.10, 0.20, 0.15]': [0.1, 0.2, 0.15],
+            'Pattern 3 [0.60, 0.50, 0.55]': [0.6, 0.5, 0.55],
+            'Pattern 4 [0.30, 0.40, 0.35]': [0.3, 0.4, 0.35],
+            'Pattern 5 [1.00, 0.00, 0.50]': [1.0, 0.0, 0.5]
+          };
+
+          function encode(x) { return (x[0] + x[1] + x[2]) / 3; }
+          function decode(z) { return [z, z, z]; }
+          function reconError(x, recon) {
+            var sum = 0;
+            for (var i = 0; i < x.length; i++) sum += Math.pow(x[i] - recon[i], 2);
+            return sum;
+          }
+
+          var tbody = document.querySelector('#ae-table tbody');
+          Object.keys(patterns).forEach(function (label) {
+            var x = patterns[label];
+            var z = encode(x);
+            var recon = decode(z);
+            var err = reconError(x, recon);
+            var tr = document.createElement('tr');
+            tr.innerHTML = '<td>' + label + '</td><td>' + z.toFixed(4) + '</td><td>[' +
+              recon.map(function (v) { return v.toFixed(2); }).join(', ') + ']</td><td>' + err.toFixed(4) + '</td>';
+            tbody.appendChild(tr);
+          });
+
+          document.getElementById('ae-readout').textContent =
+            'Patterns 1-4 reconstruct almost perfectly (error 0.0050) — their 3 numbers were already close to each other, so 1 number captures them well. ' +
+            'Pattern 5 [1.00, 0.00, 0.50] reconstructs far worse (error 0.5000, 100× higher) — its 3 numbers genuinely differ, and 1 number can\'t capture that.';
+        })();
+      </script>
+
+      <p>
+        Every pattern gets compressed to exactly one number and
+        reconstructed from exactly that one number — the same bottleneck
+        size throughout. But the reconstruction error is 100× larger for
+        Pattern 5 than for the other four. That's not a flaw in the
+        autoencoder; it's an honest measurement of how much real
+        structure a 1-number bottleneck can actually capture, for a
+        given input. Patterns 1-4 happened to be internally correlated —
+        all three of their numbers move together — so a single number
+        (their average) was nearly enough. Pattern 5 varies a lot across
+        its three positions, and one number simply isn't enough
+        information to rebuild it.
+      </p>
+
+      <p>
+        This is exactly Chapter 4.9's dimensionality reduction lesson,
+        now with a network doing the compressing and reconstructing
+        rather than a fixed linear projection like PCA. A real trained
+        autoencoder uses a learned encoder and decoder — often with
+        nonlinear activation functions (Chapter 6.3) — letting it capture
+        more complex structure than a simple average, but the underlying
+        principle is identical: the bottleneck forces the network to
+        keep only what's needed to reconstruct, and how well it succeeds
+        depends entirely on how much genuine structure the input has to
+        begin with.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>An autoencoder is a network trained to reconstruct its own input, through an encoder-decoder pair with a narrow bottleneck in between.</li>
+          <li>The bottleneck — the latent representation — is forced to be much smaller than the input, so it can only capture the input's essential structure.</li>
+          <li>Reconstruction error measures how much information the bottleneck failed to preserve; it depends both on the bottleneck's size and on how much genuine internal structure the input actually has.</li>
+          <li>Autoencoders generalize Chapter 4.9's dimensionality reduction: a learned, potentially nonlinear compression and reconstruction, instead of a fixed linear projection like PCA.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-11-1">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What is an autoencoder trained to do?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Reconstructing the input through a narrow bottleneck is exactly what forces a compressed, useful representation to emerge.">Reconstruct its own input, after compressing it down through a narrow bottleneck and back out again.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — an autoencoder's training target is the input itself, not a separate label describing it.">Predict a completely separate label for its input, like a classifier.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the bottleneck is specifically much smaller than the input; that narrowness is the entire mechanism that forces useful compression.">Expand its input into a much larger representation than it started with.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. In the demo, why did Pattern 5 reconstruct so much worse than Patterns 1-4, even though every pattern used the exact same 1-number bottleneck?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! A single number can capture data well only when that data doesn't vary much internally; Pattern 5's three numbers genuinely differ.">Patterns 1-4's three numbers were close to each other, so their average nearly captured all of them; Pattern 5's three numbers genuinely differed, so one number couldn't represent all three well.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — every pattern in the demo is compressed and reconstructed with the exact same bottleneck size (1 number) and the same encode/decode functions.">Pattern 5 used a larger bottleneck than the other four patterns.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the reconstruction error is computed by a real, deterministic formula (summed squared differences) applied identically to every pattern.">The reconstruction error was computed differently for Pattern 5 than for the others.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. How does a real trained autoencoder generalize beyond Chapter 4.9's PCA?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! PCA is a fixed linear projection; a neural autoencoder learns its own encoder and decoder, often with nonlinear activation functions, capturing more complex structure.">It uses a learned encoder and decoder, often with nonlinear activation functions, instead of PCA's fixed linear projection — letting it capture more complex structure.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the core idea (compress to fewer numbers, then reconstruct) is exactly what an autoencoder and PCA both do; they share that same underlying goal.">An autoencoder has nothing in common with PCA's dimensionality reduction idea.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — an autoencoder's bottleneck is specifically smaller than its input, the same compressive goal as PCA, not a larger one.">An autoencoder always uses a bigger bottleneck than PCA would use.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+</div>
+
+<script>
+  (function () {
+    initQuiz(document.getElementById('quiz-11-1'));
+    initProgressTracking();
+  })();
+</script>
+</body>
+</html>
