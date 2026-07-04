@@ -1,14 +1,14 @@
 # Progress
 
 ## Status
-In progress. 65 of 98 chapters written. Parts I, II, III, IV, V, VI, VII,
-and VIII are all complete. Part IX is in progress (4 of 9 chapters done).
+In progress. 66 of 98 chapters written. Parts I, II, III, IV, V, VI, VII,
+and VIII are all complete. Part IX is in progress (5 of 9 chapters done).
 
 ## Next chapter due
-Part IX, Chapter 9.5 — Efficient Fine-Tuning (LoRA, quantization)
+Part IX, Chapter 9.6 — Prompting & In-Context Learning
 (parts/part-09-language-models.html already exists — insert the new
-<section> before </main> and flip 9.5's sidebar entry from unwritten to
-live. Not an anchor chapter — chapters 9.5-9.9 (the rest of Part IX) are
+<section> before </main> and flip 9.6's sidebar entry from unwritten to
+live. Not an anchor chapter — chapters 9.6-9.9 (the rest of Part IX) are
 all non-anchor and can be batched per the normal 2-3-chapters-per-turn
 rule. Part IX self-check is due once 9.9 is complete, per the
 resumable-autonomous-loop rule.)
@@ -106,6 +106,7 @@ issues found.
 - 9.2 Meet the LLM — parts/part-09-language-models.html
 - 9.3 Scaling Laws & Emergent Abilities — parts/part-09-language-models.html
 - 9.4 Instruction Tuning & RLHF — parts/part-09-language-models.html
+- 9.5 Efficient Fine-Tuning (LoRA, quantization) — parts/part-09-language-models.html
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in

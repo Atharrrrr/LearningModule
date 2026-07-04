@@ -29,7 +29,9 @@
     <a class="nav-item" data-chapter-id="9-4" href="#chapter-9-4">
       <span class="nav-dot"></span>9.4 Instruction Tuning &amp; RLHF
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>9.5 Efficient Fine-Tuning (LoRA, quantization)</div>
+    <a class="nav-item" data-chapter-id="9-5" href="#chapter-9-5">
+      <span class="nav-dot"></span>9.5 Efficient Fine-Tuning (LoRA, quantization)
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>9.6 Prompting &amp; In-Context Learning</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>9.7 Retrieval-Augmented Generation (RAG)</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>9.8 Agents &amp; Tool Use</div>
@@ -1219,6 +1221,227 @@
 
     </section>
 
+    <section id="chapter-9-5">
+      <div class="chapter-eyebrow">Part IX · Chapter 9.5</div>
+      <h1 class="chapter-title">Efficient Fine-Tuning (LoRA, quantization)</h1>
+
+      <p class="lede">
+        Chapters 9.2-9.4 covered the training stages a large model goes
+        through. But adapting one of these models to a new task, or just
+        running it on ordinary hardware, runs into a very practical
+        problem: billions of parameters (Chapter 1.3) are expensive to
+        store, update, and run. This chapter covers two of the most
+        widely used tricks for making that dramatically cheaper.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🖼️ Frame of reference</div>
+        <p>
+          Imagine a massive, finished mural covering an entire wall.
+          Repainting the whole thing to update one detail would take
+          weeks. Instead, an artist tapes a small transparent overlay
+          onto just the section that needs touching up, and paints the
+          fix on that — the huge original mural stays completely
+          untouched underneath, but the combined result (mural + small
+          overlay) is what everyone sees. That transparent overlay,
+          tiny compared to the mural, is the idea behind LoRA. Separately:
+          if a museum catalog listed every color using 10 decimal places
+          of precision, rounding it to 2 decimal places would shrink the
+          file dramatically while looking nearly identical to the eye —
+          that's quantization.
+        </p>
+      </div>
+
+      <h2>The problem: full fine-tuning is expensive at LLM scale</h2>
+      <p>
+        Chapter 7.5 introduced fine-tuning: adjusting a pretrained
+        model's weights for a new task. For a large language model with
+        billions of parameters (Chapter 9.2), fine-tuning every single
+        one means computing and storing a gradient (Chapter 4.3) for
+        each — and optimizers like Adam (Chapter 6.5) keep extra running
+        statistics per parameter on top of that, multiplying the memory
+        cost further. Full fine-tuning of a large model can require far
+        more memory than the model itself takes up just to run.
+      </p>
+
+      <h2>LoRA: freeze the original, train a tiny update instead</h2>
+      <script>initJargonBox("low-rank",
+        "A matrix that can be reconstructed, with little or no loss, as the product of two much \"thinner\" matrices — meaning it holds far less independent information than its full size suggests, the same underlying idea behind Chapter 4.9's dimensionality reduction, now applied to a weight matrix (Chapter 2.3) instead of a dataset.");</script>
+      <script>initJargonBox("LoRA (Low-Rank Adaptation)",
+        "A fine-tuning method that freezes a pretrained model's original weight matrices completely, and instead trains a much smaller pair of matrices whose product forms an additive low-rank update on top of them. Far fewer parameters need gradients or optimizer state, while the frozen original weights preserve everything the base model already learned.");</script>
+      <p>
+        <span class="jargon-term">LoRA (Low-Rank Adaptation)</span> takes
+        a different approach entirely: freeze the pretrained weight
+        matrix completely — untouched, no gradients computed for it at
+        all — and train a small additive update instead, represented as
+        a <span class="jargon-term">low-rank</span> product of two much
+        smaller matrices. A d×d weight matrix has d² entries; two
+        low-rank matrices of shape d×r and r×d, for a small chosen rank
+        r, have only 2·d·r entries between them — dramatically fewer
+        whenever r is small compared to d. Only those small matrices get
+        trained; the original weights, and everything the base model
+        already learned, stay exactly as they were.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          A real 4096×4096 weight matrix — a realistic size for one
+          layer inside a large Transformer — has 4096² = 16,777,216
+          parameters. Slide the LoRA rank r and watch the real trainable
+          parameter count and reduction factor, computed live.
+        </p>
+        <div class="demo-controls">
+          <label class="demo-slider-label">LoRA rank r: <span id="lora-r-value">8</span>
+            <input type="range" id="lora-r-slider" min="1" max="64" step="1" value="8">
+          </label>
+        </div>
+        <p id="lora-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var d = 4096;
+          var fullParams = d * d;
+          var slider = document.getElementById('lora-r-slider');
+          var rValue = document.getElementById('lora-r-value');
+          var readout = document.getElementById('lora-readout');
+
+          function render() {
+            var r = parseInt(slider.value, 10);
+            rValue.textContent = r;
+            var loraParams = d * r + r * d;
+            var reduction = fullParams / loraParams;
+            readout.textContent = 'Full fine-tuning: ' + fullParams.toLocaleString() + ' trainable parameters.  LoRA at rank ' + r + ': ' +
+              loraParams.toLocaleString() + ' trainable parameters — ' + reduction.toFixed(1) + '× fewer.';
+          }
+
+          slider.addEventListener('input', render);
+          render();
+        })();
+      </script>
+
+      <p>
+        Even at rank 64 — a fairly generous rank — LoRA trains 32× fewer
+        parameters than full fine-tuning of that one matrix; at rank 8,
+        it's 256× fewer. Real LLMs have many such matrices across dozens
+        of layers, so the total savings compound across the entire
+        model, which is why LoRA lets fine-tuning happen on a single
+        consumer GPU where full fine-tuning would need a roomful of them.
+      </p>
+
+      <h2>Quantization: storing numbers with less precision</h2>
+      <script>initJargonBox("quantization",
+        "Storing a model's weights using fewer bits per number — 8-bit or 4-bit integers instead of the usual 16-bit or 32-bit floating point — shrinking memory footprint and speeding up computation, at the cost of some numeric precision.");</script>
+      <p>
+        <span class="jargon-term">Quantization</span> attacks a
+        different cost entirely: not how many parameters there are, but
+        how many bits each one takes up in memory. A typical weight
+        (Chapter 4.1) is stored as a 32-bit or 16-bit floating-point
+        number (Chapter 2.1). Quantization rounds each weight to the
+        nearest value in a much smaller set — say, 256 possible values,
+        fitting in a single 8-bit integer — cutting memory (and often
+        computation time) roughly in proportion to the drop in bits per
+        number, at the cost of some rounding error on every single
+        weight.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          Real 8-bit (int8) quantization of 8 example weights: map their
+          range onto the 256 possible int8 values (0-255), round each
+          weight to the nearest one, then convert back to a float and
+          measure the real rounding error introduced.
+        </p>
+        <table class="data-table" id="quant-table">
+          <thead><tr><th>Original weight (float32)</th><th>Quantized (int8)</th><th>Dequantized</th><th>Error</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p id="quant-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var weights = [-0.35, -0.12, 0.03, 0.18, 0.42, -0.28, 0.09, 0.31];
+          var min = Math.min.apply(null, weights);
+          var max = Math.max.apply(null, weights);
+          var scale = (max - min) / 255;
+
+          var tbody = document.querySelector('#quant-table tbody');
+          var totalError = 0;
+          weights.forEach(function (w) {
+            var q = Math.round((w - min) / scale);
+            q = Math.max(0, Math.min(255, q));
+            var dequant = q * scale + min;
+            var err = Math.abs(w - dequant);
+            totalError += err;
+            var tr = document.createElement('tr');
+            tr.innerHTML = '<td>' + w.toFixed(4) + '</td><td>' + q + '</td><td>' + dequant.toFixed(4) + '</td><td>' + err.toFixed(5) + '</td>';
+            tbody.appendChild(tr);
+          });
+
+          var avgError = totalError / weights.length;
+          document.getElementById('quant-readout').textContent =
+            'Average rounding error across all 8 weights: ' + avgError.toFixed(5) + '. Memory: float32 = 4 bytes/weight, int8 = 1 byte/weight → 4× smaller, for a tiny, bounded loss of precision.';
+        })();
+      </script>
+
+      <p>
+        Every quantized-then-dequantized weight lands within about
+        0.0015 of its original value — an error far smaller than the
+        differences that actually drive a model's behavior — while
+        every weight now takes a quarter of the memory. Stacked across
+        billions of parameters, that difference is often what decides
+        whether a model fits on the hardware available at all.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Full fine-tuning of a large language model is expensive because every one of its billions of parameters needs a gradient and, often, extra optimizer state.</li>
+          <li>LoRA freezes the original pretrained weights and trains only a small low-rank additive update instead, cutting trainable parameters by orders of magnitude while preserving everything the base model already learned.</li>
+          <li>Quantization stores weights with fewer bits per number (e.g., int8 instead of float32), shrinking memory and often speeding up computation, at the cost of a small, bounded rounding error per weight.</li>
+          <li>LoRA and quantization solve different problems — how many parameters need training vs. how much memory each one takes up — and are frequently combined in practice.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-9-5">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What specifically does LoRA freeze, and what does it train instead?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! The frozen original preserves everything already learned, while the small low-rank update is all that needs training.">It freezes the original pretrained weight matrix entirely, and trains only a much smaller pair of low-rank matrices whose product forms an additive update.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — LoRA specifically avoids retraining the full original weight matrix; that's exactly the expensive approach it's designed to skip.">It freezes the small update matrices and retrains the entire original weight matrix.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — LoRA changes what gets trained (a small additive update) and how much memory that costs, not the numeric precision weights are stored at — that's quantization's job.">It reduces the numeric precision of every weight, the same way quantization does.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. In the LoRA demo, why does a higher rank r mean more trainable parameters?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Both small matrices have a dimension equal to r, so the total parameter count (2·d·r) grows directly with r.">The two low-rank matrices have shape d×r and r×d, so their total parameter count grows directly with r.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — d, the original weight matrix's dimension, stays fixed at 4096 throughout the demo; only r changes.">Increasing r also increases the size d of the original frozen weight matrix.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo computes the exact parameter count from a real formula (d·r + r·d) every time the slider moves; nothing is random.">Rank r controls a random rounding error added to each parameter.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. What tradeoff does quantization make?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Fewer bits per weight means less memory (and often faster computation), paid for with a small, bounded rounding error on every weight.">It shrinks memory and often speeds up computation by storing weights with fewer bits, at the cost of a small rounding error introduced on every weight.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — quantization doesn't change how many parameters exist or need training; it changes how much memory each existing parameter takes up.">It reduces the number of parameters that need training, the same way LoRA does.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo's int8 quantization introduces a small but real rounding error on every weight; it isn't lossless.">It stores every weight with perfect precision, using less memory for free.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -1228,6 +1451,7 @@
     initQuiz(document.getElementById('quiz-9-2'));
     initQuiz(document.getElementById('quiz-9-3'));
     initQuiz(document.getElementById('quiz-9-4'));
+    initQuiz(document.getElementById('quiz-9-5'));
     initProgressTracking();
   })();
 </script>
