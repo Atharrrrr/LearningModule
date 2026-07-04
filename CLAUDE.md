@@ -4,22 +4,6 @@ A 98-chapter interactive book teaching AI/ML from zero prerequisites to
 job-ready, ending with the reader able to explain YOLO, SuperPoint,
 SuperGlue, LLMs, VLMs, and diffusion models, and build a portfolio.
 
-## The chapter-batching rule
-Default: write 2-3 chapters per turn (count given in the "Continue"
-message), verifying and committing each chapter individually as you
-finish it — not all at once at the end. Stop after the requested count
-and report all of them together.
-
-Exception — these are "anchor" chapters and must be written ALONE, one
-per turn, no matter what batch size was requested: 6.4 (Backpropagation),
-7.7 (Meet YOLO), 7.8 (Meet SuperPoint), 8.4 (Attention), 8.5 (The
-Transformer), 8.6 (Meet SuperGlue), 9.2 (Meet the LLM), 9.4 (Instruction
-Tuning & RLHF), 11.4 (Diffusion Models), 12.4 (Deep RL & RLHF Revisited).
-If a requested batch would reach one of these, stop the batch right
-before it and write only up through the chapter immediately prior.
-
-Read PROGRESS.md first, every time, to find what's next.
-
 ## The resumable autonomous-loop rule
 This project is worked on in a loop that may span multiple sessions,
 since any session can be cut off by a usage-limit reset at any point,
@@ -43,8 +27,14 @@ including mid-chapter. Every action must be safely resumable.
    never batched at the end — this is what makes steps 1-2 possible. A
    session that dies mid-batch must still leave PROGRESS.md accurate as
    of the last fully-committed chapter.
-5. Anchor chapters still get full care in loop mode — continuous
-   operation is not an excuse to rush them.
+5. Anchor chapters — 6.4 (Backpropagation), 7.7 (Meet YOLO), 7.8 (Meet
+   SuperPoint), 8.4 (Attention), 8.5 (The Transformer), 8.6 (Meet
+   SuperGlue), 9.2 (Meet the LLM), 9.4 (Instruction Tuning & RLHF), 11.4
+   (Diffusion Models), 12.4 (Deep RL & RLHF Revisited) — still get full,
+   undivided care in loop mode: each one gets its own stretch of the loop
+   with nothing else competing for attention. Continuous operation is not
+   an excuse to rush them. (All 10 are already written; this list matters
+   again only if the curriculum is ever deliberately expanded.)
 6. At the end of every Part, do a quick self-check against the
    write-book-chapter skill's actual rules (analogy -> concept -> example
    -> recap -> quiz, jargon boxes) — not just that verify.py passed
