@@ -1,17 +1,15 @@
 # Progress
 
 ## Status
-In progress. 63 of 98 chapters written. Parts I, II, III, IV, V, VI, VII,
-and VIII are all complete. Part IX is in progress (2 of 9 chapters done).
+In progress. 64 of 98 chapters written. Parts I, II, III, IV, V, VI, VII,
+and VIII are all complete. Part IX is in progress (3 of 9 chapters done).
 
 ## Next chapter due
-Part IX, Chapter 9.3 — Scaling Laws & Emergent Abilities
+Part IX, Chapter 9.4 — Instruction Tuning & RLHF
 (parts/part-09-language-models.html already exists — insert the new
-<section> before </main> and flip 9.3's sidebar entry from unwritten to
-live. Not an anchor chapter — can be batched with 9.4 up to the batch
-size given, EXCEPT Chapter 9.4 (Instruction Tuning & RLHF) is itself an
-anchor chapter (see CLAUDE.md) and must be written ALONE — so if a batch
-would reach 9.4, stop right before it and write only up through 9.3.)
+<section> before </main> and flip 9.4's sidebar entry from unwritten to
+live. IMPORTANT: 9.4 is an anchor chapter (see CLAUDE.md) — must be
+written ALONE, no other chapters batched with it.)
 
 ## Part VIII self-check (write-book-chapter skill compliance)
 Reviewed all 6 chapters (8.1–8.6) against the required rhythm: every
@@ -104,6 +102,7 @@ issues found.
 - 8.6 Meet SuperGlue — parts/part-08-attention-graphs-sequences.html
 - 9.1 Tokenization — parts/part-09-language-models.html
 - 9.2 Meet the LLM — parts/part-09-language-models.html
+- 9.3 Scaling Laws & Emergent Abilities — parts/part-09-language-models.html
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in

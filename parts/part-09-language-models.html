@@ -23,7 +23,9 @@
     <a class="nav-item" data-chapter-id="9-2" href="#chapter-9-2">
       <span class="nav-dot"></span>9.2 Meet the LLM
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>9.3 Scaling Laws &amp; Emergent Abilities</div>
+    <a class="nav-item" data-chapter-id="9-3" href="#chapter-9-3">
+      <span class="nav-dot"></span>9.3 Scaling Laws &amp; Emergent Abilities
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>9.4 Instruction Tuning &amp; RLHF</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>9.5 Efficient Fine-Tuning (LoRA, quantization)</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>9.6 Prompting &amp; In-Context Learning</div>
@@ -654,6 +656,277 @@
 
     </section>
 
+    <section id="chapter-9-3">
+      <div class="chapter-eyebrow">Part IX · Chapter 9.3</div>
+      <h1 class="chapter-title">Scaling Laws &amp; Emergent Abilities</h1>
+
+      <p class="lede">
+        Chapter 9.2 explained what an LLM is trained to do. This chapter
+        asks what happens as you make one bigger. Two related, often
+        confused phenomena show up: a remarkably predictable smooth
+        improvement called a scaling law, and capabilities that appear
+        to switch on suddenly, called emergent abilities — which turn
+        out to have a more honest explanation than "suddenly" suggests.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">💪 Frame of reference</div>
+        <p>
+          Strength training: your underlying muscle strength climbs
+          smoothly, week after week — a little more every session. But
+          a pull-up is all-or-nothing: either your chin clears the bar,
+          or it doesn't. For months, "number of pull-ups you can do"
+          reads a flat zero, even while real strength is steadily
+          building underneath. Then one week, seemingly overnight, you
+          can suddenly do one. Nothing special happened that week — your
+          smoothly growing strength simply crossed the threshold that
+          this particular all-or-nothing test requires. That gap between
+          a smooth underlying quantity and a strict pass/fail measurement
+          of it is exactly what this chapter is about.
+        </p>
+      </div>
+
+      <h2>Scaling laws: predictable improvement from more of everything</h2>
+      <script>initJargonBox("scaling law",
+        "An empirical finding that a language model's next-token-prediction loss (Chapter 9.2) decreases smoothly and predictably as you increase model size (parameters), training data size, or compute — following a power-law-shaped curve across many orders of magnitude, with no sign of leveling off until data or compute actually runs short.");</script>
+      <p>
+        A <span class="jargon-term">scaling law</span> is an unusually
+        clean empirical result: plot an LLM's loss (Chapter 9.2) against
+        its parameter count (Chapter 1.3), training data size, or total
+        compute — using a logarithmic scale on both axes — and the
+        points fall on a remarkably straight, predictable line. Bigger
+        consistently means better, in a way researchers can extrapolate
+        before ever training the larger model. It also revealed a
+        genuine mistake in how the field originally spent its budget:
+        for years, most extra compute went into more parameters, while
+        training data grew far more slowly. Careful study found a
+        "compute-optimal" balance instead — for a fixed compute budget,
+        model size and training data size should generally grow
+        together, not one at the expense of the other. A model starved
+        of data underperforms what the exact same compute budget could
+        have achieved if split more evenly.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          A real power-law curve, computed live:
+          <span class="mono">loss(N) = 1.5 + 60 · N^(−0.28)</span>.
+          The shape (smooth, ever-decreasing, flattening out but never
+          quite reaching the floor of 1.5) matches real published
+          scaling laws — the constants here are simplified for teaching,
+          not the literal figures from any specific paper.
+        </p>
+        <div class="demo-controls">
+          <label class="demo-slider-label">Model size: <span id="sl-n-value">1.0 × 10⁹</span> parameters
+            <input type="range" id="sl-n-slider" min="6" max="12" step="0.5" value="9">
+          </label>
+        </div>
+        <p id="sl-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var slider = document.getElementById('sl-n-slider');
+          var nValue = document.getElementById('sl-n-value');
+          var readout = document.getElementById('sl-readout');
+
+          function formatN(n) {
+            var parts = n.toExponential(1).split('e');
+            var supMap = { '0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','+':'','-':'⁻' };
+            var expStr = parts[1].split('').map(function (c) { return supMap[c] !== undefined ? supMap[c] : c; }).join('');
+            return parts[0] + ' × 10' + expStr;
+          }
+
+          function loss(n) {
+            return 1.5 + 60 * Math.pow(n, -0.28);
+          }
+
+          function render() {
+            var exponent = parseFloat(slider.value);
+            var n = Math.pow(10, exponent);
+            nValue.textContent = formatN(n);
+            var l = loss(n);
+            readout.textContent = 'N = 10^' + exponent + ' parameters → loss ≈ ' + l.toFixed(4) +
+              (exponent <= 6.5 ? ' — far from the floor; big gains are cheap at this scale.' :
+               exponent >= 11.5 ? ' — very close to the 1.5 floor; further scale buys less and less.' :
+               ' — steadily improving, but each extra 10× in parameters buys a shrinking gain.');
+          }
+
+          slider.addEventListener('input', render);
+          render();
+        })();
+      </script>
+
+      <p>
+        Slide from 10⁶ to 10¹²: loss drops fastest early on, then keeps
+        improving but by smaller and smaller amounts — the defining
+        shape of a power law. That predictability is precisely why
+        researchers can plan multi-million-dollar training runs with
+        real confidence in the result, well before they start.
+      </p>
+
+      <h2>Emergent abilities — and an honest caveat about how they're measured</h2>
+      <script>initJargonBox("emergent ability",
+        "A capability that appears to jump from near-zero to strong performance once model scale crosses some threshold, rather than improving gradually alongside scale — for example, a smaller model failing almost completely at a multi-step task while a larger one suddenly succeeds.");</script>
+      <p>
+        An <span class="jargon-term">emergent ability</span> is a
+        capability — multi-step arithmetic, following a chain of
+        reasoning, translating with only a couple of examples — that
+        seems to switch on abruptly at some scale, rather than climbing
+        gradually the way loss does. That's a genuinely striking
+        empirical pattern. But there's an honest caveat worth taking
+        seriously: much of what looks like "sudden emergence" can arise
+        mechanically from how the ability is measured, not from anything
+        actually switching on inside the model.
+      </p>
+      <p>
+        Here's the mechanism. Many multi-step tasks are graded
+        all-or-nothing: every step in the chain has to be correct for
+        the whole answer to count. If a model's <em>per-step</em>
+        accuracy improves smoothly with scale — the same gradual
+        improvement scaling laws already predict — then the probability
+        of getting an entire <em>k</em>-step chain fully correct is
+        <span class="mono">(per-step accuracy)^k</span>. Raising a
+        smoothly climbing number to a fixed power doesn't stay smooth —
+        it stays near zero for a long stretch, then rises steeply, purely
+        as a mathematical consequence of the exponent. Nothing needs to
+        switch on inside the model at all.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          Same model-size slider as above. Watch a smoothly improving
+          per-step accuracy get raised to the 30th power (a 30-step
+          task) — real computed values, side by side.
+        </p>
+        <div class="demo-controls">
+          <label class="demo-slider-label">Model size: <span id="em-n-value">1.0 × 10⁹</span> parameters
+            <input type="range" id="em-n-slider" min="6" max="12" step="0.25" value="9">
+          </label>
+        </div>
+        <table class="data-table" id="em-table">
+          <thead><tr><th>Quantity</th><th>Value</th><th></th></tr></thead>
+          <tbody>
+            <tr>
+              <td>Per-step accuracy (smooth)</td>
+              <td id="em-perstep-value"></td>
+              <td style="width:200px;"><div style="background:#30363d; border-radius:4px; height:14px;"><div id="em-perstep-bar" style="background:var(--blue); height:14px; border-radius:4px; width:0%;"></div></div></td>
+            </tr>
+            <tr>
+              <td>30-step chain success (looks "emergent")</td>
+              <td id="em-chain-value"></td>
+              <td style="width:200px;"><div style="background:#30363d; border-radius:4px; height:14px;"><div id="em-chain-bar" style="background:var(--purple); height:14px; border-radius:4px; width:0%;"></div></div></td>
+            </tr>
+          </tbody>
+        </table>
+        <p id="em-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var slider = document.getElementById('em-n-slider');
+          var nValue = document.getElementById('em-n-value');
+          var readout = document.getElementById('em-readout');
+          var perstepValue = document.getElementById('em-perstep-value');
+          var chainValue = document.getElementById('em-chain-value');
+          var perstepBar = document.getElementById('em-perstep-bar');
+          var chainBar = document.getElementById('em-chain-bar');
+
+          function formatN(n) {
+            var parts = n.toExponential(1).split('e');
+            var supMap = { '0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','+':'','-':'⁻' };
+            var expStr = parts[1].split('').map(function (c) { return supMap[c] !== undefined ? supMap[c] : c; }).join('');
+            return parts[0] + ' × 10' + expStr;
+          }
+
+          function perStepAccuracy(n) {
+            var errFloor = 0.002, k = 8, p = 0.22;
+            var err = errFloor + k * Math.pow(n, -p);
+            return Math.max(0, Math.min(1, 1 - err));
+          }
+
+          function render() {
+            var exponent = parseFloat(slider.value);
+            var n = Math.pow(10, exponent);
+            nValue.textContent = formatN(n);
+            var acc = perStepAccuracy(n);
+            var chain = Math.pow(acc, 30);
+            perstepValue.textContent = acc.toFixed(4);
+            chainValue.textContent = chain.toFixed(4);
+            perstepBar.style.width = (acc * 100).toFixed(1) + '%';
+            chainBar.style.width = (chain * 100).toFixed(1) + '%';
+            readout.textContent = 'Per-step accuracy moved to ' + acc.toFixed(3) +
+              ' — a modest, smooth change — but the 30-step chain success is ' + chain.toFixed(3) +
+              (chain < 0.05 ? ', still reading as essentially "can\'t do this task."' :
+               chain > 0.5 ? ', now reading as "reliably capable" — a much bigger relative swing than the smooth per-step number suggests.' :
+               ', climbing fast now even though per-step accuracy is barely moving.');
+          }
+
+          slider.addEventListener('input', render);
+          render();
+        })();
+      </script>
+
+      <p>
+        Push the slider from 10⁶ to 10¹²: per-step accuracy moves
+        gently, from roughly 0.62 up toward 0.98 — a smooth, unremarkable
+        climb. The 30-step chain success, computed from that exact same
+        number, crawls near zero for most of the range and then rises
+        sharply near the top — the "emergence" is real as a measured
+        curve, but it's a mathematical consequence of an all-or-nothing
+        grading rule applied to smooth underlying progress, not evidence
+        that some qualitatively new mechanism switched on inside the
+        model at a particular scale.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>A scaling law is the empirical finding that an LLM's loss decreases smoothly and predictably (a power-law shape) as model size, data size, or compute increases — reliable enough to plan large training runs in advance.</li>
+          <li>Compute-optimal training balances model size and training data together; pouring a fixed budget almost entirely into more parameters, while starving the model of data, wastes some of that budget.</li>
+          <li>An emergent ability is a capability that appears to switch on abruptly at some scale, rather than improving gradually.</li>
+          <li>Much apparent "emergence" can come from grading a multi-step task all-or-nothing: raising a smoothly improving per-step accuracy to a fixed power (the number of steps) produces a curve that looks like a sudden jump, even with no discontinuity in the model's actual, underlying ability.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-9-3">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What does a scaling law describe?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! That predictable, power-law-shaped relationship is what lets researchers plan large training runs with real confidence in the result.">A smooth, predictable, power-law-shaped decrease in an LLM's loss as model size, training data, or compute increases.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — scaling laws are specifically about loss decreasing predictably with more model size, data, or compute, not about a fixed maximum model size.">A hard upper limit on how large any language model is allowed to be.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — scaling laws describe a remarkably smooth, predictable trend, not sudden or random jumps.">A sudden, unpredictable jump in performance at random model sizes.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. In the demo, why does the 30-step chain success curve look far more dramatic than the per-step accuracy curve, even though both come from the exact same underlying number?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Raising a smoothly improving number to a fixed power keeps it near zero for a long stretch before it rises steeply — a mathematical consequence of the exponent, not a different underlying trend.">Chain success is per-step accuracy raised to the 30th power, and raising a smooth, gradually improving number to a fixed power produces a curve that stays low longer and then rises steeply.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — both curves in the demo are driven by the exact same per-step accuracy value; nothing separate is being measured.">The two curves are measuring two completely unrelated properties of the model.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo computes both values from one real formula each time the slider moves; nothing is randomized.">The chain success value is randomly generated, independent of the slider.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. What's the honest caveat this chapter raises about "emergent abilities"?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! An all-or-nothing grading rule can turn smooth, continuous underlying progress into a curve that looks like a sudden capability switching on.">Some apparent emergence may be an artifact of all-or-nothing grading on multi-step tasks, rather than proof that a qualitatively new mechanism switched on inside the model.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the chapter's point is the opposite: apparent sudden jumps deserve a closer look at how they were measured, not automatic acceptance at face value.">Emergent abilities should always be taken at face value with no further scrutiny.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — scaling laws and emergent abilities are presented as two distinct, related phenomena in this chapter, not as identical concepts.">Scaling laws and emergent abilities are actually the exact same phenomenon.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -661,6 +934,7 @@
   (function () {
     initQuiz(document.getElementById('quiz-9-1'));
     initQuiz(document.getElementById('quiz-9-2'));
+    initQuiz(document.getElementById('quiz-9-3'));
     initProgressTracking();
   })();
 </script>
