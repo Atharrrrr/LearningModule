@@ -1,16 +1,16 @@
 # Progress
 
 ## Status
-In progress. 56 of 98 chapters written. Parts I, II, III, IV, V, VI, and
+In progress. 57 of 98 chapters written. Parts I, II, III, IV, V, VI, and
 VII are all complete.
 
 ## Next chapter due
-Part VIII, Chapter 8.2 — RNNs & Their Limits
+Part VIII, Chapter 8.3 — Word Embeddings (word2vec)
 (parts/part-08-attention-graphs-sequences.html already exists — insert
-the new <section> before </main> and flip 8.2's sidebar entry from
-unwritten to live. Note: 8.4 Attention, 8.5 The Transformer, and 8.6 Meet
-SuperGlue are ALL anchor chapters — each must be written alone, one per
-turn. A batch reaching 8.4 should stop right before it, after 8.3.)
+the new <section> before </main> and flip 8.3's sidebar entry from
+unwritten to live. IMPORTANT: 8.4 Attention, right after this one, is an
+anchor chapter — must be written alone. A batch should stop after 8.3,
+right before 8.4.)
 
 ## Part VII self-check (write-book-chapter skill compliance)
 Reviewed all 8 chapters (7.1–7.8) against the required rhythm: every
@@ -80,6 +80,7 @@ issues found.
 - 7.7 Meet YOLO — parts/part-07-teaching-computers-to-see.html
 - 7.8 Meet SuperPoint — parts/part-07-teaching-computers-to-see.html
 - 8.1 Why Order Matters — parts/part-08-attention-graphs-sequences.html
+- 8.2 RNNs & Their Limits — parts/part-08-attention-graphs-sequences.html
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in

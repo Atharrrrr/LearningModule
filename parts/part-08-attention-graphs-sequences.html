@@ -20,7 +20,9 @@
     <a class="nav-item" data-chapter-id="8-1" href="#chapter-8-1">
       <span class="nav-dot"></span>8.1 Why Order Matters
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>8.2 RNNs &amp; Their Limits</div>
+    <a class="nav-item" data-chapter-id="8-2" href="#chapter-8-2">
+      <span class="nav-dot"></span>8.2 RNNs &amp; Their Limits
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>8.3 Word Embeddings (word2vec)</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>8.4 Attention</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>8.5 The Transformer, Piece by Piece</div>
@@ -189,12 +191,222 @@
 
     </section>
 
+    <section id="chapter-8-2">
+      <div class="chapter-eyebrow">Part VIII · Chapter 8.2</div>
+      <h1 class="chapter-title">RNNs &amp; Their Limits</h1>
+
+      <p class="lede">
+        Chapter 8.1 identified the gap: sequences vary in length and
+        depend on order. A recurrent neural network fills that gap with
+        an idea that's almost embarrassingly simple — read one element
+        at a time, and carry a running memory forward.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">📖 Frame of reference</div>
+        <p>
+          Reading a sentence one word at a time. By the time you reach
+          the tenth word, you're not replaying the previous nine
+          verbatim in your head — you're carrying forward a condensed
+          "understanding so far," updated after every new word. That
+          running, updated summary is exactly what a recurrent network
+          carries from one step to the next.
+        </p>
+      </div>
+
+      <h2>The same neuron, applied one step at a time</h2>
+      <script>initJargonBox("recurrent neural network (RNN)",
+        "A network that processes a sequence one element at a time, maintaining a hidden state that summarizes everything seen so far and gets updated at every step, using the exact same weights at every step.");</script>
+      <script>initJargonBox("hidden state",
+        "The running memory an RNN carries from one step to the next — a vector (or single number, in the simplest case) summarizing everything the network has processed in the sequence so far.");</script>
+      <p>
+        A <span class="jargon-term">recurrent neural network (RNN)</span>
+        keeps a <span class="jargon-term">hidden state</span> that gets
+        updated at every step of the sequence:
+        <span class="mono">h_t = sigmoid(w_h·h_(t-1) + w_x·x_t + b)</span>
+        — Chapter 6.1's neuron formula, applied repeatedly, using the
+        exact same weights every single step. That's weight sharing
+        again, just like Chapter 7.2's kernel reused across every
+        position in an image — except an RNN reuses its weights across
+        <em>time</em> instead of space.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          Sequence [0,0,1,0,1,1] (1 = keyword present at that step).
+          Step through and watch the hidden state — a real, computed
+          running memory — respond.
+        </p>
+        <div class="demo-actions">
+          <div class="quiz-option" id="rnn-step-btn">▶ Process next element</div>
+          <div class="quiz-option" id="rnn-reset-btn">↺ Reset</div>
+        </div>
+        <div id="rnn-sequence" style="display:flex; gap:8px; margin:12px 0;"></div>
+        <p id="rnn-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          function sigmoid(z) { return 1 / (1 + Math.exp(-z)); }
+          var seq = [0, 0, 1, 0, 1, 1];
+          var wh = 1, wx = 2, b = -1;
+          var h, t;
+
+          var seqWrap = document.getElementById('rnn-sequence');
+          var readout = document.getElementById('rnn-readout');
+          var cells = [];
+
+          seq.forEach(function (x, i) {
+            var cell = document.createElement('div');
+            cell.style.width = '40px'; cell.style.height = '40px';
+            cell.style.display = 'flex'; cell.style.alignItems = 'center'; cell.style.justifyContent = 'center';
+            cell.style.border = '1px solid #30363d'; cell.style.borderRadius = '6px';
+            cell.style.fontSize = '14px'; cell.style.color = '#8b949e';
+            cell.textContent = x;
+            seqWrap.appendChild(cell);
+            cells.push(cell);
+          });
+
+          function reset() {
+            h = 0; t = 0;
+            cells.forEach(function (c) { c.style.background = '#161b22'; c.style.color = '#8b949e'; c.style.borderColor = '#30363d'; });
+            readout.textContent = 'Initial hidden state h₀ = 0.000. Click "Process next element" to begin.';
+          }
+
+          document.getElementById('rnn-step-btn').addEventListener('click', function () {
+            if (t >= seq.length) { readout.textContent = 'Sequence finished — final hidden state h₆ = ' + h.toFixed(3) + '.'; return; }
+            var x = seq[t];
+            var hPrev = h;
+            h = sigmoid(wh * h + wx * x + b);
+            cells[t].style.background = 'var(--purple)';
+            cells[t].style.color = '#fff';
+            cells[t].style.borderColor = 'var(--purple)';
+            t++;
+            readout.textContent = 'Step ' + t + ': h_' + t + ' = sigmoid(' + wh + '×' + hPrev.toFixed(3) + ' + ' + wx + '×' + x + ' + (' + b + ')) = ' + h.toFixed(3);
+          });
+
+          document.getElementById('rnn-reset-btn').addEventListener('click', reset);
+          reset();
+        })();
+      </script>
+
+      <p>
+        Watch the hidden state rise sharply whenever the keyword
+        appears, then decay a little on steps without it — a real,
+        computed running memory of "how recently, and how often, has
+        the keyword shown up?" No fixed-length input was ever needed;
+        the same update rule just keeps running for as many steps as
+        the sequence has.
+      </p>
+
+      <h2>The limit: memory fades over long sequences</h2>
+      <p>
+        That repeated multiplication is also exactly Chapter 6.7's
+        vanishing-gradient setup, wearing different clothes. Unrolled
+        across T steps, an RNN is mathematically just as deep as a
+        T-layer feedforward network. Backpropagating an error back to
+        an early step multiplies through T local derivatives — and if
+        each one is a fraction less than 1 (sigmoid's again tops out at
+        0.25), that gradient vanishes exactly as fast as it did across
+        depth.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          Chapter 6.7's exact math, relabeled: gradient magnitude versus
+          how many steps back in the sequence an event happened.
+        </p>
+        <div class="demo-controls">
+          <label class="demo-slider-label">Steps back in the sequence: <span id="rnnvg-depth-value">10</span>
+            <input type="range" id="rnnvg-depth-slider" min="1" max="20" step="1" value="10">
+          </label>
+        </div>
+        <p id="rnnvg-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var slider = document.getElementById('rnnvg-depth-slider');
+          var depthValue = document.getElementById('rnnvg-depth-value');
+          var readout = document.getElementById('rnnvg-readout');
+
+          function render() {
+            var depth = parseInt(slider.value, 10);
+            depthValue.textContent = depth;
+            var mag = Math.pow(0.25, depth);
+            readout.textContent = 'An event ' + depth + ' steps back: gradient magnitude ≈ ' + mag.toExponential(3) +
+              (mag < 1e-4 ? ' — for practical purposes, forgotten.' : ' — still meaningfully influencing training.');
+          }
+
+          slider.addEventListener('input', render);
+          render();
+        })();
+      </script>
+
+      <p>
+        By 10-20 steps back, the gradient has collapsed to essentially
+        nothing — an event early in a long sequence barely influences
+        training at all, no matter how important it actually was to the
+        outcome. Plain RNNs genuinely struggle to connect distant parts
+        of a long sequence. Fixing this properly is exactly what
+        Chapter 8.4's attention mechanism was built to do.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>An RNN processes a sequence one element at a time, updating a hidden state with the same weights at every step — weight sharing across time.</li>
+          <li>The hidden state is a running memory: a summary of everything processed so far, not a verbatim record.</li>
+          <li>RNNs naturally handle variable-length sequences, since the same update rule just runs for as many steps as needed.</li>
+          <li>Unrolled over many steps, an RNN suffers the same vanishing-gradient problem as a very deep network (Chapter 6.7), making long-range dependencies hard to learn.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-8-2">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What does an RNN's hidden state represent?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! An updated summary, not a verbatim replay of every past element.">A running summary of everything the network has processed in the sequence so far, updated at every step.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the hidden state is a compact summary, not a verbatim copy of every past input.">An exact, verbatim copy of every element seen so far.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — an RNN's whole design is built around handling variable-length sequences, since sequences aren't fixed-length.">A fixed-size input required before the sequence can even start.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. In what sense does an RNN reuse "weight sharing," similar to a CNN?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! CNNs share weights across space (Chapter 7.2); RNNs share the exact same weights across time.">It uses the exact same weights at every timestep, the same way a CNN's kernel is reused at every spatial position.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — an RNN's weights are trained via backpropagation just like any other network; the weight-sharing point is about reusing the same weights across steps.">It doesn't actually use weights at all, only raw input values.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — every timestep in an RNN's sequence reuses the identical weights, not a fresh random set.">It picks a completely new random set of weights at every timestep.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. Why do plain RNNs struggle with long sequences?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Unrolled over many steps, an RNN is exactly as deep as a many-layer feedforward network, with the same vanishing-gradient risk.">Unrolled across many steps, an RNN is effectively as deep as a many-layer network, so gradients from early steps vanish the same way Chapter 6.7 described for deep networks.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo showed the vanishing-gradient issue happens with the same activation function (sigmoid) already used elsewhere in the book.">RNNs use a fundamentally broken activation function found nowhere else in this book.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the issue is specifically about gradients vanishing across many steps, not a hard limit on sequence length itself.">Sequences longer than a fixed number of elements are mathematically impossible to process.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
 <script>
   (function () {
     initQuiz(document.getElementById('quiz-8-1'));
+    initQuiz(document.getElementById('quiz-8-2'));
     initProgressTracking();
   })();
 </script>
