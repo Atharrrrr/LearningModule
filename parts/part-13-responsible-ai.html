@@ -23,7 +23,9 @@
     <a class="nav-item" data-chapter-id="13-2" href="#chapter-13-2">
       <span class="nav-dot"></span>13.2 Privacy, Safety &amp; Misuse
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>13.3 Interpretability</div>
+    <a class="nav-item" data-chapter-id="13-3" href="#chapter-13-3">
+      <span class="nav-dot"></span>13.3 Interpretability
+    </a>
   </nav>
 
   <main>
@@ -389,6 +391,188 @@
 
     </section>
 
+    <section id="chapter-13-3">
+      <div class="chapter-eyebrow">Part XIII · Chapter 13.3</div>
+      <h1 class="chapter-title">Interpretability</h1>
+
+      <p class="lede">
+        Chapter 5.3's metrics answer "how often is this model right?"
+        Interpretability answers a different, equally important
+        question: for one specific prediction, why did the model land
+        there? Some models make that question easy to answer exactly.
+        Others make it genuinely hard.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🩺 Frame of reference</div>
+        <p>
+          A doctor using a simple point-based checklist can tell a
+          patient exactly why: "two points for this symptom, three for
+          that test result, your total crossed the threshold." Every
+          point traces back to something specific and checkable. A
+          doctor relying purely on decades of accumulated instinct might
+          be just as accurate, or more — but asking them to break their
+          judgment down into exact, individually verifiable reasons is a
+          much harder request, even though the diagnosis itself might be
+          excellent.
+        </p>
+      </div>
+
+      <h2>When "why" has an exact answer</h2>
+      <script>initJargonBox("interpretability",
+        "The ability to understand and explain why a model made one specific prediction, not just whether it's accurate overall (Chapter 5.3). Some model types make this easy and exact; others make it genuinely difficult.");</script>
+      <p>
+        For a linear or logistic model (Chapters 4.1, 4.2),
+        <span class="jargon-term">interpretability</span> comes almost
+        for free. A prediction is a weighted sum of features plus a
+        bias — <span class="mono">w₁x₁ + w₂x₂ + ... + b</span> — so each
+        feature's exact contribution to one specific prediction is a
+        real, individually computable number, and those numbers sum up
+        to exactly reconstruct the model's raw output. Nothing here is
+        approximated or estimated after the fact — it's the literal
+        arithmetic the model already performs.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          A real toy loan-approval logistic model (Chapter 4.2):
+          weights income=1.2, debt ratio=−2.0, credit history=0.5,
+          bias=−0.3. Adjust one applicant's debt ratio and watch its
+          exact contribution — and the final probability — recompute
+          live.
+        </p>
+        <div class="demo-controls">
+          <label class="demo-slider-label">Debt ratio (0-1): <span id="int-debt-value">0.30</span>
+            <input type="range" id="int-debt-slider" min="0" max="1" step="0.05" value="0.3">
+          </label>
+        </div>
+        <table class="data-table" id="int-table">
+          <thead><tr><th>Feature</th><th>Value</th><th>Weight</th><th>Contribution (weight × value)</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p id="int-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          function sigmoid(z) { return 1 / (1 + Math.exp(-z)); }
+
+          var weights = { income: 1.2, debtRatio: -2.0, creditHistory: 0.5 };
+          var bias = -0.3;
+          var x = { income: 0.8, debtRatio: 0.3, creditHistory: 0.6 };
+
+          var slider = document.getElementById('int-debt-slider');
+          var debtValue = document.getElementById('int-debt-value');
+
+          function render() {
+            x.debtRatio = parseFloat(slider.value);
+            debtValue.textContent = x.debtRatio.toFixed(2);
+
+            var contributions = {};
+            var sum = bias;
+            Object.keys(weights).forEach(function (f) {
+              contributions[f] = weights[f] * x[f];
+              sum += contributions[f];
+            });
+
+            var labels = { income: 'Income', debtRatio: 'Debt ratio', creditHistory: 'Credit history length' };
+            var tbody = document.querySelector('#int-table tbody');
+            tbody.innerHTML = '';
+            Object.keys(weights).forEach(function (f) {
+              var tr = document.createElement('tr');
+              tr.innerHTML = '<td>' + labels[f] + '</td><td>' + x[f].toFixed(2) + '</td><td>' + weights[f].toFixed(1) + '</td><td>' + contributions[f].toFixed(4) + '</td>';
+              tbody.appendChild(tr);
+            });
+            var biasTr = document.createElement('tr');
+            biasTr.innerHTML = '<td>Bias</td><td>—</td><td>—</td><td>' + bias.toFixed(4) + '</td>';
+            tbody.appendChild(biasTr);
+
+            var prob = sigmoid(sum);
+            document.getElementById('int-readout').textContent =
+              'Contributions sum exactly to the raw score: ' + sum.toFixed(4) + ' → sigmoid(' + sum.toFixed(4) + ') = ' +
+              prob.toFixed(4) + ' probability of approval. Every single feature\'s exact effect on this specific prediction is visible above — nothing hidden, nothing estimated.';
+          }
+
+          slider.addEventListener('input', render);
+          render();
+        })();
+      </script>
+
+      <p>
+        Slide the debt ratio up: its contribution grows more negative
+        (the weight is −2.0), the raw score drops, and the final
+        approval probability drops with it — every step of that chain
+        is a real, exact number you can verify by hand. This is genuine,
+        complete interpretability: not an approximation of why the model
+        decided what it decided, but the literal calculation.
+      </p>
+
+      <h2>When "why" doesn't have a small exact answer</h2>
+      <script>initJargonBox("black box",
+        "A model complex enough — millions of interacting weights across many nonlinear layers (Chapters 6-8) — that no small set of numbers can exactly reconstruct why it produced one specific output, the way a linear model's feature contributions can.");</script>
+      <p>
+        A deep network has none of that simplicity. Its prediction comes
+        from millions of weights interacting through many nonlinear
+        layers (Chapters 6-8) — there's no small set of numbers that
+        exactly decomposes one output the way a linear model's feature
+        contributions do. That's the <span class="jargon-term">black
+        box</span> problem: real, useful predictions, without an exact,
+        complete answer to "why did it decide this, specifically?"
+        Techniques exist to approximate an explanation — visualizing
+        which parts of an image most influenced a CNN's decision, or
+        inspecting attention weights (Chapter 8.4) as a rough clue to
+        what a Transformer focused on — but these are informative
+        approximations, not the exact accounting this chapter's demo
+        just produced for a simple linear model.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Interpretability asks why a model made one specific prediction, a different question from Chapter 5.3's overall accuracy.</li>
+          <li>A linear or logistic model's prediction is an exact weighted sum, so every feature's contribution to one specific prediction is a real, individually computable number that sums up exactly to the model's raw output.</li>
+          <li>A deep network's prediction involves millions of interacting weights across nonlinear layers, with no small set of numbers that exactly explains one specific output — the "black box" problem.</li>
+          <li>Techniques like attention-weight inspection offer useful, informative approximations for black-box models, but not the same exact, complete accounting available for linear models.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-13-3">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What question does interpretability ask, that Chapter 5.3's accuracy metrics don't?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Accuracy summarizes overall correctness; interpretability explains one individual decision.">Why the model made one specific prediction, rather than how often its predictions are correct overall.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — interpretability and accuracy are two different, complementary questions about a model, not the same question restated.">Exactly the same question as accuracy, just phrased differently.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — interpretability is specifically about explaining one individual prediction, not about future data the model hasn't encountered.">How a model will behave on data that doesn't exist yet.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. In the demo, why do the feature contributions plus the bias exactly equal the raw score used for the sigmoid?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! A linear/logistic model's raw score literally is the weighted sum of features plus bias — that's the actual computation, not an approximation of it.">Because a logistic model's raw score is, by definition, exactly the sum of each feature's weight times its value, plus the bias — the demo is showing the real computation, not an estimate of it.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo displays contributions that genuinely add up to the raw score used by sigmoid, verified by the actual arithmetic performed.">It's a coincidence specific to this one example's chosen numbers.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the sigmoid is applied once, to the sum of the contributions and bias; it isn't applied separately to each individual feature.">The demo applies sigmoid separately to each feature and then adds the results together.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. Why is a deep neural network considered a "black box" in a way a logistic regression model isn't?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! With millions of weights interacting through nonlinear layers, there's no small set of numbers that exactly reconstructs one specific prediction the way a linear model's feature contributions do.">Its prediction emerges from millions of weights interacting across many nonlinear layers, so there's no small set of numbers that exactly explains one specific output.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — deep networks are frequently more accurate than simple linear models on complex tasks; the black-box problem is about explainability, not raw predictive accuracy.">A deep network is always less accurate than a logistic regression model.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the chapter describes real approximation techniques (like attention-weight inspection) that do offer some insight into deep networks, just not an exact, complete accounting.">There is no way to gain any insight at all into what a deep network is doing.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -396,6 +580,7 @@
   (function () {
     initQuiz(document.getElementById('quiz-13-1'));
     initQuiz(document.getElementById('quiz-13-2'));
+    initQuiz(document.getElementById('quiz-13-3'));
     initProgressTracking();
   })();
 </script>

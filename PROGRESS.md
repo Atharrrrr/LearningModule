@@ -1,18 +1,41 @@
 # Progress
 
 ## Status
-In progress. 84 of 98 chapters written. Parts I-XII are all complete.
-Part XIII is in progress (2 of 3 chapters done).
+In progress. 85 of 98 chapters written. Parts I-XIII are all complete.
 
 ## Next chapter due
-Part XIII, Chapter 13.3 — Interpretability
-(parts/part-13-responsible-ai.html already exists — insert the new
-<section> before </main> and flip 13.3's sidebar entry from unwritten to
-live. Not an anchor chapter. This is also the LAST chapter of Part XIII
-— completing it finishes the Part, so do the write-book-chapter skill
-self-check afterward per the resumable-autonomous-loop rule, then
-continue into Part XIV per CURRICULUM.md. No anchor chapters remain
-anywhere in the curriculum.)
+Part XIV, Chapter 14.1 — Version Control for ML
+(parts/part-14-notebook-to-product.html does not exist yet — create it
+with a full sidebar TOC for all 8 chapters of Part XIV, titles from
+CURRICULUM.md: 14.1 Version Control for ML [C], 14.2 Experiment Tracking
+[C], 14.3 Hardware: CPU vs. GPU vs. TPU [C], 14.4 Distributed & Parallel
+Training [D], 14.5 Serving a Model [C], 14.6 Containers &
+Reproducibility [D], 14.7 Monitoring & Drift [C], 14.8 A Real Pipeline,
+Start to Finish [C]. Every chapter except 14.1 starts as
+class="nav-item unwritten". No anchor chapters remain anywhere in the
+curriculum — Parts XIV and XV can be batched normally per the
+2-3-chapters-per-turn rule all the way to the end of the book.)
+
+## Part XIII self-check (write-book-chapter skill compliance)
+Reviewed all 3 chapters (13.1–13.3) against the required rhythm: every
+chapter has a frame-of-reference analogy, plain concept explanation, a
+worked/interactive example with real computed values (verified via Node
+scripts and headless-Chromium checks, not faked), a "what you can now
+explain" recap, and a 3-question quiz. Real, verified computation
+throughout: real per-group confusion-matrix metrics (accuracy,
+demographic parity, equal opportunity) computed live from toy counts,
+showing an 80% overall accuracy masking a real 30-point recall gap
+(13.1); Chapter 9.2's exact real bigram machinery reused to show a
+common context's probability genuinely splitting 50/50 versus a rare
+context's 100% deterministic (memorized) output (13.2); and a real
+logistic-regression feature-contribution breakdown, verified to sum
+exactly to the raw score feeding sigmoid, updating live as a feature
+slider moves (13.3). All new jargon terms were boxed on first use and
+cross-checked against GLOSSARY_TRACKER.md, with correct linking back to
+already-defined terms rather than redefinition (e.g. "bias (in data and
+models)" from Chapter 3.7 was linked, not redefined). Heavy
+cross-referencing to Chapters 3.7, 4.1-4.2, 5.3, 6-8, and 9.2/9.4. No
+structural or quality issues found.
 
 ## Part XII self-check (write-book-chapter skill compliance)
 Reviewed all 4 chapters (12.1–12.4) against the required rhythm: every
@@ -221,6 +244,7 @@ issues found.
 - 12.4 Deep RL & RLHF Revisited — parts/part-12-reinforcement-learning.html
 - 13.1 Fairness & Bias — parts/part-13-responsible-ai.html
 - 13.2 Privacy, Safety & Misuse — parts/part-13-responsible-ai.html
+- 13.3 Interpretability — parts/part-13-responsible-ai.html
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in
