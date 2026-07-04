@@ -1,5 +1,5 @@
 /* ==========================================================================
-   AI/ML From Zero to Job-Ready — Shared Components
+   The Beginner's Guide to Machine Learning and Artificial Intelligence — Shared Components
    Reference only — call these from chapter <script> blocks, never redefine
    them inline in a part file. Load with:
    <script src="../assets/components.js"></script>
@@ -70,7 +70,7 @@ function initSiteNav(opts) {
   var home = document.createElement('a');
   home.className = 'site-nav-home';
   home.href = homeHref;
-  home.textContent = 'AI/ML: Zero to Job-Ready';
+  home.textContent = "The Beginner's Guide to Machine Learning and Artificial Intelligence";
   nav.appendChild(home);
 
   var jump = document.createElement('div');

@@ -93,12 +93,20 @@ a:hover { text-decoration: underline; }
   text-transform: uppercase;
   letter-spacing: 0.04em;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .site-nav-home:hover { text-decoration: underline; }
 
 .site-nav-jump {
   position: relative;
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .site-nav-home { font-size: 11px; }
 }
 
 .site-nav-jump-btn {

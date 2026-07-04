@@ -1,4 +1,4 @@
-# AI/ML From Zero to Job-Ready — Project Memory
+# The Beginner's Guide to Machine Learning and Artificial Intelligence — Project Memory
 
 A 98-chapter interactive book teaching AI/ML from zero prerequisites to
 job-ready, ending with the reader able to explain YOLO, SuperPoint,

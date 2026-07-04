@@ -1,6 +1,6 @@
 ---
 name: write-book-chapter
-description: Use when writing any new chapter section for the AI/ML From Zero to Job-Ready book. Encodes house rules, design tokens, and file mechanics. Invoke before writing chapter content.
+description: Use when writing any new chapter section for the The Beginner's Guide to Machine Learning and Artificial Intelligence book. Encodes house rules, design tokens, and file mechanics. Invoke before writing chapter content.
 ---
 
 # Writing a Book Chapter
