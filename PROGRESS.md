@@ -1,19 +1,18 @@
 # Progress
 
 ## Status
-In progress. 82 of 98 chapters written. Parts I-XII are all complete.
+In progress. 83 of 98 chapters written. Parts I-XII are all complete.
+Part XIII is in progress (1 of 3 chapters done).
 
 ## Next chapter due
-Part XIII, Chapter 13.1 — Fairness & Bias
-(parts/part-13-responsible-ai.html does not exist yet — create it with
-a full sidebar TOC for all 3 chapters of Part XIII, titles from
-CURRICULUM.md: 13.1 Fairness & Bias [C], 13.2 Privacy, Safety & Misuse
-[C], 13.3 Interpretability [D]. Every chapter except 13.1 starts as
-class="nav-item unwritten". NOTE: there are NO remaining anchor chapters
-in the curriculum — 12.4 was the last one on CLAUDE.md's list. Parts
-XIII, XIV, and XV can all be batched normally per the 2-3-chapters-
-per-turn rule with no anchor-chapter interruptions from here to the end
-of the book.)
+Part XIII, Chapter 13.2 — Privacy, Safety & Misuse
+(parts/part-13-responsible-ai.html already exists — insert the new
+<section> before </main> and flip 13.2's sidebar entry from unwritten to
+live. Not an anchor chapter. NOTE: there are NO remaining anchor
+chapters in the curriculum — 12.4 was the last one on CLAUDE.md's list.
+Parts XIII, XIV, and XV can all be batched normally per the
+2-3-chapters-per-turn rule with no anchor-chapter interruptions from
+here to the end of the book.)
 
 ## Part XII self-check (write-book-chapter skill compliance)
 Reviewed all 4 chapters (12.1–12.4) against the required rhythm: every
@@ -220,6 +219,7 @@ issues found.
 - 12.2 Q-Learning, Simply Explained — parts/part-12-reinforcement-learning.html
 - 12.3 Policy Gradients & Exploration/Exploitation — parts/part-12-reinforcement-learning.html
 - 12.4 Deep RL & RLHF Revisited — parts/part-12-reinforcement-learning.html
+- 13.1 Fairness & Bias — parts/part-13-responsible-ai.html
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Part XIII — Responsible AI | AI/ML From Zero to Job-Ready</title>
+<link rel="stylesheet" href="../assets/styles.css">
+<script src="../assets/components.js"></script>
+</head>
+<body>
+<div class="book-shell">
+
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">AI/ML: Zero to Job-Ready</div>
+    </div>
+    <div class="progress-bar-track"><div class="progress-bar-fill"></div></div>
+
+    <div class="sidebar-part">Part XIII — Responsible AI</div>
+    <a class="nav-item" data-chapter-id="13-1" href="#chapter-13-1">
+      <span class="nav-dot"></span>13.1 Fairness &amp; Bias
+    </a>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>13.2 Privacy, Safety &amp; Misuse</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>13.3 Interpretability</div>
+  </nav>
+
+  <main>
+
+    <section id="chapter-13-1">
+      <div class="chapter-eyebrow">Part XIII · Chapter 13.1</div>
+      <h1 class="chapter-title">Fairness &amp; Bias</h1>
+
+      <p class="lede">
+        Chapter 3.7 already established that biased data produces biased
+        models. This chapter makes that concrete and measurable: a model
+        can post a perfectly respectable overall accuracy (Chapter 5.3)
+        while being systematically worse for one group of people than
+        another — and overall accuracy alone will never reveal that,
+        because it averages right over the disparity.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">⚖️ Frame of reference</div>
+        <p>
+          Imagine a loan officer trained purely by studying decades of
+          past lending decisions — decisions that themselves reflected
+          real historical discrimination. The officer never explicitly
+          considers anything they shouldn't, and yet, having learned
+          exclusively from that historical record, they end up
+          confidently reproducing its same old patterns, believing
+          they're just reading the data objectively. A model trained the
+          same way inherits the exact same risk — and unlike a human,
+          it applies whatever pattern it learned with total consistency,
+          at whatever scale it's deployed.
+        </p>
+      </div>
+
+      <h2>Overall accuracy can hide a real disparity</h2>
+      <p>
+        Chapter 3.7's <span class="jargon-term">bias (in data and
+        models)</span> is the root cause; this chapter is about
+        detecting its effect once a model exists. A single accuracy
+        number (Chapter 5.3) is computed across an entire dataset — it
+        has no way to reveal that a model performs very differently for
+        one subgroup than another, because good performance on one group
+        can average out with poor performance on another to look
+        perfectly fine overall.
+      </p>
+
+      <h2>Measuring fairness directly, per group</h2>
+      <script>initJargonBox("demographic parity",
+        "A fairness check comparing the positive-prediction rate across groups: what fraction of each group gets a positive prediction, regardless of whether that prediction is correct. A gap here means one group is flagged positive more often than another.");</script>
+      <script>initJargonBox("equal opportunity",
+        "A fairness check comparing recall (Chapter 5.3's true positive rate) across groups: among people who are genuinely positive, what fraction does the model correctly identify in each group? A gap here means the model misses genuinely qualified people in one group far more often than in another.");</script>
+      <p>
+        Two concrete, computable checks catch different kinds of
+        disparity. <span class="jargon-term">Demographic parity</span>
+        compares how often each group gets a positive prediction at all.
+        <span class="jargon-term">Equal opportunity</span> compares
+        recall (Chapter 5.3) across groups — specifically among people
+        who are genuinely positive, how many does the model actually
+        catch in each group? A model can pass one of these checks while
+        failing the other badly; real fairness work usually has to pick
+        which disparity matters most for the specific decision at hand,
+        since satisfying every possible fairness definition
+        simultaneously is, in general, mathematically impossible once
+        the underlying groups have different base rates.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          A toy loan-approval classifier's real confusion-matrix counts
+          (Chapter 5.3) for two applicant groups, 100 people each.
+          Compute real accuracy, demographic parity, and equal
+          opportunity for each group, live.
+        </p>
+        <table class="data-table" id="fair-table">
+          <thead><tr><th>Group</th><th>TP</th><th>FN</th><th>TN</th><th>FP</th></tr></thead>
+          <tbody>
+            <tr><td>A</td><td>45</td><td>5</td><td>40</td><td>10</td></tr>
+            <tr><td>B</td><td>30</td><td>20</td><td>45</td><td>5</td></tr>
+          </tbody>
+        </table>
+        <div class="demo-actions">
+          <div class="quiz-option" id="fair-compute-btn">🧮 Compute fairness metrics</div>
+        </div>
+        <table class="data-table" id="fair-metrics-table">
+          <thead><tr><th>Group</th><th>Accuracy</th><th>Positive-prediction rate (demographic parity)</th><th>Recall (equal opportunity)</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p id="fair-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var groups = {
+            A: { TP: 45, FN: 5, TN: 40, FP: 10 },
+            B: { TP: 30, FN: 20, TN: 45, FP: 5 }
+          };
+
+          function metrics(g) {
+            var total = g.TP + g.FN + g.TN + g.FP;
+            return {
+              total: total,
+              accuracy: (g.TP + g.TN) / total,
+              posRate: (g.TP + g.FP) / total,
+              recall: g.TP / (g.TP + g.FN)
+            };
+          }
+
+          document.getElementById('fair-compute-btn').addEventListener('click', function () {
+            var mA = metrics(groups.A);
+            var mB = metrics(groups.B);
+            var overallAcc = (groups.A.TP + groups.A.TN + groups.B.TP + groups.B.TN) / (mA.total + mB.total);
+
+            var tbody = document.querySelector('#fair-metrics-table tbody');
+            tbody.innerHTML = '';
+            [['A', mA], ['B', mB]].forEach(function (pair) {
+              var tr = document.createElement('tr');
+              tr.innerHTML = '<td>' + pair[0] + '</td><td>' + (pair[1].accuracy * 100).toFixed(0) + '%</td><td>' +
+                (pair[1].posRate * 100).toFixed(0) + '%</td><td>' + (pair[1].recall * 100).toFixed(0) + '%</td>';
+              tbody.appendChild(tr);
+            });
+
+            document.getElementById('fair-readout').textContent =
+              'Overall accuracy: ' + (overallAcc * 100).toFixed(0) + '% (looks perfectly fine) — but recall is ' +
+              (mA.recall * 100).toFixed(0) + '% for Group A vs. only ' + (mB.recall * 100).toFixed(0) +
+              '% for Group B: a ' + ((mA.recall - mB.recall) * 100).toFixed(0) +
+              '-point gap in how often genuinely qualified people actually get approved, completely invisible in the overall number.';
+          });
+        })();
+      </script>
+
+      <p>
+        Overall accuracy comes out to a respectable 80% — nothing about
+        that single number raises any flag. But look at recall per
+        group: 90% of genuinely qualified Group A applicants get
+        approved, versus only 60% of equally qualified Group B
+        applicants. That 30-point gap was there the entire time,
+        completely hidden behind one aggregate accuracy figure. Fairness
+        metrics exist specifically because "the overall number looks
+        fine" and "no group is being systematically underserved" are two
+        different claims, and only checking the first one can miss the
+        second entirely.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Bias in training data (Chapter 3.7) produces a model that faithfully reproduces — and can amplify — whatever disparities were already present in that data.</li>
+          <li>A single overall accuracy figure can look completely fine while hiding a large performance gap between subgroups.</li>
+          <li>Demographic parity compares positive-prediction rates across groups; equal opportunity compares recall across groups — two different, concrete, computable fairness checks.</li>
+          <li>A model can satisfy one fairness definition while failing another; picking which disparity matters most is a real, unavoidable part of building responsible models.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-13-1">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. Why can a model's overall accuracy look completely fine while it's actually treating two groups very differently?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Overall accuracy is computed across everyone at once, so strong performance on one group can average out with weak performance on another and still look fine overall.">Overall accuracy averages performance across the entire dataset, so good performance on one group can offset poor performance on another without the aggregate number revealing the gap.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo's overall accuracy of 80% is a real, correctly computed number from the actual per-group counts; it isn't a calculation error.">Overall accuracy is simply calculated incorrectly whenever subgroups exist.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo shows a real, substantial 30-point recall gap between two groups despite a fine-looking overall accuracy; that gap is a genuine finding, not a coincidence.">Subgroup disparities never actually happen in real trained models.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. What specifically does equal opportunity check, that demographic parity doesn't?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Equal opportunity looks specifically at recall among people who are genuinely positive — a different question than how often each group gets a positive prediction overall.">Whether people who are genuinely positive get correctly identified at the same rate across groups (recall), rather than just how often each group receives a positive prediction overall.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — demographic parity and equal opportunity are both real, distinct, computable fairness checks; they aren't the same thing under different names.">Nothing — demographic parity and equal opportunity are actually identical checks.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — both checks in this chapter are computed directly from real, observed confusion-matrix counts (Chapter 5.3), not from any predicted future outcome.">How the model will perform on entirely new data it hasn't been trained on yet.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. Why can't a model always satisfy every possible fairness definition at the same time?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! When groups have different underlying base rates, satisfying every fairness definition simultaneously is, in general, mathematically impossible — a real, well-established finding, not a design flaw.">When groups have different underlying base rates, it's mathematically impossible in general to satisfy every fairness definition simultaneously — some tradeoff has to be made.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the chapter's point is the opposite: this is a real, well-established mathematical limitation, not a matter of insufficient engineering effort.">It's simply a matter of not having tried hard enough to build a better model.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — demographic parity and equal opportunity are two genuinely different, independently computable checks; a model can pass one and fail the other, which is exactly why this tradeoff exists.">Demographic parity and equal opportunity always agree with each other, so there's no real tradeoff to make.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+</div>
+
+<script>
+  (function () {
+    initQuiz(document.getElementById('quiz-13-1'));
+    initProgressTracking();
+  })();
+</script>
+</body>
+</html>
