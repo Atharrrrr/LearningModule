@@ -20,7 +20,9 @@
     <a class="nav-item" data-chapter-id="10-1" href="#chapter-10-1">
       <span class="nav-dot"></span>10.1 Meet the VLM (CLIP)
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>10.2 Captioning &amp; Visual Question Answering</div>
+    <a class="nav-item" data-chapter-id="10-2" href="#chapter-10-2">
+      <span class="nav-dot"></span>10.2 Captioning &amp; Visual Question Answering
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>10.3 Speech &amp; Audio Models (Whisper)</div>
   </nav>
 
@@ -219,12 +221,198 @@
 
     </section>
 
+    <section id="chapter-10-2">
+      <div class="chapter-eyebrow">Part X · Chapter 10.2</div>
+      <h1 class="chapter-title">Captioning &amp; Visual Question Answering</h1>
+
+      <p class="lede">
+        Chapter 10.1's shared embedding space is enough to retrieve a
+        matching caption out of a fixed list — but real captioning
+        systems generate a brand-new sentence, and real visual question
+        answering (VQA) systems answer a question that was never
+        written down anywhere in advance. Both build directly on Chapter
+        9.2's autoregressive generation, just conditioned on an image
+        as well as (or instead of) text.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🖼️ Frame of reference</div>
+        <p>
+          A museum tour guide standing in front of a painting can do two
+          different things. Unprompted, they might describe it: "a
+          portrait of a woman in a blue dress, seated by a window." Or a
+          visitor might ask something specific: "what color is her
+          dress?" — and the guide answers that exact question instead of
+          giving the general description. Same painting, same
+          understanding of it, two different outputs depending on
+          whether there's a specific question to answer.
+        </p>
+      </div>
+
+      <h2>Captioning: generate a description, conditioned on an image</h2>
+      <script>initJargonBox("image captioning",
+        "Generating a natural-language description of an image's content by feeding the image's features (Chapter 10.1) into a text generator as context, then producing tokens autoregressively (Chapter 9.2) exactly like ordinary text generation — just conditioned on an image instead of a text prompt.");</script>
+      <p>
+        <span class="jargon-term">Image captioning</span> takes Chapter
+        9.2's autoregressive generation and swaps out the starting
+        context: instead of conditioning purely on preceding text
+        tokens, the model conditions on an image's features first, then
+        generates a caption one token at a time, same mechanism, same
+        "predict the most likely next token given everything so far" —
+        "everything so far" now includes the image itself.
+      </p>
+
+      <h2>VQA: answer a specific question about a specific image</h2>
+      <script>initJargonBox("visual question answering (VQA)",
+        "Answering a specific text question about a specific image, by conditioning generation (Chapter 9.2) on both the image's features and the question's tokens together — producing a targeted answer instead of an unprompted, general description.");</script>
+      <p>
+        <span class="jargon-term">Visual question answering (VQA)</span>
+        adds one more piece of context: both the image's features and a
+        specific question's tokens, together, condition the same
+        autoregressive generation. Ask a different question about the
+        exact same image, and the generated answer changes accordingly —
+        the model isn't just describing the image in general, it's
+        answering the particular thing that was asked.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          Two toy "scenes," each represented as a small structured
+          record (standing in for the visual features a real VLM would
+          extract directly from pixels — simulating actual pixel
+          understanding isn't feasible in a browser). Generate a caption
+          from a scene, or ask it a specific question, and watch a real
+          function assemble the sentence from that scene's data.
+        </p>
+        <div class="demo-actions">
+          <div class="quiz-option" id="vqa-scene-a-btn">🐕 Scene A</div>
+          <div class="quiz-option" id="vqa-scene-b-btn">🐈 Scene B</div>
+        </div>
+        <p id="vqa-scene-readout" class="demo-readout"></p>
+        <div class="demo-actions">
+          <div class="quiz-option" id="vqa-caption-btn">📝 Generate a caption</div>
+          <div class="quiz-option" id="vqa-q-color-btn">❓ What color is it?</div>
+          <div class="quiz-option" id="vqa-q-count-btn">❓ How many are there?</div>
+          <div class="quiz-option" id="vqa-q-place-btn">❓ Where is this?</div>
+        </div>
+        <p id="vqa-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var scenes = {
+            a: { object: 'dog', color: 'brown', count: 1, place: 'a park', prep: 'in' },
+            b: { object: 'cat', color: 'black-and-white', count: 2, place: 'a couch', prep: 'on' }
+          };
+          var current = 'a';
+
+          function describeScene(s) {
+            return 'object=' + s.object + ', color=' + s.color + ', count=' + s.count + ', place=' + s.place;
+          }
+
+          function caption(s) {
+            var subject = s.count === 1 ?
+              'a ' + s.color + ' ' + s.object :
+              s.count + ' ' + s.color + ' ' + s.object + 's';
+            return 'A photo of ' + subject + ' ' + s.prep + ' ' + s.place + '.';
+          }
+
+          function selectScene(key) {
+            current = key;
+            document.getElementById('vqa-scene-readout').textContent =
+              'Scene ' + key.toUpperCase() + "'s extracted features: " + describeScene(scenes[key]) + '.';
+            document.getElementById('vqa-readout').textContent = '';
+          }
+
+          document.getElementById('vqa-scene-a-btn').addEventListener('click', function () { selectScene('a'); });
+          document.getElementById('vqa-scene-b-btn').addEventListener('click', function () { selectScene('b'); });
+
+          document.getElementById('vqa-caption-btn').addEventListener('click', function () {
+            document.getElementById('vqa-readout').textContent = 'Caption: "' + caption(scenes[current]) + '"';
+          });
+          document.getElementById('vqa-q-color-btn').addEventListener('click', function () {
+            var s = scenes[current];
+            document.getElementById('vqa-readout').textContent = 'Q: "What color is the ' + s.object + '?"  A: "' + s.color + '."';
+          });
+          document.getElementById('vqa-q-count-btn').addEventListener('click', function () {
+            var s = scenes[current];
+            document.getElementById('vqa-readout').textContent = 'Q: "How many ' + s.object + 's are there?"  A: "' + s.count + '."';
+          });
+          document.getElementById('vqa-q-place-btn').addEventListener('click', function () {
+            var s = scenes[current];
+            document.getElementById('vqa-readout').textContent = 'Q: "Where is this?"  A: "' + s.place + '."';
+          });
+
+          selectScene('a');
+        })();
+      </script>
+
+      <p>
+        Switch to Scene B and generate a caption: "A photo of 2
+        black-and-white cats on a couch" — a different sentence, built
+        from that scene's own features, using the exact same generation
+        function. Then ask Scene B the count question directly: the
+        answer is "2," pulled from the same underlying data the caption
+        used, just surfaced as a targeted answer instead of folded into
+        a full description. Captioning and VQA aren't two different
+        systems — they're the same conditioned generation, applied to
+        two different kinds of prompt.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Image captioning generates a description by conditioning autoregressive generation (Chapter 9.2) on an image's features instead of, or in addition to, preceding text.</li>
+          <li>VQA conditions that same generation on both an image's features and a specific question, producing a targeted answer rather than a general description.</li>
+          <li>Captioning and VQA share the same underlying mechanism — what changes is what's included as context going into generation.</li>
+          <li>Different questions about the same image can produce very different answers, because each one conditions generation on different question tokens layered on top of the same image features.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-10-2">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What's the key difference between how captioning and VQA condition generation?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Captioning conditions on the image alone; VQA adds a specific question's tokens as extra context on top of the same image features.">Captioning conditions generation on the image's features alone; VQA conditions on both the image's features and a specific question's tokens.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — captioning and VQA share the same underlying autoregressive generation mechanism from Chapter 9.2; they differ in what's included as context, not in the generation mechanism itself.">Captioning and VQA use completely unrelated generation mechanisms.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — VQA specifically incorporates the image's features as context, not just the question text alone.">VQA ignores the image entirely and only looks at the question text.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. In the demo, why did the same Scene B produce different outputs for "generate a caption" versus "how many are there?"</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Both outputs are built from the same scene data, but the caption assembles all fields into a general description, while the question extracts one specific field.">Both draw from the exact same underlying scene features, but the caption assembles all of them into a general sentence, while the question surfaces just the one specific answer being asked for.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — both the caption and the question's answer come from the exact same scene data (color, count, place); nothing about the underlying scene changes between them.">The scene's underlying data changes depending on which button is clicked.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — every output in this demo is computed deterministically from the selected scene's real data, not chosen at random.">The outputs are unrelated random text with no connection to the selected scene.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. Why does this chapter say captioning and VQA are "the same conditioned generation, applied to two different kinds of prompt," rather than two separate systems?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Both rely on the identical autoregressive generation idea from Chapter 9.2; only the context fed into that generation differs.">Both use the same underlying mechanism — predicting the next token given everything in context so far — and differ only in exactly what gets included in that context.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the chapter's whole point is that captioning and VQA share one underlying generation mechanism, not that they're built from entirely different neural network types.">Captioning and VQA are built on completely different neural network architectures.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — captioning and VQA produce genuinely different kinds of output (a general description vs. a targeted answer); they aren't literally identical.">Captioning and VQA always produce identical output for the same image.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
 <script>
   (function () {
     initQuiz(document.getElementById('quiz-10-1'));
+    initQuiz(document.getElementById('quiz-10-2'));
     initProgressTracking();
   })();
 </script>
