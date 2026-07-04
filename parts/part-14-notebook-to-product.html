@@ -23,7 +23,9 @@
     <a class="nav-item" data-chapter-id="14-2" href="#chapter-14-2">
       <span class="nav-dot"></span>14.2 Experiment Tracking
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>14.3 Hardware: CPU vs. GPU vs. TPU</div>
+    <a class="nav-item" data-chapter-id="14-3" href="#chapter-14-3">
+      <span class="nav-dot"></span>14.3 Hardware: CPU vs. GPU vs. TPU
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>14.4 Distributed &amp; Parallel Training</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>14.5 Serving a Model</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>14.6 Containers &amp; Reproducibility</div>
@@ -356,6 +358,165 @@
 
     </section>
 
+    <section id="chapter-14-3">
+      <div class="chapter-eyebrow">Part XIV · Chapter 14.3</div>
+      <h1 class="chapter-title">Hardware: CPU vs. GPU vs. TPU</h1>
+
+      <p class="lede">
+        Every layer in every network this book has covered boils down to
+        matrix multiplication (Chapter 2.3). That single fact explains
+        why neural networks are trained on specialized hardware instead
+        of the same processor that runs everything else on a computer.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🍳 Frame of reference</div>
+        <p>
+          A small team of expert chefs can each handle a complicated,
+          varied dish from start to finish — flexible, but only a few
+          dishes cooking at once. A kitchen with a thousand line cooks,
+          each doing one simple, repetitive task — chop this one
+          vegetable, over and over — looks far less impressive per
+          worker, but if the actual job is "chop ten thousand identical
+          vegetables," that crew of simple workers, all chopping
+          simultaneously, finishes far faster than the small team of
+          experts ever could. Neural network training is overwhelmingly
+          that second kind of job.
+        </p>
+      </div>
+
+      <h2>Matrix multiplication is enormous, independent, repetitive work</h2>
+      <script>initJargonBox("parallelization",
+        "Doing many independent pieces of a computation at the same time, rather than one after another — possible whenever those pieces don't depend on each other's results.");</script>
+      <p>
+        A matrix multiply (Chapter 2.3) inside a layer (Chapter 6.2) is
+        made of enormous numbers of individual multiply-and-add
+        operations — and critically, none of them depends on any other
+        one's result. That's exactly the condition
+        <span class="jargon-term">parallelization</span> needs: pieces
+        of work that can all run at the very same time, on separate
+        workers, instead of one after another.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          A real operation-count and time estimate for multiplying two
+          N×N matrices (N³ multiply-add operations — the standard,
+          verifiable cost of matrix multiplication), comparing an 8-core
+          CPU against a 4096-core GPU, both running at the same
+          illustrative 1 billion operations/second per core.
+        </p>
+        <div class="demo-controls">
+          <label class="demo-slider-label">Matrix size N: <span id="hw-n-value">100</span>
+            <input type="range" id="hw-n-slider" min="10" max="4096" step="1" value="100">
+          </label>
+        </div>
+        <p id="hw-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var slider = document.getElementById('hw-n-slider');
+          var nValue = document.getElementById('hw-n-value');
+          var readout = document.getElementById('hw-readout');
+          var opsPerSecondPerCore = 1e9;
+          var cpuCores = 8, gpuCores = 4096;
+
+          function render() {
+            var n = parseInt(slider.value, 10);
+            nValue.textContent = n;
+            var totalOps = Math.pow(n, 3);
+            var cpuTime = totalOps / (cpuCores * opsPerSecondPerCore);
+            var gpuTime = totalOps / (gpuCores * opsPerSecondPerCore);
+            readout.textContent = 'N=' + n + ': ' + totalOps.toLocaleString() + ' multiply-add operations. 8-core CPU: ' +
+              cpuTime.toExponential(3) + 's. 4096-core GPU: ' + gpuTime.toExponential(3) + 's. That single matrix multiply repeats billions of times over a real training run.';
+          }
+
+          slider.addEventListener('input', render);
+          render();
+        })();
+      </script>
+
+      <p>
+        Slide N up to 4096 — a realistic hidden-layer size for a real
+        Transformer (Chapter 8.5) — and one single matrix multiply takes
+        the 8-core CPU roughly 8.6 seconds, versus about 0.017 seconds
+        on the 4096-core GPU. A real training run repeats this exact
+        operation billions of times across every layer and every step.
+        At small N the absolute gap barely matters; at real
+        neural-network scale, it's the difference between a training run
+        finishing in hours versus not finishing in any practical amount
+        of time at all.
+      </p>
+
+      <h2>GPUs and TPUs: built for exactly this shape of work</h2>
+      <script>initJargonBox("GPU (Graphics Processing Unit)",
+        "Hardware with thousands of simple compute cores, originally built for rendering graphics — coloring millions of independent pixels, another massively parallel job — and now widely repurposed for neural network training and inference, since matrix multiplication has the exact same \"many independent simple operations\" shape.");</script>
+      <script>initJargonBox("TPU (Tensor Processing Unit)",
+        "Hardware built specifically for neural network tensor (Chapter 2.11) operations, going even further than a GPU's general-purpose parallel cores — trading away flexibility for other kinds of computation in exchange for even greater speed at exactly the matrix-multiply-shaped work neural networks need.");</script>
+      <p>
+        A CPU has only a handful of powerful, flexible cores, built to
+        handle complex, varied, sequential logic well — exactly wrong for
+        a job made of millions of identical, independent operations. A
+        <span class="jargon-term">GPU (Graphics Processing Unit)</span>
+        has thousands of much simpler cores, originally built to color
+        millions of independent pixels at once for rendering graphics —
+        a workload with the identical "massively parallel, simple,
+        repetitive" shape neural network training needs. A
+        <span class="jargon-term">TPU (Tensor Processing Unit)</span>
+        pushes specialization further still: hardware built by Google
+        specifically for tensor operations, trading away general-purpose
+        flexibility entirely in exchange for even more speed at exactly
+        this one shape of computation.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Every layer's computation is a matrix multiplication, made of enormous numbers of independent multiply-add operations.</li>
+          <li>Independent operations can be parallelized — computed simultaneously on separate workers instead of one after another.</li>
+          <li>A GPU has thousands of simple cores, well suited to this kind of massively parallel, repetitive work — the same shape of workload it was originally built for in graphics rendering.</li>
+          <li>A TPU specializes even further, purpose-built for neural network tensor operations at the cost of general-purpose flexibility.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-14-3">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. Why can a matrix multiplication's individual operations be parallelized?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! None of the individual multiply-add operations inside a matrix multiply needs any other one's result first, so they can all run at the same time.">None of the individual multiply-add operations depends on any other one's result, so they can all be computed at the same time on separate workers.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo's real operation counts (N³) grow with matrix size; a matrix multiply is far from a trivial amount of computation at real neural-network scale.">A matrix multiplication is too small a computation to bother parallelizing.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the whole reason parallelization works here is that the individual operations don't depend on each other; if they did, they couldn't run simultaneously.">Each individual operation depends on every other operation's result.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. In the demo, why did the gap between CPU time and GPU time matter so much more at N=4096 than at N=10?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Total operations grow as N³, so the absolute time difference between CPU and GPU becomes dramatic at real neural-network scale, even though the speedup ratio itself stays constant.">The total number of operations grows as N³, so even though the relative speedup ratio stays the same, the absolute time difference becomes enormous at realistic matrix sizes.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the underlying formula (N³ operations, divided across cores) is applied identically at every N; nothing about the demo's calculation changes with matrix size.">The GPU's core count actually increases as N grows in the demo.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — both CPU and GPU times are computed from the same real formula (total operations divided by cores times speed) at every N; nothing here is arbitrary.">The times shown are arbitrary and don't reflect an actual computed relationship.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. What does a TPU trade away, compared to a GPU, in exchange for extra speed on neural network workloads?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! A TPU is built specifically for tensor operations, at the cost of the more general-purpose flexibility a GPU still retains.">General-purpose flexibility for other kinds of computation, since it's built specifically for neural network tensor operations.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the chapter's whole point is that a TPU trades flexibility for speed at one specific kind of work, not that it has no advantage at all.">Nothing — a TPU is simply a slower, worse version of a GPU with no tradeoff involved.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a TPU is specifically designed for parallel tensor operations; it doesn't abandon parallelism, it specializes further within it.">The ability to parallelize computation at all.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -363,6 +524,7 @@
   (function () {
     initQuiz(document.getElementById('quiz-14-1'));
     initQuiz(document.getElementById('quiz-14-2'));
+    initQuiz(document.getElementById('quiz-14-3'));
     initProgressTracking();
   })();
 </script>
