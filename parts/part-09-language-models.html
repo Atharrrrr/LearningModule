@@ -26,7 +26,9 @@
     <a class="nav-item" data-chapter-id="9-3" href="#chapter-9-3">
       <span class="nav-dot"></span>9.3 Scaling Laws &amp; Emergent Abilities
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>9.4 Instruction Tuning &amp; RLHF</div>
+    <a class="nav-item" data-chapter-id="9-4" href="#chapter-9-4">
+      <span class="nav-dot"></span>9.4 Instruction Tuning &amp; RLHF
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>9.5 Efficient Fine-Tuning (LoRA, quantization)</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>9.6 Prompting &amp; In-Context Learning</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>9.7 Retrieval-Augmented Generation (RAG)</div>
@@ -927,6 +929,296 @@
 
     </section>
 
+    <section id="chapter-9-4">
+      <div class="chapter-eyebrow">Part IX · Chapter 9.4</div>
+      <h1 class="chapter-title">Instruction Tuning &amp; RLHF</h1>
+
+      <p class="lede">
+        Chapter 9.2's LLM is trained on exactly one task: predict the
+        next token over an enormous pile of raw internet text, books,
+        and articles. Left exactly as is, that produces something odd:
+        ask it a question, and it might just as easily continue with
+        another question — that's a perfectly plausible way for a
+        forum post or homework sheet to continue, and next-token
+        prediction has no built-in preference for "answer helpfully"
+        over "continue however text like this usually continues."
+        Turning that raw next-token predictor into a helpful assistant
+        takes two more training stages, layered on top.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🧑‍🏫 Frame of reference</div>
+        <p>
+          A brilliant new hire who's read every book in the library
+          shows up on day one — encyclopedic knowledge, but no idea how
+          to actually do this specific job. First, a trainer walks them
+          through worked examples: "when a customer asks this, here's
+          what a good response looks like." That's instruction tuning.
+          Then, over the following weeks, a supervisor doesn't rewrite
+          every response from scratch — instead, whenever the new hire
+          drafts two possible replies, the supervisor just points at the
+          better one. Repeated enough times, the new hire's own sense of
+          "what's a good response" gets reshaped by that steady stream of
+          this-one's-better-than-that-one feedback. That's RLHF.
+        </p>
+      </div>
+
+      <h2>The gap: a base model just continues text</h2>
+      <script>initJargonBox("base model",
+        "An LLM trained only on next-token prediction (Chapter 9.2) over raw text, with no additional training to make it behave like a helpful assistant. Left alone, it simply continues whatever pattern of text it's given — which may or may not mean answering a question helpfully.");</script>
+      <p>
+        A <span class="jargon-term">base model</span> is genuinely
+        excellent at its one trained task — predicting plausible next
+        tokens — but "plausible continuation of this text" and "helpful
+        answer to this question" are not automatically the same thing.
+        Somewhere in its training data, questions get answered with more
+        questions, arguments get answered with rants, and requests get
+        ignored. A base model has absorbed all of that too, with no
+        signal telling it which behavior a user actually wants.
+      </p>
+
+      <h2>Stage one: instruction tuning</h2>
+      <script>initJargonBox("instruction tuning (supervised fine-tuning, SFT)",
+        "Continuing to train a base model — using the exact same next-token-prediction loss and gradient descent (Chapters 4.3, 6.4-6.5) as before — on a curated dataset of (prompt, ideal response) pairs written or vetted by humans, instead of raw internet text. This nudges the model's default completion style toward directly answering instructions.");</script>
+      <p>
+        <span class="jargon-term">Instruction tuning</span> (also called
+        supervised fine-tuning, or SFT) is the more familiar of the two
+        stages: it's Chapter 7.5's transfer learning idea, applied here.
+        Take the trained base model and keep training it — same loss
+        function, same gradient descent — but now on a much smaller,
+        carefully curated set of examples that all look like "prompt in,
+        ideal helpful response out." The model doesn't learn any new
+        facts about the world from this stage; it learns a new default
+        <em>style</em> of completion — answer the question, follow the
+        instruction, stop rambling — because that's now what "plausible
+        continuation" looks like in its recently-seen training examples.
+      </p>
+
+      <h2>Stage two: RLHF — learning from comparisons, not corrections</h2>
+      <script>initJargonBox("reward model",
+        "A separate, smaller model trained to predict which of two candidate responses to the same prompt a human would prefer. Trained on many human comparisons (\"response A is better than response B\"), it outputs a single score — higher for responses closer to what people actually want.");</script>
+      <script>initJargonBox("RLHF (Reinforcement Learning from Human Feedback)",
+        "A training stage that uses a reward model's scores as the reward signal (Chapter 1.1's reinforcement learning) for further training the LLM itself — typically with an RL algorithm called PPO. The LLM generates a response, the reward model scores it, and the LLM's weights are nudged to make higher-scoring responses more likely next time.");</script>
+      <p>
+        Instruction tuning has a bottleneck: humans have to write out a
+        full ideal response for every training example, which is slow
+        and only shows one right way to phrase a good answer, out of
+        many possible good phrasings. RLHF sidesteps that bottleneck by
+        exploiting something humans are much better at than writing
+        perfect responses from scratch: comparing two responses and
+        picking the better one. Collect a large number of these
+        comparisons, and train a <span class="jargon-term">reward
+        model</span> to predict them — a stand-in for a human judge that
+        can now score any response, instantly, at scale. Then run
+        <span class="jargon-term">RLHF</span>: the LLM generates a
+        response, the reward model scores it, and reinforcement learning
+        nudges the LLM's weights to make higher-scoring responses more
+        likely in the future — no human needed for every individual
+        training step from here on.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          A toy reward model, scoring two candidate replies to "What's
+          the capital of France?" — a real weighted sum (Chapter 2.4's
+          dot product, exactly like a neuron's weighted sum in Chapter
+          6.1) over three hand-scored features. The feature scores and
+          weights are illustrative, chosen for teaching; a real reward
+          model learns weights like these from thousands of human
+          comparisons instead.
+        </p>
+        <table class="data-table" id="rm-table">
+          <thead><tr><th>Feature (weight)</th><th>"Paris."</th><th>"I think it might possibly be Lyon or maybe Paris, I'm not totally sure, sorry!"</th></tr></thead>
+          <tbody>
+            <tr><td>Conciseness (0.3)</td><td id="rm-a-concise"></td><td id="rm-b-concise"></td></tr>
+            <tr><td>Correctness (0.5)</td><td id="rm-a-correct"></td><td id="rm-b-correct"></td></tr>
+            <tr><td>Politeness (0.2)</td><td id="rm-a-polite"></td><td id="rm-b-polite"></td></tr>
+          </tbody>
+        </table>
+        <div class="demo-actions">
+          <div class="quiz-option" id="rm-score-btn">🧮 Score both responses</div>
+        </div>
+        <p id="rm-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var weights = { conciseness: 0.3, correctness: 0.5, politeness: 0.2 };
+          var responseA = { name: '"Paris."', conciseness: 1.0, correctness: 1.0, politeness: 0.6 };
+          var responseB = { name: '"I think it might possibly be Lyon or maybe Paris, I\'m not totally sure, sorry!"', conciseness: 0.1, correctness: 0.4, politeness: 0.9 };
+
+          document.getElementById('rm-a-concise').textContent = responseA.conciseness.toFixed(1);
+          document.getElementById('rm-a-correct').textContent = responseA.correctness.toFixed(1);
+          document.getElementById('rm-a-polite').textContent = responseA.politeness.toFixed(1);
+          document.getElementById('rm-b-concise').textContent = responseB.conciseness.toFixed(1);
+          document.getElementById('rm-b-correct').textContent = responseB.correctness.toFixed(1);
+          document.getElementById('rm-b-polite').textContent = responseB.politeness.toFixed(1);
+
+          function reward(r) {
+            return r.conciseness * weights.conciseness + r.correctness * weights.correctness + r.politeness * weights.politeness;
+          }
+
+          document.getElementById('rm-score-btn').addEventListener('click', function () {
+            var scoreA = reward(responseA);
+            var scoreB = reward(responseB);
+            document.getElementById('rm-readout').textContent =
+              'reward("Paris.") = ' + responseA.conciseness.toFixed(1) + '×0.3 + ' + responseA.correctness.toFixed(1) + '×0.5 + ' + responseA.politeness.toFixed(1) + '×0.2 = ' + scoreA.toFixed(2) +
+              '   |   reward(hedging reply) = ' + responseB.conciseness.toFixed(1) + '×0.3 + ' + responseB.correctness.toFixed(1) + '×0.5 + ' + responseB.politeness.toFixed(1) + '×0.2 = ' + scoreB.toFixed(2) +
+              '  —  the reward model prefers "' + (scoreA > scoreB ? 'Paris."' : 'the hedging reply') + '" by ' + Math.abs(scoreA - scoreB).toFixed(2) + '.';
+          });
+        })();
+      </script>
+
+      <p>
+        The short, correct answer wins clearly (0.92 vs. 0.41) — mostly
+        driven by correctness, the highest-weighted feature, even though
+        the hedging reply scored higher on politeness alone. That's the
+        entire point of a reward model: one single number, blending
+        several things people care about, that RLHF can now optimize
+        against directly.
+      </p>
+
+      <p>
+        Once a reward model exists, RLHF repeatedly nudges the LLM's own
+        output probabilities toward whatever it scores highest —
+        exactly the shape of Chapter 8.4's softmax turning scores into
+        weights, but now applied training step after training step.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          Four candidate response styles to a single prompt, each already
+          scored by a reward model. Starting from an equal 25% chance of
+          producing each one, click "Run one RLHF training step" to
+          apply a real policy update — logits shift by each response's
+          reward, then get renormalized with softmax — and watch the
+          probability of producing each style shift, step by step.
+        </p>
+        <table class="data-table" id="rlhf-table">
+          <thead><tr><th>Response style</th><th>Reward-model score</th><th>Current probability</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="demo-actions">
+          <div class="quiz-option" id="rlhf-step-btn">▶ Run one RLHF training step</div>
+          <div class="quiz-option" id="rlhf-reset-btn">↺ Reset</div>
+        </div>
+        <p id="rlhf-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var styles = [
+            { key: 'A', label: 'A — concise & correct', reward: 0.9 },
+            { key: 'B', label: 'B — rambling but polite', reward: 0.3 },
+            { key: 'C', label: 'C — rude & unhelpful', reward: 0.1 },
+            { key: 'D', label: 'D — correct but verbose', reward: 0.6 }
+          ];
+          var lr = 1.0;
+          var logits, stepNum;
+
+          function softmax() {
+            var vals = styles.map(function (s) { return logits[s.key]; });
+            var max = Math.max.apply(null, vals);
+            var exps = vals.map(function (v) { return Math.exp(v - max); });
+            var sum = exps.reduce(function (a, b) { return a + b; }, 0);
+            var dist = {};
+            styles.forEach(function (s, i) { dist[s.key] = exps[i] / sum; });
+            return dist;
+          }
+
+          function render() {
+            var dist = softmax();
+            var tbody = document.querySelector('#rlhf-table tbody');
+            tbody.innerHTML = '';
+            styles.forEach(function (s) {
+              var tr = document.createElement('tr');
+              tr.innerHTML = '<td>' + s.label + '</td><td>' + s.reward.toFixed(1) + '</td><td>' + (dist[s.key] * 100).toFixed(1) + '%</td>';
+              tbody.appendChild(tr);
+            });
+            document.getElementById('rlhf-readout').textContent = stepNum === 0 ?
+              'Step 0 (before any training): uniform 25% each.' :
+              'After ' + stepNum + ' training step' + (stepNum > 1 ? 's' : '') + ': probability mass has shifted toward the higher-reward styles.';
+          }
+
+          document.getElementById('rlhf-step-btn').addEventListener('click', function () {
+            styles.forEach(function (s) { logits[s.key] += lr * s.reward; });
+            stepNum++;
+            render();
+          });
+
+          document.getElementById('rlhf-reset-btn').addEventListener('click', function () {
+            logits = { A: 0, B: 0, C: 0, D: 0 };
+            stepNum = 0;
+            render();
+          });
+
+          logits = { A: 0, B: 0, C: 0, D: 0 };
+          stepNum = 0;
+          render();
+        })();
+      </script>
+
+      <p>
+        Click through 5 steps: style A (reward 0.9) climbs from 25% to
+        roughly 77%, while style C (reward 0.1) shrinks to under 2%.
+        Nothing about the four response styles themselves changed —
+        only the model's own probability of producing each one, pushed
+        steadily toward whatever the reward model scores highest. Real
+        RLHF adds more machinery on top of this core idea (PPO's
+        clipping and a value baseline, mainly to keep training stable),
+        but the underlying push — shift probability mass toward
+        higher-reward outputs, one training step at a time — is exactly
+        what's happening here.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>A base model only predicts plausible next tokens; nothing in its training specifically rewards "helpful answer" over any other plausible continuation of the text.</li>
+          <li>Instruction tuning (supervised fine-tuning) continues training the base model on curated (prompt, ideal response) pairs, using the same loss and gradient descent as before, to shift its default completion style toward directly following instructions.</li>
+          <li>RLHF trains a separate reward model on human comparisons ("this response is better than that one"), then uses reinforcement learning to nudge the LLM's own outputs toward whatever that reward model scores highest.</li>
+          <li>A reward model's score is a single number blending several things people care about — in the toy demo, a weighted sum of conciseness, correctness, and politeness, exactly like a neuron's weighted sum.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-9-4">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. Why isn't a base model automatically a helpful assistant, even though it's excellent at next-token prediction?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Next-token prediction only rewards plausible continuations of text — and plenty of plausible continuations in its training data are not helpful, direct answers.">Next-token prediction only trains it to continue text plausibly, and plausible continuations in its training data aren't always helpful, direct answers.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a base model has genuinely absorbed an enormous amount of world knowledge from training; the gap is about behavior and style, not raw knowledge.">A base model simply doesn't know enough facts about the world yet.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a base model is a real, useful Transformer; the issue is specifically that its training objective doesn't distinguish helpful answers from any other plausible continuation.">A base model can't perform any useful computation at all.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. What bottleneck does RLHF's reward model specifically get around, compared to pure instruction tuning?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Humans are much faster and more reliable at comparing two responses than at writing out one perfect ideal response from scratch, for every single training example.">Instruction tuning needs a full ideal response written out by hand for every example; a reward model instead learns from the much cheaper task of comparing two candidate responses.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a reward model is trained on real human preference comparisons; it doesn't remove humans from the process entirely, just from every individual RLHF training step afterward.">It removes the need for any human involvement anywhere in the training process.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the reward model's whole job is producing a score used specifically for further training, not for spelling correction.">It corrects spelling and grammar mistakes in the base model's training data.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. In the RLHF demo, why did style A's probability rise from 25% to roughly 77% after 5 training steps while style C shrank to under 2%?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Each training step adds each style's reward to its logit, then renormalizes with softmax — so the highest-reward style compounds an advantage every single step.">Each training step shifted every style's logit by its own reward-model score before renormalizing with softmax, and style A's high reward (0.9) compounded that advantage over repeated steps.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the four reward-model scores are fixed throughout the whole demo; only the resulting probabilities change.">The reward-model scores for each style changed with every click.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — every step applies the same deterministic update rule to the same fixed rewards; nothing about it is random.">The probabilities were assigned randomly at each step.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -935,6 +1227,7 @@
     initQuiz(document.getElementById('quiz-9-1'));
     initQuiz(document.getElementById('quiz-9-2'));
     initQuiz(document.getElementById('quiz-9-3'));
+    initQuiz(document.getElementById('quiz-9-4'));
     initProgressTracking();
   })();
 </script>
