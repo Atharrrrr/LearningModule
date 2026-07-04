@@ -1,19 +1,29 @@
 # Progress
 
 ## Status
-In progress. 96 of 98 chapters written. Parts I-XIV are all complete.
-Part XV is in progress (3 of 5 chapters done) — this is the FINAL Part
-of the book.
+In progress. 97 of 98 chapters written. Parts I-XIV are all complete.
+Part XV is in progress (4 of 5 chapters done) — this is the FINAL Part
+of the book. Only Chapter 15.5 (Glossary) remains in the ENTIRE
+98-chapter book.
 
 ## Next chapter due
-Part XV, Chapter 15.4 — The Job Search.
+Part XV, Chapter 15.5 — Glossary. This is the LAST chapter of the entire
+98-chapter book.
 (parts/part-15-becoming-ml-engineer.html already exists — insert the new
-<section> before </main> and flip 15.4's sidebar entry from unwritten to
-live.) Not an anchor chapter. No anchor chapters remain anywhere in the
-curriculum. 15.5 (Glossary) is the LAST chapter of the entire 98-chapter
-book — after it verifies and commits cleanly, the book is complete; do a
-final whole-book self-check at that point rather than just a Part XV
-self-check.
+<section> before </main> and flip 15.5's sidebar entry from unwritten to
+live.) Not an anchor chapter. This chapter should present a real,
+organized glossary of the book's jargon terms — GLOSSARY_TRACKER.md
+already has the full authoritative list with definitions and chapter
+references; this chapter's job is to render that content as a proper,
+navigable in-book glossary section (e.g. grouped by Part, or
+alphabetically — writer's judgment), not to redefine every term's
+prose from scratch. After 15.5 verifies and commits cleanly, the entire
+98-chapter book is complete — do a final whole-book self-check at that
+point (spot-check several chapters across different Parts against the
+write-book-chapter skill's rhythm, confirm no anchor chapters were
+skipped, confirm GLOSSARY_TRACKER.md is fully consistent) rather than
+just a Part XV self-check, and update this file's Status to reflect
+100% completion.
 
 ## Part XIII self-check (write-book-chapter skill compliance)
 Reviewed all 3 chapters (13.1–13.3) against the required rhythm: every
@@ -255,6 +265,7 @@ issues found.
 - 15.1 How to Read a Research Paper — parts/part-15-becoming-ml-engineer.html
 - 15.2 Choosing a Specialization — parts/part-15-becoming-ml-engineer.html
 - 15.3 Portfolio Projects Mapped to Every Part — parts/part-15-becoming-ml-engineer.html
+- 15.4 The Job Search — parts/part-15-becoming-ml-engineer.html
 
 ## Part XIV self-check (write-book-chapter skill compliance)
 Reviewed all 8 chapters (14.1–14.8) against the required rhythm: every

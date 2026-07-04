@@ -26,7 +26,9 @@
     <a class="nav-item" data-chapter-id="15-3" href="#chapter-15-3">
       <span class="nav-dot"></span>15.3 Portfolio Projects Mapped to Every Part
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>15.4 The Job Search</div>
+    <a class="nav-item" data-chapter-id="15-4" href="#chapter-15-4">
+      <span class="nav-dot"></span>15.4 The Job Search
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>15.5 Glossary</div>
   </nav>
 
@@ -517,6 +519,148 @@
 
     </section>
 
+    <section id="chapter-15-4">
+      <div class="chapter-eyebrow">Part XV · Chapter 15.4</div>
+      <h1 class="chapter-title">The Job Search</h1>
+
+      <p class="lede">
+        Chapter 15.2 chose a domain; Chapter 15.3 built evidence for it.
+        This chapter is the pipeline that evidence actually travels
+        through — sourcing, screening, interviewing, and an offer — each
+        stage with its own separate pass criteria, same shape as Chapter
+        14.8's model pipeline.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🔗 Frame of reference</div>
+        <p>
+          Chapter 14.8 ran one model through seven stages, each with its
+          own distinct pass criteria — a model that nails experiment
+          tracking still has to separately prove itself at serving, and
+          separately again at monitoring. A job search has the identical
+          shape: a resume that gets past a screen doesn't automatically
+          pass a technical interview, and acing a technical interview
+          doesn't automatically pass a system design round. Optimizing
+          effort for the wrong stage's criteria is the single most common
+          way a real, capable candidate gets stuck.
+        </p>
+      </div>
+
+      <h2>The stages, and what each one actually tests</h2>
+      <script>initJargonBox("ATS (Applicant Tracking System)",
+        "Software that scans and ranks incoming resumes/applications before a human ever reads most of them, typically by matching keywords against the job posting — meaning a resume genuinely needs the posting's specific terms present, not just a synonym or an implied skill.");</script>
+      <script>initJargonBox("system design interview",
+        "An interview format asking a candidate to design a full system for an open-ended problem — for an ML role, often something like \"design a pipeline for X\" (Chapter 14.8's shape) — evaluating structured thinking and tradeoff awareness over one exact correct answer.");</script>
+      <p>
+        A real ML job search runs through a predictable sequence: sourcing
+        (finding postings that actually match Chapter 15.2's chosen
+        domain, not just any posting with "AI" in the title), a resume
+        and portfolio screen (often an <span class="jargon-term">ATS
+        (Applicant Tracking System)</span> before any human reads it at
+        all), a technical screen (general coding ability, plus often an
+        ML-specific take-home), a conceptual ML interview, frequently a
+        <span class="jargon-term">system design interview</span> for more
+        senior roles, and a behavioral/culture interview — with an offer
+        (and negotiation) only at the very end.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          Click a stage to see what it actually tests, and an example
+          question you're now equipped to answer from this book alone.
+        </p>
+        <div class="demo-actions" id="stage-buttons">
+          <div class="quiz-option" data-stage="sourcing">Sourcing</div>
+          <div class="quiz-option" data-stage="screen">Resume/Portfolio Screen</div>
+          <div class="quiz-option" data-stage="technical">Technical Screen</div>
+          <div class="quiz-option" data-stage="concepts">ML Concepts Interview</div>
+          <div class="quiz-option" data-stage="design">System Design Interview</div>
+          <div class="quiz-option" data-stage="behavioral">Behavioral Interview</div>
+        </div>
+        <p id="stage-explain-readout" class="demo-readout">Click a stage above.</p>
+      </div>
+
+      <script>
+        (function () {
+          var stages = {
+            sourcing: 'Tests: whether you\'re applying to postings that actually match your chosen domain (Chapter 15.2) and role (Chapter 1.5), not just anything with "AI" in the title. Filtering by the exact vocabulary this book taught (e.g. "computer vision," "LLM," "MLOps") surfaces far more relevant postings than a generic search.',
+            screen: 'Tests: whether an ATS and then a human reviewer can quickly match your resume\'s language to the posting\'s language, and whether your portfolio project (Chapter 15.3) is visible and specific. Vague bullet points ("worked with machine learning") get filtered out faster than concrete ones ("trained a CNN classifier, deployed it behind a small API").',
+            technical: 'Tests: general coding ability (often unrelated to ML directly), plus sometimes an ML-specific take-home — for example, implementing a small logistic regression (Chapter 4.2) or evaluating a model with the correct metric for an imbalanced dataset (Chapter 3.5, 5.3).',
+            concepts: 'Tests: real conceptual understanding, usually via direct questions this book has already answered — "explain overfitting" (Chapter 5.1), "walk me through backpropagation" (Chapter 6.4), "what does attention actually compute" (Chapter 8.4), "why does data drift matter" (Chapter 14.7).',
+            design: 'Tests: structured thinking on an open-ended problem, like "design a system to detect fraudulent transactions" or "design a pipeline to keep a recommendation model up to date" — directly the shape of Chapter 14.8\'s pipeline: data, training, serving, monitoring, each with real tradeoffs to discuss.',
+            behavioral: 'Tests: how you actually behave on a team — how you\'ve handled disagreement, failure, or ambiguity in the past. Your honestly-documented portfolio project failure cases (Chapter 15.3) are real, concrete material for this round, not just abstract examples.'
+          };
+
+          var buttons = document.querySelectorAll('#stage-buttons .quiz-option');
+          var explain = document.getElementById('stage-explain-readout');
+
+          buttons.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+              var s = btn.getAttribute('data-stage');
+              buttons.forEach(function (b) { b.classList.remove('correct'); });
+              btn.classList.add('correct');
+              explain.textContent = stages[s];
+            });
+          });
+        })();
+      </script>
+
+      <p>
+        Notice how many of the "ML Concepts" questions above are things
+        this book has already given you a real, hands-on, verified answer
+        to — not a memorized definition, but an actual computation you
+        watched converge, diverge, or fail in a browser. That's a
+        genuinely different, sturdier kind of interview preparation than
+        memorizing a glossary the night before.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>A job search runs through distinct stages — sourcing, screening, technical, ML concepts, system design, behavioral — each with its own separate pass criteria, the same shape as Chapter 14.8's pipeline.</li>
+          <li>An ATS typically screens resumes by keyword match before a human ever reads most of them, rewarding specific, posting-matched language over vague claims.</li>
+          <li>A system design interview evaluates structured thinking and tradeoff awareness on an open-ended problem, often literally the shape of Chapter 14.8's data-to-monitoring pipeline.</li>
+          <li>This book's chapters map directly onto real ML concepts interview questions — the preparation already happened, one verified chapter at a time.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-15-4">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. Why does the chapter compare the job search to Chapter 14.8's pipeline?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Passing one stage (like a resume screen) doesn't automatically mean passing the next (like a technical interview) — exactly like a model that passes one pipeline stage still has to separately prove itself at the next.">Both have distinct sequential stages with separate pass criteria — succeeding at one stage doesn't automatically mean succeeding at the next.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the chapter's whole point is that the two are structurally similar (sequential, separately-gated stages), not that a job search literally is a technical ML pipeline.">A job search is literally a machine learning pipeline that trains a model.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the comparison is specifically about stage structure and separate pass criteria, not about which one takes longer.">The comparison is about which process takes longer to complete.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. What does an ATS typically do before a human reviews an application?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! An ATS typically ranks or filters resumes by keyword match against the posting, meaning specific, posting-matched language passes through more reliably than vague claims.">Scans and ranks resumes, often by matching specific keywords against the job posting.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the chapter describes an ATS as an automated keyword-matching filter, not a human process.">Personally interviews every candidate before any automated screening happens.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the chapter's whole point is that ATS filtering is a real, common first step most applications actually pass through.">Nothing — every resume automatically reaches a human reviewer with no filtering at all.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. What does a system design interview mainly evaluate?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! A system design interview is open-ended by design — it evaluates how a candidate structures and reasons about tradeoffs, not whether they recite one specific correct answer.">Structured thinking and tradeoff awareness on an open-ended problem, rather than one single exactly-correct answer.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the chapter describes system design interviews as open-ended, evaluated on reasoning and tradeoffs rather than one memorized correct answer.">Whether the candidate can recite one specific memorized correct answer.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a system design interview is specifically about designing systems (like Chapter 14.8's pipeline shape), a separate round from the behavioral interview described earlier in the chapter.">How a candidate has handled disagreement or failure on past teams.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -525,6 +669,7 @@
     initQuiz(document.getElementById('quiz-15-1'));
     initQuiz(document.getElementById('quiz-15-2'));
     initQuiz(document.getElementById('quiz-15-3'));
+    initQuiz(document.getElementById('quiz-15-4'));
     initProgressTracking();
   })();
 </script>
