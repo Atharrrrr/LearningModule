@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Part IX — Language Models | AI/ML From Zero to Job-Ready</title>
+<link rel="stylesheet" href="../assets/styles.css">
+<script src="../assets/components.js"></script>
+</head>
+<body>
+<div class="book-shell">
+
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">AI/ML: Zero to Job-Ready</div>
+    </div>
+    <div class="progress-bar-track"><div class="progress-bar-fill"></div></div>
+
+    <div class="sidebar-part">Part IX — Language Models</div>
+    <a class="nav-item" data-chapter-id="9-1" href="#chapter-9-1">
+      <span class="nav-dot"></span>9.1 Tokenization
+    </a>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>9.2 Meet the LLM</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>9.3 Scaling Laws &amp; Emergent Abilities</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>9.4 Instruction Tuning &amp; RLHF</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>9.5 Efficient Fine-Tuning (LoRA, quantization)</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>9.6 Prompting &amp; In-Context Learning</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>9.7 Retrieval-Augmented Generation (RAG)</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>9.8 Agents &amp; Tool Use</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>9.9 Hallucination &amp; Evaluation</div>
+  </nav>
+
+  <main>
+
+    <section id="chapter-9-1">
+      <div class="chapter-eyebrow">Part IX · Chapter 9.1</div>
+      <h1 class="chapter-title">Tokenization</h1>
+
+      <p class="lede">
+        Chapter 8.5's Transformer takes a sequence of vectors as input,
+        adds positional encoding, and runs attention over it. But real
+        text starts as plain characters — "the cat sat" — not vectors.
+        Something has to convert raw text into a sequence of numbers
+        before any of that machinery can run at all. That first, easy
+        to overlook step is tokenization.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🧱 Frame of reference</div>
+        <p>
+          Imagine a toy factory with two possible strategies. Strategy
+          one: mold a brand-new, one-off custom piece for every single
+          toy design that's ever been requested. Strategy two: keep a
+          modest set of standard interlocking bricks, and build every
+          design — including ones nobody has ever ordered before — by
+          snapping together combinations of those same bricks. The
+          second factory never gets stuck on an order it's never seen;
+          it just reaches for the right combination of pieces it already
+          has. Turning text into model-ready pieces faces the exact same
+          choice.
+        </p>
+      </div>
+
+      <h2>From text to numbers</h2>
+      <script>initJargonBox("token",
+        "One discrete unit that a tokenizer splits text into — anywhere from a single character to a whole word — each one mapped to an integer ID.");</script>
+      <script>initJargonBox("vocabulary",
+        "The fixed, finite list of every token a model knows about, each with its own integer ID. Any text the model reads or writes is built entirely out of vocabulary entries — nothing else exists as far as the model is concerned.");</script>
+      <p>
+        Every computation this book has covered — dot products (Chapter
+        2.4), matrix multiplication (Chapter 2.3), attention (Chapter
+        8.4) — operates on numbers. Text has to become numbers before
+        any of it applies. <span class="jargon-term">Tokenization</span>
+        is that conversion: slice a string into a sequence of
+        <span class="jargon-term">token</span>s, then look each one up
+        in a fixed <span class="jargon-term">vocabulary</span> to get an
+        integer ID. Those integer IDs are what actually get turned into
+        vectors — via an embedding table, exactly like Chapter 8.3's
+        word embeddings — before a single Transformer layer ever runs.
+      </p>
+
+      <h2>Two tempting extremes</h2>
+      <script>initJargonBox("out-of-vocabulary (OOV)",
+        "A word encountered at use time that never appeared in training and has no entry in the vocabulary — a tokenizer with no fallback simply has no way to represent it.");</script>
+      <p>
+        The most obvious approach is <strong>word-level tokenization</strong>:
+        split on spaces and punctuation, and give every distinct word its
+        own ID. It's intuitive, and sequences stay short — one token per
+        word. But a language has an enormous, ever-growing number of
+        distinct words — names, typos, slang, technical terms, words in
+        other languages — and a vocabulary can't realistically contain
+        all of them. Any word missing from the vocabulary is
+        <span class="jargon-term">out-of-vocabulary (OOV)</span>: the
+        model has no ID for it at all, full stop.
+      </p>
+      <p>
+        The opposite extreme is <strong>character-level tokenization</strong>:
+        split into individual characters. Now the vocabulary is tiny —
+        a few dozen letters, digits, and symbols — and OOV essentially
+        disappears, since every word is just a sequence of characters
+        the model already knows. The cost: sequences get 5-10x longer
+        per word, the model has to relearn spelling and word structure
+        from raw characters every time, and Chapter 8.4/8.5's attention
+        has to work over far more positions, which gets expensive fast.
+      </p>
+
+      <h2>The middle ground: build a vocabulary out of common chunks</h2>
+      <script>initJargonBox("subword tokenization",
+        "Splitting text into pieces larger than a single character but smaller than a whole word — common prefixes, suffixes, and word fragments — learned from how often they actually occur in real text.");</script>
+      <script>initJargonBox("Byte-Pair Encoding (BPE)",
+        "An algorithm for learning a subword vocabulary: start from individual characters, then repeatedly merge whichever adjacent pair of symbols is currently most frequent across the training text, adding each merged result as a new vocabulary entry.");</script>
+      <p>
+        <span class="jargon-term">Subword tokenization</span> is the
+        middle ground, and the approach virtually every modern language
+        model actually uses. <span class="jargon-term">Byte-Pair Encoding
+        (BPE)</span> is the classic algorithm for learning one, and its
+        recipe is simple:
+      </p>
+      <ol>
+        <li>Start with a vocabulary of every individual character that appears in the training text.</li>
+        <li>Count how often every adjacent pair of symbols shows up next to each other, across the entire training text.</li>
+        <li>Merge the single most frequent pair into one new symbol, and add it to the vocabulary.</li>
+        <li>Repeat — count, merge, repeat — growing the vocabulary one merged chunk at a time, until it reaches a target size.</li>
+      </ol>
+      <p>
+        Because every merge is chosen from real frequency counts, the
+        chunks that end up in the vocabulary are exactly the pieces that
+        keep recurring across the language — common prefixes, suffixes,
+        and word fragments. A brand-new word can then usually be spelled
+        out of pieces the vocabulary already has, even if the whole word
+        itself was never seen during training.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          A tiny training corpus: <span class="mono">low</span> (×5),
+          <span class="mono">lower</span> (×2), <span class="mono">newest</span>
+          (×6), <span class="mono">widest</span> (×3). Every word starts
+          split into individual characters plus an end-of-word marker
+          <span class="mono">&lt;/w&gt;</span>. Click through real BPE
+          merges, one at a time — the exact same counting-and-merging
+          algorithm described above, actually running below.
+        </p>
+        <div class="demo-actions">
+          <div class="quiz-option" id="bpe-step-btn">▶ Merge next pair</div>
+          <div class="quiz-option" id="bpe-reset-btn">↺ Reset</div>
+        </div>
+        <table class="data-table" id="bpe-table">
+          <thead><tr><th>Word</th><th>Frequency</th><th>Current symbols</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p id="bpe-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var corpus = { low: 5, lower: 2, newest: 6, widest: 3 };
+          var vocab, merges, stepNum;
+
+          function initVocab() {
+            vocab = {};
+            Object.keys(corpus).forEach(function (word) {
+              vocab[word] = { symbols: word.split('').concat(['</w>']), freq: corpus[word] };
+            });
+            merges = [];
+            stepNum = 0;
+          }
+
+          function getPairCounts() {
+            var counts = {};
+            Object.keys(vocab).forEach(function (word) {
+              var syms = vocab[word].symbols;
+              var freq = vocab[word].freq;
+              for (var i = 0; i < syms.length - 1; i++) {
+                var pair = syms[i] + ',' + syms[i + 1];
+                counts[pair] = (counts[pair] || 0) + freq;
+              }
+            });
+            return counts;
+          }
+
+          function mergePair(pairKey) {
+            var parts = pairKey.split(',');
+            var a = parts[0], b = parts[1];
+            Object.keys(vocab).forEach(function (word) {
+              var syms = vocab[word].symbols;
+              var out = [];
+              var i = 0;
+              while (i < syms.length) {
+                if (i < syms.length - 1 && syms[i] === a && syms[i + 1] === b) {
+                  out.push(a + b);
+                  i += 2;
+                } else {
+                  out.push(syms[i]);
+                  i += 1;
+                }
+              }
+              vocab[word].symbols = out;
+            });
+          }
+
+          function renderTable() {
+            var tbody = document.querySelector('#bpe-table tbody');
+            tbody.innerHTML = '';
+            Object.keys(corpus).forEach(function (word) {
+              var tr = document.createElement('tr');
+              tr.innerHTML = '<td>' + word + '</td><td>' + vocab[word].freq + '</td><td class="mono">' +
+                vocab[word].symbols.join(' ') + '</td>';
+              tbody.appendChild(tr);
+            });
+          }
+
+          function render() {
+            renderTable();
+            var readout = document.getElementById('bpe-readout');
+            if (stepNum === 0) {
+              readout.textContent = 'Vocabulary so far: just individual characters + </w>. Click "Merge next pair" to run the first BPE merge.';
+            } else {
+              var last = merges[merges.length - 1];
+              readout.textContent = 'Merge ' + stepNum + ': merged "' + last[0].replace(',', '" + "') + '" (appeared together ' + last[1] + ' times) into one new symbol "' + last[0].replace(',', '') + '".';
+            }
+          }
+
+          document.getElementById('bpe-step-btn').addEventListener('click', function () {
+            var counts = getPairCounts();
+            var entries = Object.keys(counts).map(function (k) { return [k, counts[k]]; });
+            if (entries.length === 0) {
+              document.getElementById('bpe-readout').textContent = 'No adjacent pairs left to merge — every word is now a single whole-word symbol.';
+              return;
+            }
+            entries.sort(function (a, b) { return b[1] - a[1]; });
+            var bestPair = entries[0][0];
+            var bestCount = entries[0][1];
+            mergePair(bestPair);
+            merges.push([bestPair, bestCount]);
+            stepNum++;
+            render();
+          });
+
+          document.getElementById('bpe-reset-btn').addEventListener('click', function () {
+            initVocab();
+            render();
+          });
+
+          initVocab();
+          render();
+
+          window.bpeGetMerges = function () { return merges; };
+          window.bpeGetCorpus = function () { return corpus; };
+        })();
+      </script>
+
+      <p>
+        Click through all 8 merges and watch <span class="mono">e</span>
+        and <span class="mono">s</span> merge first (they appear
+        together 9 times, inside both "newest" and "widest"), then
+        <span class="mono">es</span> absorbs <span class="mono">t</span>,
+        then the end marker, then <span class="mono">l</span> and
+        <span class="mono">o</span> merge (7 times, from "low" and
+        "lower"), and so on — the exact same counting-and-merging rule,
+        every single step, with the vocabulary growing by one chunk each
+        time.
+      </p>
+
+      <h2>What this buys you: handling a word you've never seen</h2>
+      <p>
+        The real payoff of subword tokenization shows up on a word the
+        training corpus never contained at all. Once the merges above
+        have run, try tokenizing a brand-new word using only the pieces
+        that were learned.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          Tokenize any word using the merges learned so far (run the
+          merges above first — the more merges applied, the bigger the
+          chunks this can use).
+        </p>
+        <div class="demo-controls">
+          <label class="demo-slider-label">Word to tokenize:
+            <input type="text" id="tok-word-input" value="lowest" style="margin-left:8px; background:#0d1117; color:#e6edf3; border:1px solid #30363d; border-radius:6px; padding:4px 8px; font-family:inherit;">
+          </label>
+        </div>
+        <div class="demo-actions">
+          <div class="quiz-option" id="tok-run-btn">🔤 Tokenize</div>
+        </div>
+        <p id="tok-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          function applyMerges(word, merges) {
+            var symbols = word.toLowerCase().split('').concat(['</w>']);
+            for (var m = 0; m < merges.length; m++) {
+              var parts = merges[m][0].split(',');
+              var a = parts[0], b = parts[1];
+              var out = [];
+              var i = 0;
+              while (i < symbols.length) {
+                if (i < symbols.length - 1 && symbols[i] === a && symbols[i + 1] === b) {
+                  out.push(a + b);
+                  i += 2;
+                } else {
+                  out.push(symbols[i]);
+                  i += 1;
+                }
+              }
+              symbols = out;
+            }
+            return symbols;
+          }
+
+          document.getElementById('tok-run-btn').addEventListener('click', function () {
+            var word = document.getElementById('tok-word-input').value.trim();
+            if (!word) return;
+            var merges = window.bpeGetMerges();
+            var corpus = window.bpeGetCorpus();
+            var tokens = applyMerges(word, merges);
+            var wasInTraining = Object.prototype.hasOwnProperty.call(corpus, word.toLowerCase());
+            document.getElementById('tok-readout').textContent =
+              '"' + word + '" → [' + tokens.join(', ') + ']  (' + tokens.length + ' tokens, ' + merges.length + ' merges applied)' +
+              (wasInTraining ? ' — this exact word was in the training corpus.' : ' — this word never appeared in training; it’s built entirely out of merged pieces learned from other words.');
+          });
+        })();
+      </script>
+
+      <p>
+        Run all 8 merges, then tokenize <span class="mono">lowest</span>:
+        it comes back as <span class="mono">[low, est&lt;/w&gt;]</span> —
+        two pieces, both learned from other words ("low"/"lower" gave it
+        <span class="mono">low</span>; "newest"/"widest" gave it
+        <span class="mono">est&lt;/w&gt;</span>), stitched together to
+        represent a word the corpus never contained as a whole. That's
+        the entire point: a fixed, modest-sized vocabulary of frequent
+        chunks that can still spell out words it's never directly seen —
+        exactly the LEGO-bricks tradeoff from the top of this chapter.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Every model in this book operates on numbers — tokenization is the first step that turns raw text into a sequence of integer IDs from a fixed vocabulary.</li>
+          <li>Word-level tokenization is intuitive but breaks on any word missing from its vocabulary (out-of-vocabulary); character-level tokenization avoids that but makes sequences much longer and throws away word structure.</li>
+          <li>Byte-Pair Encoding (BPE) learns a subword vocabulary by repeatedly merging whichever adjacent pair of symbols is most frequent in the training text, building up common chunks one merge at a time.</li>
+          <li>Because those chunks are learned from real frequency, an unseen word can usually still be spelled out of pieces the vocabulary already knows — the middle ground between the two extremes.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-9-1">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What specifically goes wrong with pure word-level tokenization?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! A vocabulary can't realistically contain every word a language might ever produce, so unseen words have no ID at all.">Any word missing from its fixed vocabulary (out-of-vocabulary) has no ID at all, and a language has far too many possible words to include them all.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — word-level tokenization actually keeps sequences short, one token per word; that's character-level's weakness, not word-level's.">It makes sequences too long to process efficiently.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — word-level tokenization is a real, historically common approach; its failure mode is specifically unseen/rare words.">Word-level tokenization simply doesn't work on any text at all.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. In Byte-Pair Encoding, what determines which pair of symbols gets merged at each step?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! BPE always merges whichever adjacent pair currently occurs most often across the training text.">Whichever adjacent pair of symbols currently appears most frequently, counted across the whole training corpus.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — BPE's merges are driven entirely by frequency counts, not alphabetical order.">Symbols are merged in alphabetical order.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — every merge is determined by counting real adjacent-pair frequencies in the training text, not chosen randomly.">A random pair is picked at each step.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. Why could the demo tokenize "lowest" correctly, even though "lowest" itself was never in the training corpus?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Subword tokenization's whole point: rare or unseen whole words can usually still be spelled from pieces learned elsewhere.">The learned merges "low" and "est&lt;/w&gt;" each came from other training words, and BPE only needs pieces the vocabulary already has, not the exact whole word.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — "lowest" was deliberately never included in the toy training corpus; the demo used {low, lower, newest, widest}.">"lowest" was secretly included in the training corpus.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the tokenizer never falls back to individual characters unless no learned merge applies at all; here two real merged chunks matched.">The tokenizer just fell back to raw individual characters.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+</div>
+
+<script>
+  (function () {
+    initQuiz(document.getElementById('quiz-9-1'));
+    initProgressTracking();
+  })();
+</script>
+</body>
+</html>

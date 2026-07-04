@@ -1,21 +1,16 @@
 # Progress
 
 ## Status
-In progress. 61 of 98 chapters written. Parts I, II, III, IV, V, VI, VII,
-and VIII are all complete.
+In progress. 62 of 98 chapters written. Parts I, II, III, IV, V, VI, VII,
+and VIII are all complete. Part IX is in progress (1 of 9 chapters done).
 
 ## Next chapter due
-Part IX, Chapter 9.1 — Tokenization
-(parts/part-09-language-models.html does not exist yet — create it with
-a full sidebar TOC for all 9 chapters of Part IX, titles from
-CURRICULUM.md: 9.1 Tokenization [C], 9.2 Meet the LLM [C], 9.3 Scaling
-Laws & Emergent Abilities [D], 9.4 Instruction Tuning & RLHF [C], 9.5
-Efficient Fine-Tuning (LoRA, quantization) [D], 9.6 Prompting &
-In-Context Learning [C], 9.7 Retrieval-Augmented Generation (RAG) [C],
-9.8 Agents & Tool Use [D], 9.9 Hallucination & Evaluation [C]. Every
-chapter except 9.1 starts as class="nav-item unwritten". NOTE: 9.2 (Meet
-the LLM) and 9.4 (Instruction Tuning & RLHF) are anchor chapters (see
-CLAUDE.md) — must each be written ALONE, one per turn.)
+Part IX, Chapter 9.2 — Meet the LLM
+(parts/part-09-language-models.html already exists — insert the new
+<section> before </main> and flip 9.2's sidebar entry from unwritten to
+live. IMPORTANT: 9.2 is an anchor chapter (see CLAUDE.md) — must be
+written ALONE. Chapter 9.4 (Instruction Tuning & RLHF) later in this
+same Part is also an anchor chapter and must likewise be written alone.)
 
 ## Part VIII self-check (write-book-chapter skill compliance)
 Reviewed all 6 chapters (8.1–8.6) against the required rhythm: every
@@ -106,6 +101,7 @@ issues found.
 - 8.4 Attention — parts/part-08-attention-graphs-sequences.html
 - 8.5 The Transformer, Piece by Piece — parts/part-08-attention-graphs-sequences.html
 - 8.6 Meet SuperGlue — parts/part-08-attention-graphs-sequences.html
+- 9.1 Tokenization — parts/part-09-language-models.html
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in
