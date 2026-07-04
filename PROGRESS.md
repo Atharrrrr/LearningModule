@@ -1,17 +1,39 @@
 # Progress
 
 ## Status
-In progress. 72 of 98 chapters written. Parts I-IX are all complete.
-Part X is in progress (2 of 3 chapters done).
+In progress. 73 of 98 chapters written. Parts I-X are all complete.
 
 ## Next chapter due
-Part X, Chapter 10.3 — Speech & Audio Models (Whisper)
-(parts/part-10-multimodal-ai.html already exists — insert the new
-<section> before </main> and flip 10.3's sidebar entry from unwritten to
-live. Not an anchor chapter. This is also the LAST chapter of Part X —
-completing it finishes the Part, so do the write-book-chapter skill
-self-check afterward per the resumable-autonomous-loop rule, then
-continue into Part XI per CURRICULUM.md.)
+Part XI, Chapter 11.1 — Autoencoders
+(parts/part-11-generative-ai.html does not exist yet — create it with a
+full sidebar TOC for all 5 chapters of Part XI, titles from
+CURRICULUM.md: 11.1 Autoencoders [C], 11.2 Variational Autoencoders [C],
+11.3 GANs [C], 11.4 Diffusion Models [C], 11.5 Text-to-Image (Diffusion
+Meets CLIP) [D]. Every chapter except 11.1 starts as
+class="nav-item unwritten". NOTE: 11.4 (Diffusion Models) is an anchor
+chapter (see CLAUDE.md) — must be written ALONE, one per turn. If a
+requested/natural batch would reach 11.4, stop right before it and write
+only up through 11.3.)
+
+## Part X self-check (write-book-chapter skill compliance)
+Reviewed all 3 chapters (10.1–10.3) against the required rhythm: every
+chapter has a frame-of-reference analogy, plain concept explanation, a
+worked/interactive example with real computed values (verified via Node
+scripts and headless-Chromium checks, not faked), a "what you can now
+explain" recap, and a 3-question quiz. Real, verified computation
+throughout: real cosine-similarity image-caption matching over toy CLIP
+embeddings (10.1); a real template-based caption/VQA-answer generator
+sharing one underlying data structure per scene (10.2); and a real
+frequency-correlation computation (a genuine single-bin DFT) correctly
+isolating the two true frequencies in a synthetic waveform out of five
+candidates (10.3). Where full pixel- or audio-level neural computation
+wasn't feasible to run live in a browser, this was stated honestly in
+the prose rather than faked (10.2's structured "scene" standing in for
+real vision features; 10.3's synthetic waveform standing in for a real
+recording). All new jargon terms were boxed on first use and
+cross-checked against GLOSSARY_TRACKER.md, with heavy, explicit
+cross-referencing back to Chapters 2.4, 2.11, 7.1-7.2, 8.3, 8.5, and
+9.1-9.2. No structural or quality issues found.
 
 ## Part IX self-check (write-book-chapter skill compliance)
 Reviewed all 9 chapters (9.1–9.9) against the required rhythm: every
@@ -137,6 +159,7 @@ issues found.
 - 9.9 Hallucination & Evaluation — parts/part-09-language-models.html
 - 10.1 Meet the VLM (CLIP) — parts/part-10-multimodal-ai.html
 - 10.2 Captioning & Visual Question Answering — parts/part-10-multimodal-ai.html
+- 10.3 Speech & Audio Models (Whisper) — parts/part-10-multimodal-ai.html
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in

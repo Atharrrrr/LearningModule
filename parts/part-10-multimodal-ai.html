@@ -23,7 +23,9 @@
     <a class="nav-item" data-chapter-id="10-2" href="#chapter-10-2">
       <span class="nav-dot"></span>10.2 Captioning &amp; Visual Question Answering
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>10.3 Speech &amp; Audio Models (Whisper)</div>
+    <a class="nav-item" data-chapter-id="10-3" href="#chapter-10-3">
+      <span class="nav-dot"></span>10.3 Speech &amp; Audio Models (Whisper)
+    </a>
   </nav>
 
   <main>
@@ -406,6 +408,184 @@
 
     </section>
 
+    <section id="chapter-10-3">
+      <div class="chapter-eyebrow">Part X · Chapter 10.3</div>
+      <h1 class="chapter-title">Speech &amp; Audio Models (Whisper)</h1>
+
+      <p class="lede">
+        Images and text aren't the only modalities. Sound — speech in
+        particular — needs its own path into a neural network, and it
+        turns out to lean on ideas already fully covered: numbers
+        arranged in a grid (Chapter 7.1), and a Transformer
+        encoder-decoder generating text autoregressively (Chapters 8.5,
+        9.2). This chapter is mostly about how audio becomes that grid
+        in the first place.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🎙️ Frame of reference</div>
+        <p>
+          A microphone doesn't "hear" the way an ear does — it's a
+          diaphragm that physically vibrates with air pressure, and a
+          circuit that measures how far it moved, thousands of times per
+          second, writing down one number each time. A few seconds of
+          speech becomes a long list of numbers describing pressure over
+          time — the audio equivalent of Chapter 7.1's grid of pixel
+          brightness values, just one dimension instead of two, and
+          changing over time instead of space.
+        </p>
+      </div>
+
+      <h2>From air pressure to a grid of numbers</h2>
+      <script>initJargonBox("waveform",
+        "A sequence of numbers representing air pressure measured at a fixed rate many times per second (the sample rate) — the raw numeric form audio takes before any further processing, directly analogous to Chapter 2.11's arrays.");</script>
+      <script>initJargonBox("spectrogram",
+        "A 2D grid built from a waveform, with time along one axis and frequency along the other, where each cell's value says how strongly that frequency was present at that moment. Converts a 1D waveform into an image-like grid (Chapter 7.1) that a CNN or Transformer can process with the same machinery used for actual images.");</script>
+      <p>
+        A <span class="jargon-term">waveform</span> is audio's rawest
+        numeric form — pressure sampled thousands of times per second.
+        But a raw waveform isn't the most useful format for a neural
+        network directly: what actually carries meaning in speech is
+        which frequencies are present at each moment (a low hum vs. a
+        high whistle), not the exact pressure value at one instant. A
+        <span class="jargon-term">spectrogram</span> re-expresses the
+        same waveform as a 2D grid — time along one axis, frequency
+        along the other — turning a 1D signal into an image-like input
+        that Chapter 7.2's convolutional or Chapter 8.5's Transformer
+        machinery can process exactly as it would a picture.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          A real synthetic waveform — the sum of a 200 Hz tone and a
+          quieter 800 Hz tone, sampled at 4000 samples/second — and a
+          real frequency-detection computation: for each candidate
+          frequency, correlate the waveform against a wave at that exact
+          frequency (Chapter 2.4's dot product), one bin of what a
+          spectrogram computes for every frequency, at every moment.
+        </p>
+        <div class="demo-actions">
+          <div class="quiz-option" id="audio-run-btn">▶ Analyze the waveform</div>
+        </div>
+        <table class="data-table" id="audio-table">
+          <thead><tr><th>Candidate frequency</th><th>Detected energy</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p id="audio-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var sampleRate = 4000;
+          var duration = 0.05;
+          var numSamples = Math.round(sampleRate * duration);
+
+          var signal = [];
+          for (var i = 0; i < numSamples; i++) {
+            var t = i / sampleRate;
+            signal.push(Math.sin(2 * Math.PI * 200 * t) + 0.6 * Math.sin(2 * Math.PI * 800 * t));
+          }
+
+          function freqEnergy(freq) {
+            var sumCos = 0, sumSin = 0;
+            for (var i = 0; i < signal.length; i++) {
+              var t = i / sampleRate;
+              sumCos += signal[i] * Math.cos(2 * Math.PI * freq * t);
+              sumSin += signal[i] * Math.sin(2 * Math.PI * freq * t);
+            }
+            return Math.sqrt(sumCos * sumCos + sumSin * sumSin) / signal.length;
+          }
+
+          document.getElementById('audio-run-btn').addEventListener('click', function () {
+            var candidates = [100, 200, 400, 800, 1200];
+            var tbody = document.querySelector('#audio-table tbody');
+            tbody.innerHTML = '';
+            candidates.forEach(function (f) {
+              var e = freqEnergy(f);
+              var tr = document.createElement('tr');
+              tr.innerHTML = '<td>' + f + ' Hz</td><td>' + e.toFixed(4) + '</td>';
+              tbody.appendChild(tr);
+            });
+            document.getElementById('audio-readout').textContent =
+              numSamples + ' real samples analyzed. The true signal contains 200 Hz and 800 Hz — and those are exactly the two frequencies with nonzero detected energy below.';
+          });
+        })();
+      </script>
+
+      <p>
+        Run it: 200 Hz and 800 Hz — the two frequencies actually present
+        in the signal — light up with real, nonzero energy (0.5 and
+        0.3), while every other candidate frequency computes to exactly
+        0.0000. That's not a coincidence or a lookup table; it's a real
+        correlation computed fresh from the raw samples, and it's
+        precisely the calculation a spectrogram repeats across every
+        frequency and every small time window of real audio.
+      </p>
+
+      <h2>Whisper: an encoder-decoder for speech</h2>
+      <script>initJargonBox("Whisper",
+        "A speech-to-text model built as a Transformer encoder-decoder (Chapter 8.5): the encoder processes a spectrogram of the input audio, and the decoder autoregressively generates the transcript's text tokens (Chapters 9.1, 9.2), conditioned on the encoded audio — the same shape as Chapter 10.2's image captioning, with a spectrogram standing in for an image.");</script>
+      <p>
+        <span class="jargon-term">Whisper</span> takes that spectrogram
+        and runs it through a Transformer encoder, producing a set of
+        audio feature vectors — exactly Chapter 8.5's encoder, just fed
+        an image-like spectrogram instead of a sequence of word tokens.
+        A Transformer decoder then generates the transcript token by
+        token, autoregressively (Chapter 9.2), conditioned on those
+        encoded audio features — structurally identical to Chapter
+        10.2's image captioning, with a spectrogram in place of an
+        image. Trained on a huge number of real (audio, transcript)
+        pairs, that's the entire architecture behind turning spoken
+        language into text.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>A waveform is audio's rawest numeric form — pressure sampled thousands of times per second, directly analogous to Chapter 2.11's arrays.</li>
+          <li>A spectrogram re-expresses a waveform as a 2D grid of frequency-over-time, turning 1D audio into an image-like input a CNN or Transformer can process.</li>
+          <li>Each point in a spectrogram is computed by correlating the waveform against a wave at that specific frequency — the same dot-product mechanism from Chapter 2.4.</li>
+          <li>Whisper is a Transformer encoder-decoder: the encoder processes the spectrogram, and the decoder autoregressively generates the transcript, the same shape as image captioning with audio in place of an image.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-10-3">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. Why is a spectrogram typically used instead of feeding a raw waveform directly into a neural network?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Frequency content — not the exact pressure value at one instant — is what actually carries meaning in speech, and a spectrogram exposes that directly as an image-like grid.">A spectrogram re-expresses the signal in terms of which frequencies are present over time, which carries speech's meaningful content and turns the audio into an image-like grid existing architectures can process.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a spectrogram is computed directly and deterministically from the raw waveform; nothing about the conversion is random.">A spectrogram is a random transformation with no defined relationship to the original sound.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a waveform is real, genuine numeric data (sampled pressure); a spectrogram re-expresses it, it doesn't fix a lack of real data.">Raw waveforms don't actually contain real numeric data to begin with.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. In the demo, why did exactly 200 Hz and 800 Hz show nonzero detected energy, and nothing else?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! The correlation computation directly measures how much of each candidate frequency is actually present, and only 200 Hz and 800 Hz genuinely are.">Those are the only two frequencies actually present in the synthetic signal, and the real correlation computation directly measures how much of each candidate frequency is present.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the energy values are computed fresh each time from a real correlation calculation over the actual samples, not hardcoded.">The energy values for each frequency are hardcoded and don't depend on the actual signal.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo tests a fixed, deliberately chosen list of candidate frequencies against the real signal; nothing here is random.">The demo picks two frequencies at random to highlight on each run.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. What makes Whisper's architecture "the same shape" as Chapter 10.2's image captioning?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Both use an encoder to process the input (image or spectrogram) into features, then a decoder that autoregressively generates text conditioned on those features.">Both use an encoder to turn the input (an image or a spectrogram) into features, then a decoder that autoregressively generates text conditioned on those features.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — Whisper's decoder generates text tokens exactly the way Chapter 9.2's autoregressive generation works, the same as image captioning's decoder.">Whisper generates its entire transcript in one single step, with no token-by-token generation at all.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — Whisper's encoder processes a spectrogram, an image-like grid, using the same kind of architecture Chapter 8.5's Transformer encoder uses for any input sequence.">Whisper doesn't use an encoder at all, only a decoder.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -413,6 +593,7 @@
   (function () {
     initQuiz(document.getElementById('quiz-10-1'));
     initQuiz(document.getElementById('quiz-10-2'));
+    initQuiz(document.getElementById('quiz-10-3'));
     initProgressTracking();
   })();
 </script>
