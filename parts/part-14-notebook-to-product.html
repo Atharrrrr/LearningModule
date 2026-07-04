@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Part XIV — From Notebook to Product | AI/ML From Zero to Job-Ready</title>
+<link rel="stylesheet" href="../assets/styles.css">
+<script src="../assets/components.js"></script>
+</head>
+<body>
+<div class="book-shell">
+
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">AI/ML: Zero to Job-Ready</div>
+    </div>
+    <div class="progress-bar-track"><div class="progress-bar-fill"></div></div>
+
+    <div class="sidebar-part">Part XIV — From Notebook to Product</div>
+    <a class="nav-item" data-chapter-id="14-1" href="#chapter-14-1">
+      <span class="nav-dot"></span>14.1 Version Control for ML
+    </a>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>14.2 Experiment Tracking</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>14.3 Hardware: CPU vs. GPU vs. TPU</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>14.4 Distributed &amp; Parallel Training</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>14.5 Serving a Model</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>14.6 Containers &amp; Reproducibility</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>14.7 Monitoring &amp; Drift</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>14.8 A Real Pipeline, Start to Finish</div>
+  </nav>
+
+  <main>
+
+    <section id="chapter-14-1">
+      <div class="chapter-eyebrow">Part XIV · Chapter 14.1</div>
+      <h1 class="chapter-title">Version Control for ML</h1>
+
+      <p class="lede">
+        Every chapter so far has focused on building and understanding
+        models. This Part shifts to a different question: how do you
+        actually run one of these things reliably, as part of a real
+        product, maintained by a team? It starts with something that
+        sounds solved already — version control — and shows exactly
+        where ordinary git starts to strain.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">📸 Frame of reference</div>
+        <p>
+          Tracking changes to a written recipe is easy: line 3 changed
+          from "bake 20 minutes" to "bake 25 minutes," and that's the
+          entire diff. Now imagine trying to track changes to a dish by
+          diffing a full-resolution photograph of it after every attempt
+          instead. The lighting shifts a little, the plating shifts a
+          little, and suddenly nearly every pixel in the photo looks
+          "different" from the last one — even though the recipe itself
+          barely changed. A trained model's weight file behaves exactly
+          like that photograph, not like the recipe.
+        </p>
+      </div>
+
+      <h2>Why git struggles specifically with ML artifacts</h2>
+      <script>initJargonBox("model checkpoint",
+        "A saved snapshot of a model's parameters (weights) at some point during or after training — typically a large binary file, often hundreds of megabytes to many gigabytes for real models.");</script>
+      <p>
+        Git tracks code beautifully because a code change is usually a
+        handful of lines out of many — a small, meaningful diff. A
+        <span class="jargon-term">model checkpoint</span> doesn't work
+        that way. Training nudges every single weight by gradient
+        descent (Chapter 4.3), even slightly, every single step — so two
+        checkpoints saved moments apart can differ in nearly every
+        number they contain. There's no small, meaningful diff to store;
+        the "difference" between versions is effectively the whole file,
+        every time.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          A real toy 20-number "weight file," compared before and after
+          one more real simulated training step (a small random nudge
+          applied to every number) — versus a real 4-line code file
+          where only one line actually changes.
+        </p>
+        <div class="demo-actions">
+          <div class="quiz-option" id="vc-run-btn">▶ Run one more training step &amp; compare</div>
+        </div>
+        <p id="vc-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          function gaussianSample() {
+            var u1 = Math.random(), u2 = Math.random();
+            return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+          }
+
+          var weightsV1 = [0.12, -0.45, 0.33, 0.78, -0.21, 0.05, -0.60, 0.44, 0.19, -0.33,
+                           0.51, -0.08, 0.27, -0.15, 0.62, -0.49, 0.03, 0.38, -0.72, 0.16];
+
+          var codeV1 = ['def train(lr=0.01):', '    model = Net()', '    opt = SGD(lr)', '    return model'];
+          var codeV2 = ['def train(lr=0.02):', '    model = Net()', '    opt = SGD(lr)', '    return model'];
+
+          document.getElementById('vc-run-btn').addEventListener('click', function () {
+            var weightsV2 = weightsV1.map(function (w) { return w + gaussianSample() * 0.01; });
+            var numChanged = 0;
+            for (var i = 0; i < weightsV1.length; i++) {
+              if (Math.abs(weightsV1[i] - weightsV2[i]) > 1e-9) numChanged++;
+            }
+            var linesChanged = 0;
+            for (var i = 0; i < codeV1.length; i++) if (codeV1[i] !== codeV2[i]) linesChanged++;
+
+            document.getElementById('vc-readout').textContent =
+              'Weight file: ' + numChanged + ' / ' + weightsV1.length + ' numbers changed (' + (numChanged / weightsV1.length * 100).toFixed(0) +
+              '%) after one real training step. Code file: ' + linesChanged + ' / ' + codeV1.length + ' lines changed (' +
+              (linesChanged / codeV1.length * 100).toFixed(0) + '%) after one real edit. A real model checkpoint has millions of numbers, all nudged the same way — a text diff of it would be useless.';
+          });
+        })();
+      </script>
+
+      <p>
+        Click it a few times: the weight file reliably shows 100% of its
+        numbers changed, every single run, while the code file only ever
+        shows 1 of 4 lines changed. That's not a rare edge case — it's
+        the guaranteed, mechanical consequence of gradient descent
+        touching every parameter on every step. Scale the weight file up
+        from 20 numbers to the millions or billions a real model has,
+        and storing a full new copy for every checkpoint, the way git
+        would try to diff it, becomes enormous, fast.
+      </p>
+
+      <h2>The fix: track a fingerprint, not a diff</h2>
+      <script>initJargonBox("hashing (for large files)",
+        "Computing a short, fixed-length fingerprint from a large file's exact contents. Two identical files always produce the same hash; any change at all produces a completely different one. Tools built for ML version control store the large file itself separately, and let the lightweight code repository track just its hash — enough to know exactly which version of a huge file belongs with which commit, without storing full copies inside git itself.");</script>
+      <script>initJargonBox("reproducibility",
+        "The ability to recreate the exact same trained model again later — which requires tracking not just the code, but the exact data version, hyperparameters, and random seed that produced it, since any of those alone can change the result.");</script>
+      <p>
+        Tools built for this problem don't try to diff large files at
+        all. They use <span class="jargon-term">hashing (for large
+        files)</span>: compute a compact fingerprint from a checkpoint's
+        contents, store the actual file separately (often in cloud
+        storage), and let git track only that fingerprint alongside the
+        code. A commit then records exactly which checkpoint, which
+        dataset version, and which code all belong together — genuine
+        <span class="jargon-term">reproducibility</span>, since
+        recreating a past result requires all three matching exactly,
+        not just the code.
+      </p>
+
+      <p>
+        Notice that a hash doesn't measure <em>how much</em> two files
+        differ — the fingerprint for one changed number looks just as
+        different as the fingerprint for every number changing. That's
+        fine for its actual job: confirming exactly which version of a
+        large file is meant to go with which commit, not summarizing
+        what changed inside it.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Git's diffs work well for code because a typical change touches a small handful of lines out of many.</li>
+          <li>A model checkpoint doesn't have that structure — gradient descent nudges every parameter on every training step, so essentially the entire file changes between versions.</li>
+          <li>ML version control tools store large files separately and track a short hash fingerprint of them in git instead of trying to diff them directly.</li>
+          <li>Real reproducibility requires the exact code, data version, and hyperparameters to all be tracked together — any one of them differing can change the result.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-14-1">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. Why does a text diff work well for code but poorly for a model checkpoint?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Gradient descent updates every parameter on every step, so nearly the entire checkpoint file changes between versions — no small diff exists to capture.">A code change typically touches a small handful of lines, while gradient descent nudges essentially every single weight in a checkpoint on every training step, leaving no small, meaningful diff to store.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo shows the weight file changing at essentially every position, the opposite of nothing changing.">A model checkpoint never actually changes between training steps.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — git is a real, capable tool for code; the specific issue here is how poorly text-diffing behaves on large binary files with pervasive small changes.">Git is fundamentally incapable of tracking any kind of file.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. What does a hash of a large file actually tell you?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! A hash is a fingerprint for confirming exact identity, not a measurement of how much two files differ.">Whether the file's exact contents match a known version or not — not how much, or in what way, two versions of the file differ.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a hash gives no information about the size or nature of a difference; it changes completely even for a tiny edit, the same as for a massive one.">Exactly how many individual values changed between two versions of the file.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a hash is computed directly and deterministically from a file's actual contents, not assigned at random.">A random label with no real connection to the file's actual contents.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. What does genuine reproducibility require, beyond just the code?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Any of these three changing on their own can produce a different trained model, even with identical code.">The exact same data version, hyperparameters, and random seed used to produce the original result — code alone isn't enough.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the chapter's whole point is that code alone is insufficient; data version and hyperparameters matter just as much.">Nothing else — the code by itself is always sufficient to reproduce a trained model exactly.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — reproducibility is about recreating a specific known result, which requires tracking exactly what produced it, not increasing randomness.">A larger amount of random noise added to the training process.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+</div>
+
+<script>
+  (function () {
+    initQuiz(document.getElementById('quiz-14-1'));
+    initProgressTracking();
+  })();
+</script>
+</body>
+</html>

@@ -1,20 +1,17 @@
 # Progress
 
 ## Status
-In progress. 85 of 98 chapters written. Parts I-XIII are all complete.
+In progress. 86 of 98 chapters written. Parts I-XIII are all complete.
+Part XIV is in progress (1 of 8 chapters done).
 
 ## Next chapter due
-Part XIV, Chapter 14.1 — Version Control for ML
-(parts/part-14-notebook-to-product.html does not exist yet — create it
-with a full sidebar TOC for all 8 chapters of Part XIV, titles from
-CURRICULUM.md: 14.1 Version Control for ML [C], 14.2 Experiment Tracking
-[C], 14.3 Hardware: CPU vs. GPU vs. TPU [C], 14.4 Distributed & Parallel
-Training [D], 14.5 Serving a Model [C], 14.6 Containers &
-Reproducibility [D], 14.7 Monitoring & Drift [C], 14.8 A Real Pipeline,
-Start to Finish [C]. Every chapter except 14.1 starts as
-class="nav-item unwritten". No anchor chapters remain anywhere in the
-curriculum — Parts XIV and XV can be batched normally per the
-2-3-chapters-per-turn rule all the way to the end of the book.)
+Part XIV, Chapter 14.2 — Experiment Tracking
+(parts/part-14-notebook-to-product.html already exists — insert the new
+<section> before </main> and flip 14.2's sidebar entry from unwritten to
+live. Not an anchor chapter. No anchor chapters remain anywhere in the
+curriculum — the rest of Part XIV and all of Part XV can be batched
+normally per the 2-3-chapters-per-turn rule all the way to the end of
+the book.)
 
 ## Part XIII self-check (write-book-chapter skill compliance)
 Reviewed all 3 chapters (13.1–13.3) against the required rhythm: every
@@ -245,6 +242,7 @@ issues found.
 - 13.1 Fairness & Bias — parts/part-13-responsible-ai.html
 - 13.2 Privacy, Safety & Misuse — parts/part-13-responsible-ai.html
 - 13.3 Interpretability — parts/part-13-responsible-ai.html
+- 14.1 Version Control for ML — parts/part-14-notebook-to-product.html
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in
