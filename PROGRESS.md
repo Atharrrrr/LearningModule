@@ -1,18 +1,18 @@
 # Progress
 
 ## Status
-In progress. 83 of 98 chapters written. Parts I-XII are all complete.
-Part XIII is in progress (1 of 3 chapters done).
+In progress. 84 of 98 chapters written. Parts I-XII are all complete.
+Part XIII is in progress (2 of 3 chapters done).
 
 ## Next chapter due
-Part XIII, Chapter 13.2 — Privacy, Safety & Misuse
+Part XIII, Chapter 13.3 — Interpretability
 (parts/part-13-responsible-ai.html already exists — insert the new
-<section> before </main> and flip 13.2's sidebar entry from unwritten to
-live. Not an anchor chapter. NOTE: there are NO remaining anchor
-chapters in the curriculum — 12.4 was the last one on CLAUDE.md's list.
-Parts XIII, XIV, and XV can all be batched normally per the
-2-3-chapters-per-turn rule with no anchor-chapter interruptions from
-here to the end of the book.)
+<section> before </main> and flip 13.3's sidebar entry from unwritten to
+live. Not an anchor chapter. This is also the LAST chapter of Part XIII
+— completing it finishes the Part, so do the write-book-chapter skill
+self-check afterward per the resumable-autonomous-loop rule, then
+continue into Part XIV per CURRICULUM.md. No anchor chapters remain
+anywhere in the curriculum.)
 
 ## Part XII self-check (write-book-chapter skill compliance)
 Reviewed all 4 chapters (12.1–12.4) against the required rhythm: every
@@ -220,6 +220,7 @@ issues found.
 - 12.3 Policy Gradients & Exploration/Exploitation — parts/part-12-reinforcement-learning.html
 - 12.4 Deep RL & RLHF Revisited — parts/part-12-reinforcement-learning.html
 - 13.1 Fairness & Bias — parts/part-13-responsible-ai.html
+- 13.2 Privacy, Safety & Misuse — parts/part-13-responsible-ai.html
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in

@@ -20,7 +20,9 @@
     <a class="nav-item" data-chapter-id="13-1" href="#chapter-13-1">
       <span class="nav-dot"></span>13.1 Fairness &amp; Bias
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>13.2 Privacy, Safety &amp; Misuse</div>
+    <a class="nav-item" data-chapter-id="13-2" href="#chapter-13-2">
+      <span class="nav-dot"></span>13.2 Privacy, Safety &amp; Misuse
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>13.3 Interpretability</div>
   </nav>
 
@@ -211,12 +213,189 @@
 
     </section>
 
+    <section id="chapter-13-2">
+      <div class="chapter-eyebrow">Part XIII · Chapter 13.2</div>
+      <h1 class="chapter-title">Privacy, Safety &amp; Misuse</h1>
+
+      <p class="lede">
+        Chapter 13.1 covered how a model can treat different groups of
+        people unevenly. This chapter covers three more ways a trained
+        model can cause real harm: leaking pieces of its own training
+        data, being tricked into producing content it was trained to
+        refuse, and being deliberately misused.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">📓 Frame of reference</div>
+        <p>
+          A student who reads a textbook doesn't memorize most of it
+          word for word — they absorb the general ideas. But one
+          strange, one-off sentence that appeared exactly once, with
+          nothing similar anywhere else to generalize from, might stick
+          in their memory verbatim, purely because there was no broader
+          pattern to compress it into. Ask them to recall a common topic
+          and you'll get a paraphrase; ask about that one weird sentence
+          and you might get it back word for word. A trained model can
+          do the exact same thing with its training data.
+        </p>
+      </div>
+
+      <h2>Privacy: models can memorize, not just generalize</h2>
+      <script>initJargonBox("memorization",
+        "A model reproducing a specific training example nearly verbatim, rather than a generalized pattern learned across many examples — most likely for rare or unique strings that appeared only once or twice, since there was little repeated pattern available to compress them into a general rule.");</script>
+      <p>
+        <span class="jargon-term">Memorization</span> is a real,
+        measurable risk for models trained on huge amounts of real-world
+        text (Chapter 9.2) — a person's phone number, address, or a
+        private passage that happened to appear in scraped training
+        data doesn't get "cleaned up" into a general rule the way a
+        common phrase does; it can simply get stored close to verbatim.
+        The right prompt can sometimes extract it back out, which is
+        exactly why training data curation and filtering matter as much
+        as raw scale.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          Chapter 9.2's exact toy next-word model, trained on a tiny
+          corpus containing one common pattern (repeated with variety)
+          and one rare, unique string (appearing only once). Compare
+          what the model does with each.
+        </p>
+        <div class="demo-actions">
+          <div class="quiz-option" id="mem-common-btn">Query: "cat" (a common pattern)</div>
+          <div class="quiz-option" id="mem-rare-btn">Query: "555" (a rare, unique string)</div>
+        </div>
+        <p id="mem-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var sentences = [
+            'the cat sat on the mat',
+            'the cat ran in the park',
+            'the dog sat on the mat',
+            'please call 555 0147 for support'
+          ];
+
+          var bigramCounts = {};
+          sentences.forEach(function (s) {
+            var words = s.split(' ');
+            for (var i = 0; i < words.length - 1; i++) {
+              var ctx = words[i], nxt = words[i + 1];
+              bigramCounts[ctx] = bigramCounts[ctx] || {};
+              bigramCounts[ctx][nxt] = (bigramCounts[ctx][nxt] || 0) + 1;
+            }
+          });
+
+          function dist(ctx) {
+            var counts = bigramCounts[ctx] || {};
+            var total = 0;
+            Object.keys(counts).forEach(function (k) { total += counts[k]; });
+            var d = {};
+            Object.keys(counts).forEach(function (k) { d[k] = counts[k] / total; });
+            return d;
+          }
+
+          document.getElementById('mem-common-btn').addEventListener('click', function () {
+            var d = dist('cat');
+            var parts = Object.keys(d).map(function (k) { return k + ': ' + (d[k] * 100).toFixed(0) + '%'; }).join(', ');
+            document.getElementById('mem-readout').textContent =
+              'After "cat", real computed distribution: ' + parts + ' — split across multiple options, a genuinely generalized pattern (it saw "cat" followed by different words across the training sentences).';
+          });
+
+          document.getElementById('mem-rare-btn').addEventListener('click', function () {
+            var d = dist('555');
+            var parts = Object.keys(d).map(function (k) { return k + ': ' + (d[k] * 100).toFixed(0) + '%'; }).join(', ');
+            document.getElementById('mem-readout').textContent =
+              'After "555", real computed distribution: ' + parts + ' — 100% deterministic. This exact string appeared only once, so the model has nothing to generalize from and simply reproduces it verbatim: real memorization, not paraphrase.';
+          });
+        })();
+      </script>
+
+      <p>
+        "Cat" splits its probability across two real, different
+        continuations — a genuinely generalized pattern, learned from
+        multiple training sentences. "555" is 100% deterministic — it
+        appeared in the training data exactly once, so the model has no
+        alternative to draw on and reproduces the specific string that
+        followed it verbatim. That's the entire mechanism behind
+        training-data memorization, honestly reproduced at toy scale: it
+        isn't a bug, it's the direct, unavoidable consequence of a rare
+        string having no repeated pattern to be compressed into.
+      </p>
+
+      <h2>Safety: models can be tricked into unwanted behavior</h2>
+      <script>initJargonBox("jailbreak (adversarial prompt)",
+        "A carefully crafted input designed to bypass a model's trained safety behavior (Chapter 9.4's RLHF), getting it to produce output it was specifically trained to refuse.");</script>
+      <p>
+        RLHF (Chapter 9.4) trains a model to refuse harmful requests, but
+        that training only covers the patterns it was actually trained
+        against. A <span class="jargon-term">jailbreak (adversarial
+        prompt)</span> is a request phrased specifically to slip past
+        that trained behavior — through role-play framing, unusual
+        formatting, or splitting a harmful request across several
+        seemingly-innocent steps. Safety training genuinely reduces
+        harmful output; it doesn't make a model unconditionally safe
+        against every possible way of asking. This is an ongoing arms
+        race between safety training and adversarial prompting, not a
+        problem with a final, permanent fix.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Memorization happens when a rare or unique training example has no repeated pattern to be generalized into, so a model can reproduce it nearly verbatim instead of paraphrasing it.</li>
+          <li>Common patterns, seen many times with variation, get compressed into a genuinely generalized, spread-out probability distribution instead.</li>
+          <li>A jailbreak is a prompt specifically crafted to bypass a model's trained safety behavior (RLHF, Chapter 9.4).</li>
+          <li>Safety training reduces harmful output but doesn't eliminate it — it's an ongoing arms race, not a solved, permanent guarantee.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-13-2">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. In the demo, why did the query "555" produce a 100% deterministic answer while "cat" produced a split distribution?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! With only one training example, there's no variation to average across — the model reproduces the single continuation it saw, verbatim.">"555" appeared only once in the training data, so the model had no alternative continuation to draw on, while "cat" appeared multiple times with genuinely different continuations.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — both distributions are computed with the exact same real counting method; nothing about the demo treats one context differently by design.">The demo specifically hardcodes "555" to always return the same answer, unlike "cat."</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the distributions are real, deterministic outputs of counting actual training sentences, not randomly generated.">The two results are random, and re-running the demo would likely show different numbers.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. Why is memorization specifically a privacy concern for models trained on real-world text?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! A rare, unique string in the training data — like a phone number or private passage — can get reproduced verbatim rather than generalized away.">A rare piece of personal information that happened to appear in the training data — like a phone number — can be reproduced verbatim by the right prompt, rather than being safely generalized into a broader pattern.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — memorization specifically applies to rare, unique strings; common patterns are the ones that get generalized away, not memorized verbatim.">Memorization only ever affects extremely common phrases seen thousands of times.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo shows a real, computed distinction between memorized and generalized content; it isn't a theoretical concern with no real mechanism behind it.">Memorization isn't a real phenomenon in trained models.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. What does this chapter say about RLHF's ability to prevent unsafe outputs?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Safety training only covers the specific patterns it was trained against, leaving room for cleverly phrased jailbreak prompts to slip through.">It genuinely reduces harmful output but doesn't eliminate it — creatively phrased jailbreak prompts can still bypass trained safety behavior.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the chapter explicitly describes this as an ongoing arms race, not a solved problem with a guaranteed outcome.">RLHF makes a model completely and permanently safe against every possible harmful request.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — RLHF (Chapter 9.4) is a real, effective training technique that measurably reduces harmful output; it just isn't a complete guarantee.">RLHF has no effect on a model's safety behavior at all.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
 <script>
   (function () {
     initQuiz(document.getElementById('quiz-13-1'));
+    initQuiz(document.getElementById('quiz-13-2'));
     initProgressTracking();
   })();
 </script>
