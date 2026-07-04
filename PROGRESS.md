@@ -1,17 +1,15 @@
 # Progress
 
 ## Status
-In progress. 75 of 98 chapters written. Parts I-X are all complete.
-Part XI is in progress (2 of 5 chapters done).
+In progress. 76 of 98 chapters written. Parts I-X are all complete.
+Part XI is in progress (3 of 5 chapters done).
 
 ## Next chapter due
-Part XI, Chapter 11.3 — GANs
+Part XI, Chapter 11.4 — Diffusion Models
 (parts/part-11-generative-ai.html already exists — insert the new
-<section> before </main> and flip 11.3's sidebar entry from unwritten to
-live. Not an anchor chapter. NOTE: 11.4 (Diffusion Models), immediately
-after, is an anchor chapter (see CLAUDE.md) — must be written ALONE, one
-per turn. Since 11.3 is the last chapter before that anchor, stop the
-batch right after 11.3 and give 11.4 its own turn.)
+<section> before </main> and flip 11.4's sidebar entry from unwritten to
+live. IMPORTANT: 11.4 is an anchor chapter (see CLAUDE.md) — must be
+written ALONE, no other chapters batched with it.)
 
 ## Part X self-check (write-book-chapter skill compliance)
 Reviewed all 3 chapters (10.1–10.3) against the required rhythm: every
@@ -160,6 +158,7 @@ issues found.
 - 10.3 Speech & Audio Models (Whisper) — parts/part-10-multimodal-ai.html
 - 11.1 Autoencoders — parts/part-11-generative-ai.html
 - 11.2 Variational Autoencoders — parts/part-11-generative-ai.html
+- 11.3 GANs — parts/part-11-generative-ai.html
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in

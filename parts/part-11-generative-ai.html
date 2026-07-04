@@ -23,7 +23,9 @@
     <a class="nav-item" data-chapter-id="11-2" href="#chapter-11-2">
       <span class="nav-dot"></span>11.2 Variational Autoencoders
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>11.3 GANs</div>
+    <a class="nav-item" data-chapter-id="11-3" href="#chapter-11-3">
+      <span class="nav-dot"></span>11.3 GANs
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>11.4 Diffusion Models</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>11.5 Text-to-Image (Diffusion Meets CLIP)</div>
   </nav>
@@ -371,6 +373,186 @@
 
     </section>
 
+    <section id="chapter-11-3">
+      <div class="chapter-eyebrow">Part XI · Chapter 11.3</div>
+      <h1 class="chapter-title">GANs</h1>
+
+      <p class="lede">
+        Chapter 11.2's VAE generates by sampling a well-organized latent
+        space and decoding. A GAN takes a completely different route to
+        the same goal — realistic generated output — by pitting two
+        networks against each other and letting competition, not a
+        reconstruction target, do the training.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🕵️ Frame of reference</div>
+        <p>
+          An art forger and an authenticator are locked in an ongoing
+          contest. The forger paints fakes, trying to fool the
+          authenticator; the authenticator studies real and fake
+          paintings side by side, trying to get better at telling them
+          apart. Every time the authenticator improves, the forger has
+          to improve too, or every fake gets caught. Every time the
+          forger improves, the authenticator has to sharpen their eye
+          further. Neither one ever "finishes" studying — they improve
+          because of each other, round after round.
+        </p>
+      </div>
+
+      <h2>Two networks, trained against each other</h2>
+      <script>initJargonBox("generative adversarial network (GAN)",
+        "Two networks trained against each other: a generator that produces fake data from random noise, and a discriminator that tries to distinguish real training data from the generator's fakes. Each network's training signal comes directly from the other's current performance, not from a fixed reconstruction target.");</script>
+      <script>initJargonBox("generator",
+        "The network in a GAN that takes random noise as input and outputs fake data, trained to make that fake data score as \"real\" as possible according to the current discriminator.");</script>
+      <script>initJargonBox("discriminator",
+        "The network in a GAN trained as an ordinary classifier (Chapter 4.2): given an input, output the probability it's real training data rather than something the generator produced.");</script>
+      <p>
+        A <span class="jargon-term">generative adversarial network (GAN)</span>
+        trains a <span class="jargon-term">generator</span> and a
+        <span class="jargon-term">discriminator</span> at the same time,
+        with opposing goals. The discriminator is trained as an ordinary
+        classifier (Chapter 4.2, Chapter 6.1's neuron): shown a mix of
+        real examples (labeled "real") and the generator's current
+        output (labeled "fake"), it adjusts its weights via gradient
+        descent to tell them apart better. The generator never sees real
+        data directly at all — it's trained only to adjust its own
+        output so the discriminator scores it higher as "real" next
+        time. Each one's improvement changes the target the other is
+        chasing, which is exactly what makes this "adversarial."
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          A real, working 1-number toy GAN. Real data is fixed at 0.8.
+          The generator starts by outputting 0.1; the discriminator
+          starts barely able to tell anything apart. Each click runs one
+          real training round: a discriminator gradient-descent step,
+          then a generator gradient-ascent step against that updated
+          discriminator — the exact same math as a real GAN, just with
+          one number standing in for a whole image.
+        </p>
+        <div class="demo-actions">
+          <div class="quiz-option" id="gan-step-btn">▶ Run one training round</div>
+          <div class="quiz-option" id="gan-reset-btn">↺ Reset</div>
+        </div>
+        <p id="gan-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          function sigmoid(z) { return 1 / (1 + Math.exp(-z)); }
+
+          var real = 0.8;
+          var g, w, b, stepNum;
+          var lrD = 0.5, lrG = 0.5;
+
+          function D(x) { return sigmoid(w * x + b); }
+
+          function reset() {
+            g = 0.1; w = 0.1; b = 0.0; stepNum = 0;
+            render();
+          }
+
+          function render() {
+            document.getElementById('gan-readout').textContent =
+              'Step ' + stepNum + ':  generator output g = ' + g.toFixed(4) +
+              '   |   D(real=0.80) = ' + D(real).toFixed(4) +
+              '   |   D(fake=' + g.toFixed(2) + ') = ' + D(g).toFixed(4) +
+              (stepNum === 0 ? '' : (Math.abs(D(real) - D(g)) < 0.03 ?
+                '  —  the discriminator can barely tell real from fake apart anymore.' :
+                '  —  the discriminator still favors real over fake.'));
+          }
+
+          document.getElementById('gan-step-btn').addEventListener('click', function () {
+            var dReal = D(real), dFake = D(g);
+            var gradW = (1 - dReal) * real - dFake * g;
+            var gradB = (1 - dReal) - dFake;
+            w += lrD * gradW;
+            b += lrD * gradB;
+
+            var dFake2 = D(g);
+            var gradG = (1 - dFake2) * w;
+            g += lrG * gradG;
+
+            stepNum++;
+            render();
+          });
+
+          document.getElementById('gan-reset-btn').addEventListener('click', reset);
+          reset();
+        })();
+      </script>
+
+      <p>
+        Click through 30-40 rounds: the generator's output climbs from
+        0.1 toward the neighborhood of the real value 0.8, while D(real)
+        and D(fake) drift toward each other, both settling near 0.5 —
+        the discriminator genuinely can't tell real from fake apart
+        anymore, which is exactly the sign a GAN is supposed to reach.
+        Watch closely and you'll also see the values wobble rather than
+        settle smoothly — a real, well-known property of adversarial
+        training: two networks chasing shifting targets don't converge
+        the same clean way a single loss function does.
+      </p>
+
+      <p>
+        A real image-generating GAN runs the identical idea at far
+        larger scale: the generator takes random noise and produces a
+        full image through a decoder-like network, the discriminator is
+        a real CNN classifier (Chapter 7.2), and both train for many
+        thousands of rounds instead of 40 — but the core loop, one
+        network's gradient chasing the other's current weakness, is
+        exactly what just ran above.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>A GAN trains a generator and a discriminator simultaneously, with opposing objectives, instead of training against a fixed reconstruction target.</li>
+          <li>The discriminator is an ordinary classifier, trained to distinguish real training data from the generator's current fakes.</li>
+          <li>The generator never sees real data directly — it's trained only to make the discriminator score its output as "real" more often.</li>
+          <li>Adversarial training genuinely oscillates rather than converging smoothly, since each network's target keeps shifting as the other one improves; a well-trained GAN reaches a point where the discriminator can barely distinguish real from fake at all.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-11-3">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What is the discriminator in a GAN actually trained to do?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! The discriminator is an ordinary classifier, just trained on a mix of real training data and the generator's evolving fakes.">Act as an ordinary classifier, distinguishing real training examples from the generator's current fake output.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — producing fake data from random noise is specifically the generator's job; the discriminator only judges real vs. fake.">Produce fake data from random noise, the same job as the generator.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the discriminator's training signal comes from labeled real vs. fake examples, not from a fixed reconstruction target like a VAE uses.">Reconstruct its own input through a narrow bottleneck, the same job as an autoencoder.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. In the demo, what does it mean when D(real) and D(fake) both settle close to 0.5?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! A discriminator outputting close to 0.5 for both real and fake input is, by definition, unable to reliably tell them apart — exactly the target state of adversarial training.">The discriminator can no longer reliably tell the generator's output apart from real data — the generator has become good enough to consistently fool it.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — training hasn't failed or broken; a discriminator score near 0.5 for both real and fake is specifically the sign of successful adversarial training.">Training has completely failed and produced meaningless output.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the generator's output and the discriminator's weights are both computed live from real gradient updates each round; nothing here is a fixed, unchanging value.">The generator's output and the discriminator's weights have both stopped updating entirely.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. Why does the demo's generator output wobble instead of climbing smoothly and directly to 0.8?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Because the discriminator itself keeps changing in response to the generator, and vice versa, adversarial training doesn't behave like ordinary gradient descent on one fixed loss.">Adversarial training involves two networks chasing each other's constantly shifting targets, which genuinely produces oscillation instead of the smooth convergence a single fixed loss function would give.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the wobbling is a real, well-documented property of adversarial training dynamics, not a mistake in the demo's math.">The demo has a bug that makes the numbers jump around randomly.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the discriminator's weights genuinely update every single round based on real gradients; they aren't held fixed.">The discriminator's weights are frozen and never actually update.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -378,6 +560,7 @@
   (function () {
     initQuiz(document.getElementById('quiz-11-1'));
     initQuiz(document.getElementById('quiz-11-2'));
+    initQuiz(document.getElementById('quiz-11-3'));
     initProgressTracking();
   })();
 </script>
