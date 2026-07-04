@@ -1,16 +1,17 @@
 # Progress
 
 ## Status
-In progress. 52 of 98 chapters written. Parts I, II, III, IV, V, and VI
+In progress. 53 of 98 chapters written. Parts I, II, III, IV, V, and VI
 are all complete.
 
 ## Next chapter due
-Part VII, Chapter 7.6 — Evaluating Vision Models (IoU/mAP)
+Part VII, Chapter 7.7 — Meet YOLO
 (parts/part-07-teaching-computers-to-see.html already exists — insert the
-new <section> before </main> and flip 7.6's sidebar entry from unwritten
-to live. IMPORTANT: 7.7 Meet YOLO, right after this one, is an anchor
-chapter — must be written alone, one per turn. A batch should stop after
-7.6, right before 7.7.)
+new <section> before </main> and flip 7.7's sidebar entry from unwritten
+to live. IMPORTANT: 7.7 is an anchor chapter (see CLAUDE.md) — must be
+written ALONE, one per turn, no matter what batch size is requested.
+Chapter 7.8 (Meet SuperPoint) right after it is ALSO an anchor chapter —
+write it alone too, on its own separate turn.)
 
 ## Completed chapters
 - 0.1 How This Book Works — parts/part-00-before-we-begin.html
@@ -65,6 +66,7 @@ chapter — must be written alone, one per turn. A batch should stop after
 - 7.3 The Classic CV Toolbox (SIFT/ORB) — parts/part-07-teaching-computers-to-see.html
 - 7.4 Classification vs. Detection vs. Segmentation — parts/part-07-teaching-computers-to-see.html
 - 7.5 Famous Architectures & Transfer Learning — parts/part-07-teaching-computers-to-see.html
+- 7.6 Evaluating Vision Models (IoU/mAP) — parts/part-07-teaching-computers-to-see.html
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in

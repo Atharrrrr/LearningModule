@@ -32,7 +32,9 @@
     <a class="nav-item" data-chapter-id="7-5" href="#chapter-7-5">
       <span class="nav-dot"></span>7.5 Famous Architectures &amp; Transfer Learning
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>7.6 Evaluating Vision Models (IoU/mAP)</div>
+    <a class="nav-item" data-chapter-id="7-6" href="#chapter-7-6">
+      <span class="nav-dot"></span>7.6 Evaluating Vision Models (IoU/mAP)
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>7.7 Meet YOLO</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>7.8 Meet SuperPoint</div>
   </nav>
@@ -1251,6 +1253,248 @@
 
     </section>
 
+    <section id="chapter-7-6">
+      <div class="chapter-eyebrow">Part VII · Chapter 7.6</div>
+      <h1 class="chapter-title">Evaluating Vision Models (IoU/mAP)</h1>
+
+      <p class="lede">
+        Chapter 5.3's precision, recall, and F1 all assumed a prediction
+        was simply right or wrong. A detector's bounding box (Chapter
+        7.4) is never exactly right or wrong — it's a rectangle that
+        overlaps the true answer by some amount. Vision needs its own
+        way to turn "close" into a number before precision and recall
+        can even apply.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🚗 Frame of reference</div>
+        <p>
+          Grading how well a car is parked inside a marked space. A car
+          centered perfectly in the lines overlaps the marked space
+          almost completely. A car parked crooked, half over the line,
+          overlaps only partially — plenty of marked space sits empty,
+          and plenty of car sits outside it. The fraction of the
+          combined car-plus-space area that's actually shared by both
+          is a single, honest number for "how well parked is this?"
+        </p>
+      </div>
+
+      <h2>IoU: turning overlap into a number</h2>
+      <script>initJargonBox("IoU (Intersection over Union)",
+        "A measure of how well two bounding boxes match: the area where they overlap, divided by the total area covered by either one. Ranges from 0 (no overlap) to 1 (identical boxes).");</script>
+      <p>
+        <span class="jargon-term">IoU (Intersection over Union)</span>
+        is exactly that fraction: overlap area ÷ combined area. A
+        detection is usually only counted as correct if its IoU with
+        the true box clears some threshold — commonly 0.5.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          A fixed 4×4 ground-truth box (green) and a same-size predicted
+          box (orange) you can shift. Real computed IoU, live.
+        </p>
+
+        <div class="demo-controls">
+          <label class="demo-slider-label">Horizontal shift: <span id="iou-dx-value">0</span>
+            <input type="range" id="iou-dx-slider" min="-4" max="4" step="1" value="0">
+          </label>
+          <label class="demo-slider-label">Vertical shift: <span id="iou-dy-value">0</span>
+            <input type="range" id="iou-dy-slider" min="-4" max="4" step="1" value="0">
+          </label>
+        </div>
+        <div id="iou-grid" style="display:grid; grid-template-columns:repeat(12, 28px); gap:1px; margin-top:12px;"></div>
+        <p id="iou-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var rows = 10, cols = 12;
+          var gt = { r0: 2, r1: 5, c0: 3, c1: 6 };
+
+          var gridEl = document.getElementById('iou-grid');
+          var readout = document.getElementById('iou-readout');
+          var dxSlider = document.getElementById('iou-dx-slider');
+          var dySlider = document.getElementById('iou-dy-slider');
+          var dxValue = document.getElementById('iou-dx-value');
+          var dyValue = document.getElementById('iou-dy-value');
+
+          var cellEls = [];
+          for (var r = 0; r < rows; r++) {
+            for (var c = 0; c < cols; c++) {
+              var cell = document.createElement('div');
+              cell.style.width = '28px'; cell.style.height = '28px';
+              cell.style.border = '1px solid #21262d';
+              gridEl.appendChild(cell);
+              cellEls.push({ el: cell, r: r, c: c });
+            }
+          }
+
+          function inBox(box, r, c) { return r >= box.r0 && r <= box.r1 && c >= box.c0 && c <= box.c1; }
+
+          function render() {
+            var dx = parseInt(dxSlider.value, 10), dy = parseInt(dySlider.value, 10);
+            dxValue.textContent = dx; dyValue.textContent = dy;
+
+            var pred = { r0: gt.r0 + dy, r1: gt.r1 + dy, c0: gt.c0 + dx, c1: gt.c1 + dx };
+
+            var interR0 = Math.max(gt.r0, pred.r0), interR1 = Math.min(gt.r1, pred.r1);
+            var interH = Math.max(0, interR1 - interR0 + 1);
+            var interC0 = Math.max(gt.c0, pred.c0), interC1 = Math.min(gt.c1, pred.c1);
+            var interW = Math.max(0, interC1 - interC0 + 1);
+            var interArea = interH * interW;
+
+            var areaGT = (gt.r1 - gt.r0 + 1) * (gt.c1 - gt.c0 + 1);
+            var areaPred = (pred.r1 - pred.r0 + 1) * (pred.c1 - pred.c0 + 1);
+            var union = areaGT + areaPred - interArea;
+            var iou = union > 0 ? interArea / union : 0;
+
+            cellEls.forEach(function (cell) {
+              var inGT = inBox(gt, cell.r, cell.c);
+              var inPred = inBox(pred, cell.r, cell.c);
+              if (inGT && inPred) cell.el.style.background = 'rgba(63,185,80,0.9)';
+              else if (inGT) cell.el.style.background = 'rgba(63,185,80,0.35)';
+              else if (inPred) cell.el.style.background = 'rgba(255,166,87,0.5)';
+              else cell.el.style.background = '#161b22';
+            });
+
+            readout.textContent = 'Intersection: ' + interArea + ' cells.  Union: ' + union +
+              ' cells.  IoU = ' + interArea + '/' + union + ' = ' + iou.toFixed(3) +
+              (iou >= 0.5 ? '  — counted correct at the standard 0.5 threshold.' : '  — below the standard 0.5 threshold, counted wrong.');
+          }
+
+          dxSlider.addEventListener('input', render);
+          dySlider.addEventListener('input', render);
+          render();
+        })();
+      </script>
+
+      <p>
+        At zero shift the boxes match exactly — IoU = 1.0. Shift by
+        just one row or column and IoU already drops to 0.6, since a
+        chunk of each box no longer overlaps the other. Push the shift
+        far enough and the boxes stop touching entirely — IoU = 0,
+        no matter how "close" the boxes still look on a busy image.
+      </p>
+
+      <h2>From IoU to a precision-recall curve</h2>
+      <p>
+        Once IoU decides whether one detection counts as a true
+        positive or a false positive, everything from Chapter 5.3 —
+        precision, recall — applies directly. A detector doesn't output
+        just one box per object; it outputs many candidate boxes, each
+        with a confidence score. Rank them by confidence, and precision
+        and recall trace out a curve as you accept more and more
+        detections.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          6 detections for one class, ranked by confidence (highest
+          first), already marked correct/wrong by the 0.5 IoU rule
+          above. 4 real objects of this class exist in total.
+        </p>
+        <div class="demo-actions">
+          <div class="quiz-option" id="ap-reveal-btn">📊 Compute precision/recall at each rank</div>
+        </div>
+        <table class="data-table" id="ap-table">
+          <thead><tr><th>Rank</th><th>Result</th><th>Cumulative TP</th><th>Cumulative FP</th><th>Precision</th><th>Recall</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p id="ap-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var results = ['TP', 'FP', 'TP', 'FP', 'TP', 'FP'];
+          var totalGT = 4;
+
+          document.getElementById('ap-reveal-btn').addEventListener('click', function () {
+            var tbody = document.querySelector('#ap-table tbody');
+            tbody.innerHTML = '';
+            var cumTP = 0, cumFP = 0;
+            var tpPrecisions = [];
+
+            results.forEach(function (r, i) {
+              if (r === 'TP') cumTP++; else cumFP++;
+              var precision = cumTP / (cumTP + cumFP);
+              var recall = cumTP / totalGT;
+              if (r === 'TP') tpPrecisions.push(precision);
+
+              var tr = document.createElement('tr');
+              tr.innerHTML = '<td>' + (i + 1) + '</td><td>' + r + '</td><td>' + cumTP + '</td><td>' + cumFP +
+                '</td><td>' + precision.toFixed(3) + '</td><td>' + recall.toFixed(3) + '</td>';
+              tbody.appendChild(tr);
+            });
+
+            var ap = tpPrecisions.reduce(function (a, b) { return a + b; }, 0) / tpPrecisions.length;
+            document.getElementById('ap-readout').textContent = 'Average Precision (AP) = average of the precision value at each TP: (' +
+              tpPrecisions.map(function (p) { return p.toFixed(3); }).join(' + ') + ') / ' + tpPrecisions.length +
+              ' = ' + ap.toFixed(3) + '.';
+          });
+        })();
+      </script>
+
+      <script>initJargonBox("mAP (mean Average Precision)",
+        "The standard summary metric for object detectors: Average Precision (the area under the precision-recall curve, roughly the average precision value at each true-positive rank) computed separately for each class, then averaged across all classes.");</script>
+      <p>
+        That single number — precision, averaged at each point a new
+        true positive appears — is a class's <strong>Average
+        Precision (AP)</strong>. Compute AP separately for every class a
+        detector handles, then average those across all classes, and
+        you get <span class="jargon-term">mAP (mean Average Precision)</span>
+        — the standard headline number used to compare object detectors,
+        including Chapter 7.7's YOLO.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>IoU measures how well two boxes overlap: intersection area ÷ union area, from 0 to 1.</li>
+          <li>A detection typically only counts as a true positive if its IoU with the ground truth clears a threshold (commonly 0.5).</li>
+          <li>Once IoU decides true/false positives, Chapter 5.3's precision and recall apply directly to ranked detections.</li>
+          <li>Average Precision summarizes a class's precision-recall trade-off in one number; mAP averages AP across all classes.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-7-6">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What does IoU measure?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Intersection over union — overlap area divided by combined area.">The overlap between two boxes, divided by the total area the two boxes cover together.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — IoU is a ratio between 0 and 1, not a raw pixel count.">The exact number of pixels inside the predicted box, regardless of the true box.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — IoU specifically compares two boxes against each other; it isn't defined for a single box alone.">How confident a detector is in a single prediction.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. In the demo, why did shifting the predicted box by even one row or column drop IoU noticeably?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Even a small shift removes shared area while adding new non-shared area on both sides.">A small shift removes some overlapping area while adding new non-overlapping area to both boxes at once, shrinking the ratio quickly.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo used the exact same fixed box size throughout; only its position changed.">The predicted box's size changes randomly with every shift.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the intersection area is computed directly from the real overlapping cells, not rounded.">IoU is rounded so aggressively that small shifts always look the same.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. What is mAP?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! AP per class, then averaged across classes.">Average Precision computed separately for each class, then averaged across all classes.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — mAP is computed from precision and recall values across ranked detections, not IoU alone.">The single highest IoU value found across all detections.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — mAP is a real, computed summary metric with a precise definition, not an arbitrary constant.">A fixed threshold every detector must exceed to be considered valid.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -1261,6 +1505,7 @@
     initQuiz(document.getElementById('quiz-7-3'));
     initQuiz(document.getElementById('quiz-7-4'));
     initQuiz(document.getElementById('quiz-7-5'));
+    initQuiz(document.getElementById('quiz-7-6'));
     initProgressTracking();
   })();
 </script>
