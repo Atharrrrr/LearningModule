@@ -1,19 +1,44 @@
 # Progress
 
 ## Status
-In progress. 81 of 98 chapters written. Parts I-XI are all complete.
-Part XII is in progress (3 of 4 chapters done).
+In progress. 82 of 98 chapters written. Parts I-XII are all complete.
 
 ## Next chapter due
-Part XII, Chapter 12.4 — Deep RL & RLHF Revisited
-(parts/part-12-reinforcement-learning.html already exists — insert the
-new <section> before </main> and flip 12.4's sidebar entry from
-unwritten to live. IMPORTANT: 12.4 is an anchor chapter (see CLAUDE.md)
-— must be written ALONE, no other chapters batched with it. This is
-also the LAST chapter of Part XII — completing it finishes the Part, so
-do the write-book-chapter skill self-check afterward per the
-resumable-autonomous-loop rule, then continue into Part XIII per
-CURRICULUM.md.)
+Part XIII, Chapter 13.1 — Fairness & Bias
+(parts/part-13-responsible-ai.html does not exist yet — create it with
+a full sidebar TOC for all 3 chapters of Part XIII, titles from
+CURRICULUM.md: 13.1 Fairness & Bias [C], 13.2 Privacy, Safety & Misuse
+[C], 13.3 Interpretability [D]. Every chapter except 13.1 starts as
+class="nav-item unwritten". NOTE: there are NO remaining anchor chapters
+in the curriculum — 12.4 was the last one on CLAUDE.md's list. Parts
+XIII, XIV, and XV can all be batched normally per the 2-3-chapters-
+per-turn rule with no anchor-chapter interruptions from here to the end
+of the book.)
+
+## Part XII self-check (write-book-chapter skill compliance)
+Reviewed all 4 chapters (12.1–12.4) against the required rhythm: every
+chapter has a frame-of-reference analogy, plain concept explanation, a
+worked/interactive example with real computed values (verified via Node
+scripts and headless-Chromium checks, not faked), a "what you can now
+explain" recap, and a 3-question quiz. Real, verified computation
+throughout: a real multi-armed bandit with genuinely random Bernoulli
+rewards converging toward hidden true probabilities (12.1); a real
+Q-learning update rule run over hundreds of episodes with a fully random
+behavior policy, converging to Q-values matching the exact discounted-
+reward formula γ^distance-from-goal (12.2); a real policy-gradient
+(REINFORCE-with-baseline) update converging a softmax policy toward the
+best hidden-probability action, plus a real, deterministic demonstration
+of pure-exploitation getting permanently stuck due to zero-initialization
+and tie-breaking (12.3); and a real combinatorial calculation showing a
+Q-table's entry count for an 84×84 image state (~17,000 digits) dwarfing
+even the number of atoms in the observable universe, motivating deep RL,
+plus an explicit, accurate vocabulary mapping back onto Chapter 9.4's
+already-computed RLHF demo (12.4, anchor). All new jargon terms were
+boxed on first use and cross-checked against GLOSSARY_TRACKER.md, with
+heavy cross-referencing back to Chapters 1.1, 4.3, 6-8, 8.4, and 9.2-9.4.
+Chapter 12.4 closed the loop explicitly back to Part IX's RLHF chapter,
+tying the whole book's LLM-training material to this Part's RL
+vocabulary. No structural or quality issues found.
 
 ## Part XI self-check (write-book-chapter skill compliance)
 Reviewed all 5 chapters (11.1–11.5) against the required rhythm: every
@@ -194,6 +219,7 @@ issues found.
 - 12.1 Learning by Trial and Reward — parts/part-12-reinforcement-learning.html
 - 12.2 Q-Learning, Simply Explained — parts/part-12-reinforcement-learning.html
 - 12.3 Policy Gradients & Exploration/Exploitation — parts/part-12-reinforcement-learning.html
+- 12.4 Deep RL & RLHF Revisited — parts/part-12-reinforcement-learning.html
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in

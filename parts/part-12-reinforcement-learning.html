@@ -26,7 +26,9 @@
     <a class="nav-item" data-chapter-id="12-3" href="#chapter-12-3">
       <span class="nav-dot"></span>12.3 Policy Gradients &amp; Exploration/Exploitation
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>12.4 Deep RL &amp; RLHF Revisited</div>
+    <a class="nav-item" data-chapter-id="12-4" href="#chapter-12-4">
+      <span class="nav-dot"></span>12.4 Deep RL &amp; RLHF Revisited
+    </a>
   </nav>
 
   <main>
@@ -690,6 +692,197 @@
 
     </section>
 
+    <section id="chapter-12-4">
+      <div class="chapter-eyebrow">Part XII · Chapter 12.4</div>
+      <h1 class="chapter-title">Deep RL &amp; RLHF Revisited</h1>
+
+      <p class="lede">
+        Chapter 12.2's Q-table and Chapter 12.3's policy both relied on
+        something that quietly assumed the world stays small: one table
+        entry, or one learnable score, per possible state. Deep
+        reinforcement learning is what happens when that assumption
+        breaks — and closing this Part means going back to Chapter 9.4's
+        RLHF, which turns out to already have been deep RL all along,
+        described in different words.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🚕 Frame of reference</div>
+        <p>
+          A delivery driver working four fixed intersections could
+          reasonably memorize a table: "at intersection 2, turning left
+          is best." A driver working an entire city can't memorize a
+          table entry for every possible combination of intersection,
+          traffic, weather, and time of day — there are simply too many
+          distinct situations to write each one down. Instead, they
+          develop a general sense of good driving that generalizes:
+          faced with an intersection they've never specifically seen
+          before, they still make a reasonable call, based on how it
+          resembles situations they have seen. A neural network gives a
+          reinforcement learning agent exactly that same kind of
+          generalizing sense, in place of a table.
+        </p>
+      </div>
+
+      <h2>Deep RL: replacing the table with a network</h2>
+      <script>initJargonBox("deep reinforcement learning (deep RL)",
+        "Using a neural network (Chapter 6) instead of a table to represent Q-values (Chapter 12.2) or a policy (Chapter 12.3), when the number of possible states is too large — or continuous — to ever enumerate one table entry per state. The network generalizes across similar states instead of memorizing one value per exact state, the same generalization ability that made CNNs (Chapter 7.2) and Transformers (Chapter 8.5) useful in the first place.");</script>
+      <p>
+        <span class="jargon-term">Deep reinforcement learning (deep RL)</span>
+        swaps Chapter 12.2's Q-table, or Chapter 12.3's per-action score,
+        for a neural network that takes a state as input and outputs
+        Q-values or action probabilities directly — the exact same
+        networks from Chapters 6-8, just trained with reinforcement
+        learning's update rules instead of supervised learning's labels.
+        The table approach never actually stopped being correct in
+        principle; it just stops being <em>possible</em> once the number
+        of distinct states grows large enough.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          A real computation of exactly how large a Q-table would need
+          to be. Slide the grid size for a simple grid-world (4
+          actions per cell) to see the table stay entirely manageable —
+          then compare against a real calculation for a single 84×84
+          grayscale image used as the state instead (a typical size for
+          image-based RL), where a table becomes impossible.
+        </p>
+        <div class="demo-controls">
+          <label class="demo-slider-label">Grid size (N×N): <span id="drl-n-value">10</span>
+            <input type="range" id="drl-n-slider" min="2" max="50" step="1" value="10">
+          </label>
+        </div>
+        <p id="drl-grid-readout" class="demo-readout"></p>
+        <p id="drl-image-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var slider = document.getElementById('drl-n-slider');
+          var nValue = document.getElementById('drl-n-value');
+          var gridReadout = document.getElementById('drl-grid-readout');
+          var imageReadout = document.getElementById('drl-image-readout');
+
+          function renderGrid() {
+            var n = parseInt(slider.value, 10);
+            nValue.textContent = n;
+            var tableSize = n * n * 4;
+            gridReadout.textContent = 'Grid-world Q-table: ' + n + '×' + n + ' cells × 4 actions = ' +
+              tableSize.toLocaleString() + ' table entries — perfectly manageable to store directly.';
+          }
+
+          function renderImage() {
+            var pixels = 84 * 84;
+            var levels = 256;
+            var totalLog10 = pixels * Math.log10(levels);
+            imageReadout.textContent = 'A single 84×84 grayscale image as the state (256 possible values per pixel): possible distinct states = 256^' +
+              pixels + ' ≈ 10^' + totalLog10.toFixed(0) + ' — a number with about ' + Math.ceil(totalLog10) +
+              ' digits. (Atoms in the observable universe: only about 10^80, roughly 81 digits.) No table could ever hold one entry per state — a generalizing network is the only option.';
+          }
+
+          slider.addEventListener('input', renderGrid);
+          renderGrid();
+          renderImage();
+        })();
+      </script>
+
+      <p>
+        Slide up to a 50×50 grid: still only 10,000 table entries, easy
+        to store. But swap the state representation to a single 84×84
+        grayscale image — a completely realistic input size for
+        image-based RL — and the number of possible distinct states
+        explodes to roughly 10<sup>16,993</sup>, a number with about
+        17,000 digits, dwarfing even the ~81-digit estimate of atoms in
+        the observable universe. No table could ever have one entry for
+        every possible image. A neural network doesn't need one — it
+        generalizes from the states it has actually seen to states it
+        hasn't, the same way a CNN (Chapter 7.2) recognizes a cat it's
+        never seen in a photo it's never seen.
+      </p>
+
+      <h2>Revisiting RLHF: it was reinforcement learning all along</h2>
+      <p>
+        Chapter 9.4 described RLHF without leaning on this Part's
+        vocabulary. Read back through it now, and every piece maps
+        directly onto what this Part just built:
+      </p>
+
+      <table class="data-table" id="rlhf-map-table">
+        <thead><tr><th>This Part's term</th><th>RLHF's version of it (Chapter 9.4)</th></tr></thead>
+        <tbody>
+          <tr><td>Agent</td><td>The LLM itself</td></tr>
+          <tr><td>State</td><td>The prompt plus every token generated so far</td></tr>
+          <tr><td>Action</td><td>Choosing the next token to generate</td></tr>
+          <tr><td>Policy</td><td>The LLM's own probability distribution over next tokens — Chapter 9.2's next-token prediction, exactly</td></tr>
+          <tr><td>Reward</td><td>The reward model's score (Chapter 9.4) for the generated response</td></tr>
+          <tr><td>Policy gradient (Chapter 12.3)</td><td>PPO, the specific algorithm Chapter 9.4 named for actually updating the LLM's weights</td></tr>
+        </tbody>
+      </table>
+
+      <p>
+        Chapter 9.4's demo already computed this directly: four response
+        styles, each with a reward-model score, started at an equal 25%
+        probability each, and after 5 real policy-gradient update steps —
+        logits shifted by reward, then renormalized with softmax,
+        exactly Chapter 12.3's update rule — the highest-reward style
+        climbed to roughly 77%. That demo was never a separate technique
+        bolted onto the LLM chapters; it was this Part's policy gradient
+        method, running on an "action space" of possible tokens instead
+        of slot-machine arms, with the reward model standing in for the
+        environment's real-world reward signal. RLHF is deep RL applied
+        to language: the "network" is the LLM itself, already far too
+        large and its state space far too vast for anything but a neural
+        network to represent.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Deep RL replaces a Q-table or policy table with a neural network, needed once the number of possible states is too large (or continuous) to enumerate directly.</li>
+          <li>A neural network generalizes across similar states instead of memorizing one value per exact state — the same ability that makes CNNs and Transformers useful elsewhere in this book.</li>
+          <li>RLHF (Chapter 9.4) is a real, concrete instance of this Part's ideas: the LLM is the agent and the policy, the conversation so far is the state, the next token is the action, and the reward model's score is the reward.</li>
+          <li>Chapter 9.4's policy-update demo was already running Chapter 12.3's policy gradient method — just on language generation instead of a small, fixed set of actions.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-12-4">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. Why does deep RL replace a Q-table with a neural network?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Once states are too numerous (or continuous) to enumerate, a table becomes physically impossible to store, and a generalizing network takes over instead.">Because many real problems have far too many possible states to store one table entry for each — a network generalizes across similar states instead of requiring an entry for every single one.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a Q-table is a completely valid, correct approach in principle; the issue is that it becomes physically impossible to store once the state space is large enough.">A Q-table is mathematically incorrect and always gives the wrong answer.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo shows a small grid-world's table staying entirely manageable (just thousands of entries); the actual problem only shows up with truly enormous state spaces like images.">Q-tables are always too large to store, even for a tiny 4-state problem like Chapter 12.2's corridor.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. In the demo, why does using a single image as the state make a Q-table completely impossible, while a 50×50 grid does not?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Every possible combination of pixel values is a distinct state, and 256 possible values per pixel across thousands of pixels multiplies out to a number with about 17,000 digits.">An image state has to account for every possible combination of pixel values, and with 256 possible values across thousands of pixels, the number of distinct possible states becomes astronomically larger than a grid's mere thousands of cells.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the comparison is computed from real numbers (grid cells × actions vs. 256 raised to the number of pixels), not an arbitrary claim.">There's no real difference in size between the two cases; the chapter is exaggerating for effect.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo's grid-world slider goes up to a real, computed 10,000 entries at 50×50, still far smaller than the image case's ~17,000-digit number.">A 50×50 grid actually requires more table entries than a single image would.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. In the RLHF-revisited mapping, what plays the role of "reward"?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! The reward model's score is exactly the reward signal that Chapter 12.3's policy gradient update uses to nudge the LLM's token probabilities.">The reward model's score for the LLM's generated response (Chapter 9.4).</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the next token being generated is the action in this mapping, not the reward.">The next token the LLM chooses to generate.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the LLM itself plays the role of the agent and the policy in this mapping, not the reward.">The LLM's own weights.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -698,6 +891,7 @@
     initQuiz(document.getElementById('quiz-12-1'));
     initQuiz(document.getElementById('quiz-12-2'));
     initQuiz(document.getElementById('quiz-12-3'));
+    initQuiz(document.getElementById('quiz-12-4'));
     initProgressTracking();
   })();
 </script>
