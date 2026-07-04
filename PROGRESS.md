@@ -1,29 +1,63 @@
 # Progress
 
 ## Status
-In progress. 97 of 98 chapters written. Parts I-XIV are all complete.
-Part XV is in progress (4 of 5 chapters done) — this is the FINAL Part
-of the book. Only Chapter 15.5 (Glossary) remains in the ENTIRE
-98-chapter book.
+COMPLETE. All 98 of 98 chapters written, verified, and committed. Every
+Part (0 through XV) is finished. Chapter 15.5 (Glossary) was the final
+chapter of the entire book.
 
 ## Next chapter due
-Part XV, Chapter 15.5 — Glossary. This is the LAST chapter of the entire
-98-chapter book.
-(parts/part-15-becoming-ml-engineer.html already exists — insert the new
-<section> before </main> and flip 15.5's sidebar entry from unwritten to
-live.) Not an anchor chapter. This chapter should present a real,
-organized glossary of the book's jargon terms — GLOSSARY_TRACKER.md
-already has the full authoritative list with definitions and chapter
-references; this chapter's job is to render that content as a proper,
-navigable in-book glossary section (e.g. grouped by Part, or
-alphabetically — writer's judgment), not to redefine every term's
-prose from scratch. After 15.5 verifies and commits cleanly, the entire
-98-chapter book is complete — do a final whole-book self-check at that
-point (spot-check several chapters across different Parts against the
-write-book-chapter skill's rhythm, confirm no anchor chapters were
-skipped, confirm GLOSSARY_TRACKER.md is fully consistent) rather than
-just a Part XV self-check, and update this file's Status to reflect
-100% completion.
+None — the book is done. If resuming this project in the future, the
+only legitimate work left is revision/maintenance, not new chapters:
+e.g. fixing a reported bug in a demo, updating a stale fact, or adding
+genuinely new chapters only if the curriculum itself is deliberately
+expanded (which would require updating CURRICULUM.md first).
+
+## Final whole-book self-check (after Chapter 15.5)
+Ran `verify.py` against all 16 Part files (part-00 through part-15) —
+every single one PASSed structural checks cleanly, zero failures.
+Counted exactly 98 `<section id="chapter-X-Y">` elements across the
+whole book — matching the 98-chapter curriculum exactly, no duplicates,
+no gaps. Counted zero remaining `nav-item unwritten` elements anywhere
+in any Part file — every sidebar entry in the book is a live, linked
+chapter. Confirmed all 10 anchor chapters listed in CLAUDE.md (6.4, 7.7,
+7.8, 8.4, 8.5, 8.6, 9.2, 9.4, 11.4, 12.4) are present and were each
+written in their own dedicated turn per the anchor-chapter rule.
+GLOSSARY_TRACKER.md contains 221 terms across 16 Parts (Part 0 through
+XV), each with a first-defined chapter reference; Chapter 15.5 renders
+this exact data as a live, searchable, filterable glossary section
+inside the book itself (verified via Playwright: search terms like
+"attention," "drift," and a nonsense string all return correct,
+live-computed match counts). Every chapter across all 98 was verified
+via the two-step pipeline established at the start of this project:
+`verify.py` for structural checks, then a headless-Chromium Playwright
+script asserting zero console/page errors and checking every computed
+demo value against an independently pre-verified Node script — with
+zero unresolved computational mismatches across the entire book.
+No structural, quality, or continuity issues found. The book is
+complete.
+
+## Part XV self-check (write-book-chapter skill compliance)
+Reviewed all 5 chapters (15.1–15.5) against the required rhythm: every
+chapter has a frame-of-reference analogy, plain concept explanation, a
+worked/interactive example, a "what you can now explain" recap, and a
+3-question quiz. Since this Part is career-facing rather than technical,
+its "interactive demos" are real, verifiable click-to-reveal/search
+components rather than numeric computations — a deliberate, judgment-
+based choice per the write-book-chapter skill's "not every chapter needs
+both kinds of code" guidance: a real, accurate summary of the actual
+SuperPoint paper cross-checked against Chapter 7.8 (15.1); a real
+click-to-reveal domain/role matrix distinguishing Chapter 1.5's function
+axis from this Part's domain axis (15.2); a real click-to-reveal project
+list mapped to every technical Part of the book (15.3); a real
+click-to-reveal job-search-stage breakdown explicitly structured as a
+mirror of Chapter 14.8's pipeline shape (15.4); and a real, live,
+search-filterable rendering of all 221 glossary terms grouped by Part,
+computed and verified in-browser (15.5). New jargon terms (abstract,
+ablation study, T-shaped skill set, MVP, ATS, system design interview)
+were boxed on first use and cross-checked against GLOSSARY_TRACKER.md
+before writing. Heavy, explicit cross-referencing back to Chapters 1.5,
+5.2-5.3, 7.8, 9.7, 9.9, and all of Part XIV. This Part, and the entire
+98-chapter book, is complete. No structural or quality issues found.
 
 ## Part XIII self-check (write-book-chapter skill compliance)
 Reviewed all 3 chapters (13.1–13.3) against the required rhythm: every
@@ -266,6 +300,7 @@ issues found.
 - 15.2 Choosing a Specialization — parts/part-15-becoming-ml-engineer.html
 - 15.3 Portfolio Projects Mapped to Every Part — parts/part-15-becoming-ml-engineer.html
 - 15.4 The Job Search — parts/part-15-becoming-ml-engineer.html
+- 15.5 Glossary — parts/part-15-becoming-ml-engineer.html (FINAL CHAPTER — book complete)
 
 ## Part XIV self-check (write-book-chapter skill compliance)
 Reviewed all 8 chapters (14.1–14.8) against the required rhythm: every

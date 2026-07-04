@@ -228,3 +228,8 @@ Note: Chapter 6.9 (Building Your First Network, PyTorch) introduced no new jargo
 | MVP (Minimum Viable Project) | 15.3 Portfolio Projects Mapped to Every Part | A project deliberately scoped down to something small enough to actually finish, end to end, rather than an ambitious project left half-built. A complete small thing demonstrates far more than an incomplete large one. |
 | ATS (Applicant Tracking System) | 15.4 The Job Search | Software that scans and ranks incoming resumes/applications before a human ever reads most of them, typically by matching keywords against the job posting — meaning a resume genuinely needs the posting's specific terms present, not just a synonym or an implied skill. |
 | system design interview | 15.4 The Job Search | An interview format asking a candidate to design a full system for an open-ended problem — for an ML role, often something like "design a pipeline for X" (Chapter 14.8's shape) — evaluating structured thinking and tradeoff awareness over one exact correct answer. |
+
+Note: Chapter 15.5 (Glossary) introduced no new jargon terms — it renders
+this exact table (221 terms across 16 Parts, Part 0 through Part XV) as a
+searchable in-book glossary section. This file is now complete and final;
+the book's 98-chapter curriculum is fully written.
