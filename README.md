@@ -1,8 +1,8 @@
 # The Beginner's Guide to Machine Learning and Artificial Intelligence
 
 A free, 98-chapter interactive book that teaches AI/ML from zero
-prerequisites to job-ready — no prior coding, math, or ML background
-assumed. It starts with the basics (what a variable is, what a vector
+prerequisites, building a genuinely solid foundation — no prior coding,
+math, or ML background assumed. It starts with the basics (what a variable is, what a vector
 is) and builds all the way up to explaining and building real systems:
 YOLO, SuperPoint, SuperGlue, large language models, vision-language
 models, and diffusion models — ending with a portfolio and a job search.
