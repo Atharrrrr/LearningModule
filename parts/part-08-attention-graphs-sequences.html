@@ -29,7 +29,9 @@
     <a class="nav-item" data-chapter-id="8-4" href="#chapter-8-4">
       <span class="nav-dot"></span>8.4 Attention
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>8.5 The Transformer, Piece by Piece</div>
+    <a class="nav-item" data-chapter-id="8-5" href="#chapter-8-5">
+      <span class="nav-dot"></span>8.5 The Transformer, Piece by Piece
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>8.6 Meet SuperGlue</div>
   </nav>
 
@@ -793,6 +795,265 @@
 
     </section>
 
+    <section id="chapter-8-5">
+      <div class="chapter-eyebrow">Part VIII · Chapter 8.5</div>
+      <h1 class="chapter-title">The Transformer, Piece by Piece</h1>
+
+      <p class="lede">
+        You've now built every individual part: embeddings (8.3),
+        attention (8.4), feedforward layers (6.2), residual connections
+        (7.5). A Transformer doesn't add much that's genuinely new —
+        it bolts these exact parts together into one block, fixes one
+        gap attention leaves open, and stacks the result.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🔧 Frame of reference</div>
+        <p>
+          You've built an engine, a transmission, and a chassis, each
+          on its own workbench. None of them is a car by itself. A
+          Transformer block is the assembly step — bolting parts you
+          already understand into one running machine, in a specific
+          order, with a couple of connectors that make sure nothing
+          gets lost between stages.
+        </p>
+      </div>
+
+      <h2>The gap attention leaves open: position</h2>
+      <script>initJargonBox("positional encoding",
+        "A vector added to each position's embedding before attention runs, giving every position a unique signature based on where it sits in the sequence. Without it, attention's dot products have no way to tell position 1 from position 5.");</script>
+      <p>
+        Look closely at Chapter 8.4's attention formula: a dot product
+        between a query and a key doesn't reference position anywhere.
+        Swap two input positions, and attention produces the exact
+        same set of comparisons, just relabeled — it genuinely cannot
+        tell "trophy" at position 1 from "trophy" at position 5. That
+        reopens Chapter 8.1's entire problem, inside the very mechanism
+        built to solve it.
+      </p>
+      <p>
+        <span class="jargon-term">Positional encoding</span> patches
+        this directly: add a position-dependent vector to each token's
+        embedding before attention ever runs. The standard recipe uses
+        sine and cosine waves at different frequencies, so every
+        position gets a unique numeric signature:
+        <span class="mono">PE(pos, 2i) = sin(pos / 10000^(2i/d))</span>,
+        <span class="mono">PE(pos, 2i+1) = cos(pos / 10000^(2i/d))</span>.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          Real computed positional encoding vectors (4 numbers each).
+          Drag the position and watch its unique signature.
+        </p>
+        <div class="demo-controls">
+          <label class="demo-slider-label">Position: <span id="pe-pos-value">0</span>
+            <input type="range" id="pe-pos-slider" min="0" max="10" step="1" value="0">
+          </label>
+        </div>
+        <p id="pe-readout" class="demo-readout"></p>
+        <table class="data-table" id="pe-table">
+          <thead><tr><th>Position</th><th>dim 0 (sin)</th><th>dim 1 (cos)</th><th>dim 2 (sin, slow)</th><th>dim 3 (cos, slow)</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <script>
+        (function () {
+          var dModel = 4;
+          function positionalEncoding(pos) {
+            var vec = [];
+            for (var i = 0; i < dModel; i += 2) {
+              var freq = pos / Math.pow(10000, i / dModel);
+              vec.push(Math.sin(freq));
+              vec.push(Math.cos(freq));
+            }
+            return vec;
+          }
+
+          var slider = document.getElementById('pe-pos-slider');
+          var posValue = document.getElementById('pe-pos-value');
+          var readout = document.getElementById('pe-readout');
+          var tbody = document.querySelector('#pe-table tbody');
+
+          for (var p = 0; p <= 4; p++) {
+            var vec = positionalEncoding(p);
+            var tr = document.createElement('tr');
+            tr.innerHTML = '<td>' + p + '</td>' + vec.map(function (v) { return '<td>' + v.toFixed(4) + '</td>'; }).join('');
+            tbody.appendChild(tr);
+          }
+
+          function render() {
+            var pos = parseInt(slider.value, 10);
+            posValue.textContent = pos;
+            var vec = positionalEncoding(pos);
+            readout.textContent = 'PE(' + pos + ') = [' + vec.map(function (v) { return v.toFixed(4); }).join(', ') + ']';
+          }
+
+          slider.addEventListener('input', render);
+          render();
+        })();
+      </script>
+
+      <p>
+        No two rows in that table are ever identical — every position
+        gets its own numeric fingerprint, smoothly related to its
+        neighbors' fingerprints rather than arbitrary. Add this vector
+        to a token's embedding, and "trophy" at position 1 and "trophy"
+        at position 5 arrive at attention as genuinely different
+        vectors, breaking the symmetry a dot product alone could never
+        see.
+      </p>
+
+      <h2>Multi-head attention: several relationships at once</h2>
+      <script>initJargonBox("multi-head attention",
+        "Running several attention computations in parallel (\"heads\"), each with its own query/key/value weights, then combining their outputs. Different heads can specialize in different kinds of relationships between positions.");</script>
+      <p>
+        One attention computation learns one notion of "relevant."
+        <span class="jargon-term">Multi-head attention</span> runs
+        several in parallel — one head might specialize in resolving
+        references like Chapter 8.4's "it," another might track which
+        adjective modifies which noun. Each head produces its own
+        weighted output; concatenating them gives the block more than
+        one lens on the same sequence at once.
+      </p>
+
+      <h2>Feedforward, residuals, and stacking</h2>
+      <p>
+        After attention mixes information across positions, a plain
+        feedforward layer (Chapter 6.2) — the same small MLP, applied
+        identically at every position — processes each position's
+        result independently, adding capacity attention itself doesn't
+        provide. Both the attention step and the feedforward step are
+        wrapped in a residual connection (Chapter 7.5): the block's
+        input is added back to its output, keeping gradients healthy
+        even when many blocks are stacked. A normalization step
+        (closely related to Chapter 6.8's BatchNorm, but normalizing
+        across each position's own features rather than across a batch)
+        keeps signal scale stable between blocks. Stack several of
+        these blocks — each one attention, then feedforward, each
+        wrapped in residual-and-normalize — and you have a Transformer.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          Click a piece to see exactly where it sits in one Transformer block.
+        </p>
+        <div class="demo-actions" id="tf-concept-buttons">
+          <div class="quiz-option" data-part="embed">Embeddings + Positional Encoding</div>
+          <div class="quiz-option" data-part="attn">Multi-Head Attention</div>
+          <div class="quiz-option" data-part="addnorm1">Add &amp; Norm</div>
+          <div class="quiz-option" data-part="ff">Feedforward</div>
+          <div class="quiz-option" data-part="addnorm2">Add &amp; Norm</div>
+        </div>
+
+        <div id="tf-diagram" style="display:flex; flex-direction:column; gap:6px; max-width:340px; margin:16px 0;">
+          <div class="tf-block" data-part="embed">Input Embeddings (8.3) + Positional Encoding</div>
+          <div class="tf-block" data-part="attn">Multi-Head Attention (8.4)</div>
+          <div class="tf-block" data-part="addnorm1">Add (residual, 7.5) &amp; Norm</div>
+          <div class="tf-block" data-part="ff">Feedforward (6.2)</div>
+          <div class="tf-block" data-part="addnorm2">Add (residual, 7.5) &amp; Norm</div>
+          <div class="tf-block" style="opacity:0.6;">↑ repeat this whole stack N times ↑</div>
+        </div>
+        <p id="tf-explain-readout" class="demo-readout">Click a piece above to highlight it.</p>
+      </div>
+
+      <script>
+        (function () {
+          var blocks = document.querySelectorAll('#tf-diagram .tf-block[data-part]');
+          blocks.forEach(function (b) {
+            b.style.padding = '10px 14px';
+            b.style.border = '1px solid #30363d';
+            b.style.borderRadius = '6px';
+            b.style.background = '#161b22';
+            b.style.fontSize = '13.5px';
+          });
+
+          var explanations = {
+            embed: 'Chapter 8.3\'s word embeddings, plus this chapter\'s positional encoding added in — the only place position enters the picture.',
+            attn: 'Chapter 8.4\'s scaled dot-product attention, run as several parallel heads and combined.',
+            addnorm1: 'The attention sub-layer\'s input is added back to its output (Chapter 7.5\'s residual connection), then normalized.',
+            ff: 'A plain feedforward network (Chapter 6.2), applied identically and independently at every position.',
+            addnorm2: 'The feedforward sub-layer gets the same residual-plus-normalize treatment as the attention sub-layer above.'
+          };
+
+          var buttons = document.querySelectorAll('#tf-concept-buttons .quiz-option');
+          var explain = document.getElementById('tf-explain-readout');
+
+          buttons.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+              var part = btn.getAttribute('data-part');
+              buttons.forEach(function (b) { b.classList.remove('correct'); });
+              btn.classList.add('correct');
+              blocks.forEach(function (b) {
+                var active = b.getAttribute('data-part') === part;
+                b.style.borderColor = active ? 'var(--purple)' : '#30363d';
+                b.style.background = active ? 'rgba(188,140,255,0.15)' : '#161b22';
+              });
+              explain.textContent = explanations[part];
+            });
+          });
+        })();
+      </script>
+
+      <p>
+        Nothing in that diagram is a mystery any more: every box is a
+        chapter you've already built by hand. A Transformer's real
+        contribution is the arrangement — attention for mixing
+        information across positions, feedforward for processing each
+        position further, residual-and-normalize for keeping a deep
+        stack trainable, and positional encoding for giving the whole
+        thing a sense of order it otherwise wouldn't have.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Attention's dot products carry no information about position, so positional encoding adds a unique, position-dependent signature to each token's embedding before attention runs.</li>
+          <li>Multi-head attention runs several attention computations in parallel, letting different heads specialize in different relationships.</li>
+          <li>Each Transformer block alternates attention and a feedforward layer, both wrapped in a residual connection and a normalization step.</li>
+          <li>A Transformer is a stack of these identical blocks — every individual piece was already covered in an earlier chapter.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-8-5">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. Why is positional encoding necessary at all?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! A dot product between a query and a key has no reference to where either one sits in the sequence.">Attention's dot products carry no information about position, so without it, swapping two positions wouldn't change attention's output at all.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — positional encoding is added directly to embeddings; it doesn't change how attention itself is computed.">It replaces the need for attention entirely.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — positional encoding uses a smooth, deterministic sine/cosine formula, producing a genuinely unique vector per position, not randomness.">It's simply a random tag added for no functional reason.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. What does multi-head attention add on top of a single attention computation?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Multiple parallel attention computations, each potentially specializing differently.">Several attention computations running in parallel, each able to specialize in a different kind of relationship between positions.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — multi-head attention runs several heads at once, in parallel, not one after another.">Running the exact same single attention computation twice in a row.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — multi-head attention is specifically about running several attention computations, not replacing attention with something else.">Removing attention and replacing it with a feedforward layer.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. What role does the residual connection play inside a Transformer block?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! The same +x shortcut from Chapter 7.5, now protecting a stack of Transformer blocks instead of CNN layers.">It adds a sub-layer's input back to its output, helping gradients stay healthy across a deep stack of blocks, exactly like Chapter 7.5's ResNet.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the residual connection is a structural addition (input + output), not a data-augmentation technique.">It's a way of generating more training data for the Transformer.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the residual connection works together with attention and feedforward layers; it doesn't replace either.">It replaces the need for both attention and feedforward layers.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -802,6 +1063,7 @@
     initQuiz(document.getElementById('quiz-8-2'));
     initQuiz(document.getElementById('quiz-8-3'));
     initQuiz(document.getElementById('quiz-8-4'));
+    initQuiz(document.getElementById('quiz-8-5'));
     initProgressTracking();
   })();
 </script>
