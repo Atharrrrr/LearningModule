@@ -35,7 +35,9 @@
     <a class="nav-item" data-chapter-id="9-6" href="#chapter-9-6">
       <span class="nav-dot"></span>9.6 Prompting &amp; In-Context Learning
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>9.7 Retrieval-Augmented Generation (RAG)</div>
+    <a class="nav-item" data-chapter-id="9-7" href="#chapter-9-7">
+      <span class="nav-dot"></span>9.7 Retrieval-Augmented Generation (RAG)
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>9.8 Agents &amp; Tool Use</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>9.9 Hallucination &amp; Evaluation</div>
   </nav>
@@ -1697,6 +1699,192 @@
 
     </section>
 
+    <section id="chapter-9-7">
+      <div class="chapter-eyebrow">Part IX · Chapter 9.7</div>
+      <h1 class="chapter-title">Retrieval-Augmented Generation (RAG)</h1>
+
+      <p class="lede">
+        Every LLM covered so far has one hard limitation: its knowledge
+        is frozen at whatever point its training data was collected.
+        It can't know about a document written yesterday, a company's
+        private internal wiki, or anything that simply wasn't in its
+        training text — no matter how good its prompting (Chapter 9.6)
+        is. Retrieval-augmented generation fixes this without touching
+        the model's weights at all.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">📖 Frame of reference</div>
+        <p>
+          A closed-book exam tests only what you've memorized —
+          impressive, but strictly limited to whatever stuck during
+          study, with a hard cutoff at exam day. An open-book exam lets
+          you look up the exact right page in a reference book before
+          answering, so your answer can quote something specific and
+          current, not just whatever you happen to remember. RAG turns
+          an LLM's closed-book exam into an open-book one: before
+          answering, go find the most relevant pages from an actual
+          library of documents, and hand those pages to the model along
+          with the question.
+        </p>
+      </div>
+
+      <h2>The problem: frozen knowledge, with no way to update it</h2>
+      <p>
+        Once an LLM finishes training (Chapters 9.2-9.4), its weights
+        are fixed. Ask it about something published after its training
+        cutoff, or about a private document it never saw — an internal
+        HR policy, a specific customer's order history — and it simply
+        has nothing to draw on. It might guess, sometimes confidently
+        and incorrectly (Chapter 9.9 covers this failure mode directly).
+        Retraining the model every time a document changes would be
+        absurdly expensive and slow.
+      </p>
+
+      <h2>The fix: retrieve first, then generate</h2>
+      <script>initJargonBox("RAG (Retrieval-Augmented Generation)",
+        "A technique that, before generating a response, first retrieves the most relevant chunks of text from an external document collection and inserts them into the prompt (Chapter 9.6) as extra context — letting a frozen LLM answer using specific, current, or private information it was never trained on.");</script>
+      <script>initJargonBox("retrieval",
+        "Finding the most relevant document chunks for a given query out of a large collection, typically by comparing embeddings (Chapter 8.3) with a similarity measure like cosine similarity (Chapter 2.4's dot product, normalized by vector length) and keeping the closest matches.");</script>
+      <p>
+        <span class="jargon-term">RAG (Retrieval-Augmented Generation)</span>
+        works in two steps for every query. First, <span class="jargon-term">
+        retrieval</span>: embed the user's query into a vector, exactly
+        like Chapter 8.3's word embeddings, then compare it against a
+        precomputed embedding for every chunk of every document in a
+        knowledge base, using the same cosine-similarity idea from
+        Chapter 2.4's dot product. Whichever chunks land closest in that
+        vector space get pulled out. Second, generation: insert those
+        retrieved chunks directly into the prompt as extra context —
+        Chapter 9.6's mechanism exactly — and let the LLM generate its
+        answer grounded in that real, specific text.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          A tiny 4-document knowledge base, each with a real 2D toy
+          embedding (exactly Chapter 8.3's style). Pick a query and
+          watch real cosine similarity, computed live, rank every
+          document — the top-ranked one is what RAG would retrieve and
+          hand to the LLM as context.
+        </p>
+        <div class="demo-actions">
+          <div class="quiz-option" id="rag-q1-btn">❓ "How many days do I have to return a product?"</div>
+          <div class="quiz-option" id="rag-q2-btn">❓ "How much paid time off do I get?"</div>
+          <div class="quiz-option" id="rag-q3-btn">❓ "Where's the office located?"</div>
+        </div>
+        <table class="data-table" id="rag-table">
+          <thead><tr><th>Document chunk</th><th>Cosine similarity to query</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p id="rag-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var docs = {
+            returns: { label: 'Return policy: "Returns accepted within 30 days of purchase, with a valid receipt."', vec: [5, 1] },
+            address: { label: 'Office address: "Our headquarters is located at 123 Main Street, Suite 400."', vec: [-4, -4] },
+            earnings: { label: 'Earnings report: "The 2024 quarterly earnings report shows 12% revenue growth."', vec: [1, 5] },
+            vacation: { label: 'Vacation policy: "Full-time employees receive 15 paid vacation days per year."', vec: [-1, 4] }
+          };
+
+          var queries = {
+            q1: { vec: [4.5, 1.2] },
+            q2: { vec: [-1.5, 3.5] },
+            q3: { vec: [-3.5, -3.8] }
+          };
+
+          function dot(a, b) { return a[0] * b[0] + a[1] * b[1]; }
+          function norm(a) { return Math.sqrt(a[0] * a[0] + a[1] * a[1]); }
+          function cosine(a, b) { return dot(a, b) / (norm(a) * norm(b)); }
+
+          function runQuery(qKey) {
+            var qVec = queries[qKey].vec;
+            var results = Object.keys(docs).map(function (dKey) {
+              return { key: dKey, label: docs[dKey].label, sim: cosine(qVec, docs[dKey].vec) };
+            });
+            results.sort(function (a, b) { return b.sim - a.sim; });
+
+            var tbody = document.querySelector('#rag-table tbody');
+            tbody.innerHTML = '';
+            results.forEach(function (r, i) {
+              var tr = document.createElement('tr');
+              tr.innerHTML = '<td>' + (i === 0 ? '🏆 ' : '') + r.label + '</td><td>' + r.sim.toFixed(4) + '</td>';
+              tbody.appendChild(tr);
+            });
+
+            document.getElementById('rag-readout').textContent =
+              'Retrieved chunk: "' + results[0].label.split(':')[0] + '" (similarity ' + results[0].sim.toFixed(4) +
+              ') — this is what gets inserted into the prompt before the LLM generates its answer.';
+          }
+
+          document.getElementById('rag-q1-btn').addEventListener('click', function () { runQuery('q1'); });
+          document.getElementById('rag-q2-btn').addEventListener('click', function () { runQuery('q2'); });
+          document.getElementById('rag-q3-btn').addEventListener('click', function () { runQuery('q3'); });
+
+          runQuery('q1');
+        })();
+      </script>
+
+      <p>
+        Each query retrieves a different top chunk, purely because each
+        query's embedding sits closest to a different document's
+        embedding in the same vector space — the return-policy question
+        retrieves the return policy (similarity 0.998), the paid-time-off
+        question retrieves the vacation policy (0.987), and the location
+        question retrieves the office address (0.999). None of this
+        required retraining anything; a completely frozen LLM just
+        receives different, relevant context depending on the question.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>An LLM's knowledge is frozen at training time — it has no way to know about documents that didn't exist yet or were never in its training data, no matter how it's prompted.</li>
+          <li>RAG retrieves the most relevant document chunks for a given query — by comparing embeddings with cosine similarity — before generation happens at all.</li>
+          <li>Retrieved chunks get inserted into the prompt as extra context, letting a completely frozen model ground its answer in real, specific, possibly private or recent text.</li>
+          <li>RAG needs no retraining to add new knowledge — updating the document collection is enough, unlike updating an LLM's actual trained knowledge.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-9-7">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What specific problem does RAG solve that better prompting alone cannot?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! No amount of clever prompting can supply information the model never saw during training and has no other way to access.">An LLM's weights are frozen after training, so it has no way to know about documents that never appeared in its training data — RAG supplies that missing information directly in the prompt.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — RAG's whole mechanism is inserting retrieved text into the prompt; it doesn't touch how many parameters the model has.">RAG reduces the number of parameters an LLM needs to store.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — RAG specifically requires no weight updates or retraining; that's exactly what makes it cheap to keep a knowledge base current.">RAG retrains the model's weights every time a new document is added.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. In the demo, how does RAG decide which document chunk to retrieve for a given query?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Retrieval is a nearest-neighbor search in embedding space, exactly like Chapter 8.3's word-embedding lookups.">It embeds the query, computes cosine similarity against every document chunk's embedding, and retrieves whichever chunk scores highest.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo always retrieves whichever chunk has the highest computed similarity to the specific query, not a fixed default.">It always retrieves the first document chunk in the knowledge base, regardless of the query.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — retrieval is driven entirely by a real, deterministic similarity computation between the query and each document's embedding, not randomness.">It picks a document chunk at random for every query.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. Why doesn't adding a new document to a RAG system require retraining the LLM?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! The LLM's weights never change in RAG — only the document collection it can retrieve from does.">RAG only needs the new document embedded and added to the retrievable collection; the LLM itself, and its weights, are never touched.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the LLM's weights stay completely frozen throughout; RAG's entire appeal is not needing to retrain it.">Adding a document does require retraining the LLM, just a smaller amount than full training.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — RAG's knowledge base can absolutely be updated at any time; that's a central advantage of the approach, not a limitation.">New documents can never actually be added to a RAG system once it's built.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -1708,6 +1896,7 @@
     initQuiz(document.getElementById('quiz-9-4'));
     initQuiz(document.getElementById('quiz-9-5'));
     initQuiz(document.getElementById('quiz-9-6'));
+    initQuiz(document.getElementById('quiz-9-7'));
     initProgressTracking();
   })();
 </script>
