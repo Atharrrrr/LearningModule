@@ -1,17 +1,18 @@
 # Progress
 
 ## Status
-In progress. 58 of 98 chapters written. Parts I, II, III, IV, V, VI, and
+In progress. 59 of 98 chapters written. Parts I, II, III, IV, V, VI, and
 VII are all complete.
 
 ## Next chapter due
-Part VIII, Chapter 8.4 — Attention
+Part VIII, Chapter 8.5 — The Transformer, Piece by Piece
 (parts/part-08-attention-graphs-sequences.html already exists — insert
-the new <section> before </main> and flip 8.4's sidebar entry from
-unwritten to live. IMPORTANT: 8.4 is an anchor chapter (see CLAUDE.md) —
-must be written ALONE, one per turn. Chapter 8.5 (The Transformer) right
-after it is ALSO an anchor — write it alone too, on its own turn. Then
-8.6 (Meet SuperGlue) is a THIRD anchor in a row — also alone.)
+the new <section> before </main> and flip 8.5's sidebar entry from
+unwritten to live. IMPORTANT: 8.5 is an anchor chapter (see CLAUDE.md) —
+must be written ALONE, one per turn. Chapter 8.6 (Meet SuperGlue), right
+after it, is ALSO an anchor — write it alone too, on its own separate
+turn. It is also the LAST chapter of Part VIII — do the Part self-check
+after it.)
 
 ## Part VII self-check (write-book-chapter skill compliance)
 Reviewed all 8 chapters (7.1–7.8) against the required rhythm: every
@@ -83,6 +84,7 @@ issues found.
 - 8.1 Why Order Matters — parts/part-08-attention-graphs-sequences.html
 - 8.2 RNNs & Their Limits — parts/part-08-attention-graphs-sequences.html
 - 8.3 Word Embeddings (word2vec) — parts/part-08-attention-graphs-sequences.html
+- 8.4 Attention — parts/part-08-attention-graphs-sequences.html
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in

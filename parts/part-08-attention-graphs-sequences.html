@@ -26,7 +26,9 @@
     <a class="nav-item" data-chapter-id="8-3" href="#chapter-8-3">
       <span class="nav-dot"></span>8.3 Word Embeddings (word2vec)
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>8.4 Attention</div>
+    <a class="nav-item" data-chapter-id="8-4" href="#chapter-8-4">
+      <span class="nav-dot"></span>8.4 Attention
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>8.5 The Transformer, Piece by Piece</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>8.6 Meet SuperGlue</div>
   </nav>
@@ -593,6 +595,204 @@
 
     </section>
 
+    <section id="chapter-8-4">
+      <div class="chapter-eyebrow">Part VIII · Chapter 8.4</div>
+      <h1 class="chapter-title">Attention</h1>
+
+      <p class="lede">
+        "The trophy doesn't fit in the suitcase because it is too big."
+        What does "it" refer to? Now swap one word — "...because it is
+        too small" — and the answer flips entirely. Resolving that
+        pronoun means directly comparing "it" against every candidate
+        noun in the sentence, no matter how far back they are. That
+        direct comparison, done with real numbers, is attention.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🏆 Frame of reference</div>
+        <p>
+          Reading that sentence, you don't process "it" by slowly
+          replaying every word that came before, hoping enough survived
+          in your memory. You directly glance back at "trophy" and
+          "suitcase" — the only two real candidates — and weigh each
+          one's relevance given the rest of the sentence. "Big" tips
+          the weighing toward "trophy" (the thing too big to fit);
+          "small" tips it toward "suitcase" (the thing too small to
+          hold it). Attention is that direct glance-and-weigh, turned
+          into arithmetic.
+        </p>
+      </div>
+
+      <h2>Query, Key, Value: asking, offering, answering</h2>
+      <script>initJargonBox("attention",
+        "A mechanism where each position in a sequence directly compares itself against every other position (via a query and key), and combines their content (values) weighted by how relevant each one is — regardless of distance between them.");</script>
+      <script>initJargonBox("softmax",
+        "A function that converts a list of raw scores into probabilities that sum to exactly 1, amplifying the biggest scores' share while keeping every option's probability positive. The multi-option generalization of Chapter 4.2's sigmoid.");</script>
+      <p>
+        <span class="jargon-term">Attention</span> gives every position
+        three roles. A <strong>query</strong>: what is this position
+        trying to figure out (for "it," roughly "what noun am I
+        standing in for?"). A <strong>key</strong>: what does each
+        candidate position offer to be matched against (what "trophy"
+        and "suitcase" each represent). A <strong>value</strong>: the
+        actual content contributed if chosen. Compare the query against
+        every key with a dot product (Chapter 2.4) — a bigger dot
+        product means a better match. Turn those scores into weights
+        that sum to 1 with <span class="jargon-term">softmax</span>,
+        then take a weighted sum of every value using those weights.
+        No step-by-step chain, no distance penalty — every position is
+        one dot product away from every other.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          Real scaled dot-product attention — the exact formula used in
+          Transformers (Chapter 8.5) — resolving "it" between "trophy"
+          and "suitcase." Toggle the sentence's ending and watch the
+          weights flip.
+        </p>
+
+        <div class="demo-actions" id="attn-toggle-buttons">
+          <div class="quiz-option" data-ctx="big">"...because it is too BIG"</div>
+          <div class="quiz-option" data-ctx="small">"...because it is too SMALL"</div>
+        </div>
+
+        <table class="data-table" id="attn-table" style="margin-top:12px;">
+          <thead><tr><th>Step</th><th>trophy</th><th>suitcase</th></tr></thead>
+          <tbody>
+            <tr><td>Key vector</td><td>(0.5, 2)</td><td>(0.5, −2)</td></tr>
+            <tr><td>Value vector</td><td>(1, 0)</td><td>(0, 1)</td></tr>
+            <tr id="attn-row-dot"><td>Query · Key (dot product)</td><td></td><td></td></tr>
+            <tr id="attn-row-scaled"><td>Scaled score (÷√2)</td><td></td><td></td></tr>
+            <tr id="attn-row-softmax"><td>Softmax weight</td><td></td><td></td></tr>
+          </tbody>
+        </table>
+        <p id="attn-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var trophyKey = [0.5, 2], suitcaseKey = [0.5, -2];
+          var trophyVal = [1, 0], suitcaseVal = [0, 1];
+          var queryBig = [0.5, 1], querySmall = [0.5, -1];
+          var scaleFactor = Math.sqrt(2);
+
+          function dot(a, b) { return a[0] * b[0] + a[1] * b[1]; }
+
+          function softmax(scores) {
+            var maxS = Math.max.apply(null, scores);
+            var exps = scores.map(function (s) { return Math.exp(s - maxS); });
+            var sum = exps.reduce(function (a, b) { return a + b; }, 0);
+            return exps.map(function (e) { return e / sum; });
+          }
+
+          var buttons = document.querySelectorAll('#attn-toggle-buttons .quiz-option');
+          var readout = document.getElementById('attn-readout');
+
+          function render(ctx) {
+            var query = ctx === 'big' ? queryBig : querySmall;
+            var rawT = dot(query, trophyKey), rawS = dot(query, suitcaseKey);
+            var scaledT = rawT / scaleFactor, scaledS = rawS / scaleFactor;
+            var weights = softmax([scaledT, scaledS]);
+
+            document.querySelector('#attn-row-dot td:nth-child(2)').textContent = rawT.toFixed(3);
+            document.querySelector('#attn-row-dot td:nth-child(3)').textContent = rawS.toFixed(3);
+            document.querySelector('#attn-row-scaled td:nth-child(2)').textContent = scaledT.toFixed(3);
+            document.querySelector('#attn-row-scaled td:nth-child(3)').textContent = scaledS.toFixed(3);
+            document.querySelector('#attn-row-softmax td:nth-child(2)').textContent = (weights[0] * 100).toFixed(1) + '%';
+            document.querySelector('#attn-row-softmax td:nth-child(3)').textContent = (weights[1] * 100).toFixed(1) + '%';
+
+            var output = [
+              weights[0] * trophyVal[0] + weights[1] * suitcaseVal[0],
+              weights[0] * trophyVal[1] + weights[1] * suitcaseVal[1]
+            ];
+
+            var winner = weights[0] > weights[1] ? 'trophy' : 'suitcase';
+            readout.textContent = 'Query = (' + query.join(', ') + ').  Attention output = (' + output[0].toFixed(3) + ', ' + output[1].toFixed(3) +
+              ') — ' + (weights[0] * 100).toFixed(1) + '% trophy + ' + (weights[1] * 100).toFixed(1) + '% suitcase.  "It" resolves to: ' + winner + '.';
+          }
+
+          buttons.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+              buttons.forEach(function (b) { b.classList.remove('correct'); });
+              btn.classList.add('correct');
+              render(btn.getAttribute('data-ctx'));
+            });
+          });
+
+          buttons[0].classList.add('correct');
+          render('big');
+        })();
+      </script>
+
+      <p>
+        Flip the toggle and the softmax weights flip with it — 94.4%
+        trophy in the "big" case, 94.4% suitcase in the "small" case —
+        computed from the exact same mechanism, just a different query.
+        Nothing here traveled step by step through a hidden state the
+        way Chapter 8.2's RNN would; "it" compared itself directly
+        against both candidates in one shot, regardless of how many
+        words separated them.
+      </p>
+
+      <p>
+        The <span class="mono">÷√2</span> scaling matters more than it
+        looks: as vectors get longer (real Transformers use hundreds of
+        dimensions, not 2), raw dot products grow larger purely from
+        having more terms to sum, which would push softmax toward
+        an extreme 100%/0% split regardless of how genuinely different
+        the scores are. Dividing by the square root of the dimension
+        keeps scores in a range where softmax can still express real
+        uncertainty.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Attention compares a query against every key with a dot product, converts those scores to weights with softmax, then takes a weighted sum of values.</li>
+          <li>Unlike an RNN, attention lets any two positions interact directly in one step, with no distance penalty and no vanishing-gradient chain to survive.</li>
+          <li>Softmax turns a list of raw scores into probabilities summing to 1, generalizing sigmoid to more than two options.</li>
+          <li>Scores are scaled down (by the square root of the vector dimension) before softmax, to keep the weights from saturating to an extreme split as dimensions grow.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-8-4">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. In attention, what does a dot product between a query and a key represent?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! A bigger dot product means a stronger match between what's being sought and what's on offer.">How well that key matches what the query is looking for — a higher dot product means a stronger match.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the value vectors, not the dot product itself, are what actually gets blended into the output.">The final output value that gets returned directly.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — dot products are computed for every key, not just one arbitrarily chosen position.">A random number unrelated to the query or key's content.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. How is attention different from how an RNN (Chapter 8.2) shares information across a sequence?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! No step-by-step chain, no distance penalty — attention compares any two positions in one direct step.">Attention lets any two positions compare directly in a single step, while an RNN's information has to pass hand-to-hand through every step in between.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — attention is used specifically to compare and combine information across positions in a sequence.">Attention only ever looks at one single position and ignores the rest of the sequence.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo computed real, different query/key/value vectors and real dot products, not random behavior.">Attention and RNNs are mathematically identical, just renamed.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. Why are attention scores scaled down before applying softmax?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Without scaling, growing dimensions push dot products to extremes, saturating softmax toward 100%/0%.">Without scaling, dot products tend to grow larger as vector dimension increases, pushing softmax toward an extreme, overconfident split.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — scaling is a fixed mathematical step (dividing by the square root of the dimension), not a data-cleaning technique.">To remove outlier words from the training data.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the query and key vectors themselves are unaffected; only the resulting scores are scaled before softmax.">To make the query and key vectors exactly identical.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -601,6 +801,7 @@
     initQuiz(document.getElementById('quiz-8-1'));
     initQuiz(document.getElementById('quiz-8-2'));
     initQuiz(document.getElementById('quiz-8-3'));
+    initQuiz(document.getElementById('quiz-8-4'));
     initProgressTracking();
   })();
 </script>
