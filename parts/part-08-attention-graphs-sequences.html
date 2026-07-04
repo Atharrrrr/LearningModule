@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Part VIII — Attention, Graphs &amp; Sequences | AI/ML From Zero to Job-Ready</title>
+<link rel="stylesheet" href="../assets/styles.css">
+<script src="../assets/components.js"></script>
+</head>
+<body>
+<div class="book-shell">
+
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">AI/ML: Zero to Job-Ready</div>
+    </div>
+    <div class="progress-bar-track"><div class="progress-bar-fill"></div></div>
+
+    <div class="sidebar-part">Part VIII — Attention, Graphs &amp; Sequences</div>
+    <a class="nav-item" data-chapter-id="8-1" href="#chapter-8-1">
+      <span class="nav-dot"></span>8.1 Why Order Matters
+    </a>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>8.2 RNNs &amp; Their Limits</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>8.3 Word Embeddings (word2vec)</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>8.4 Attention</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>8.5 The Transformer, Piece by Piece</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>8.6 Meet SuperGlue</div>
+  </nav>
+
+  <main>
+
+    <section id="chapter-8-1">
+      <div class="chapter-eyebrow">Part VIII · Chapter 8.1</div>
+      <h1 class="chapter-title">Why Order Matters</h1>
+
+      <p class="lede">
+        Every model so far has treated its input as a fixed bundle of
+        features, or a fixed grid of pixels. Language, audio, and time
+        series break that assumption in a specific way: the exact same
+        pieces, rearranged, can mean something completely different.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🐕 Frame of reference</div>
+        <p>
+          "The dog bit the man" and "the man bit the dog" use the
+          exact same five words. One is a mundane news brief; the
+          other is a much stranger headline. Nothing about the
+          <em>set</em> of words changed — only their order — and yet
+          the meaning flipped entirely. Any representation that throws
+          away order would see these two sentences as identical.
+        </p>
+      </div>
+
+      <h2>When "what's present" isn't enough</h2>
+      <script>initJargonBox("bag of words",
+        "A representation of text that counts how many times each word appears, completely ignoring the order those words appeared in. Two sentences using the exact same words in different orders produce the identical bag-of-words vector.");</script>
+      <p>
+        A <span class="jargon-term">bag of words</span> is exactly
+        Chapter 3.4's feature-engineering idea applied to text: turn a
+        sentence into a vector (Chapter 2.2) of word counts. It's a
+        genuinely useful representation for plenty of problems — but it
+        has a specific blind spot.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          Two sentences, same 5 words, opposite meaning. Real bag-of-words
+          vectors, computed live.
+        </p>
+        <div class="demo-actions">
+          <div class="quiz-option" id="bow-compute-btn">🔢 Compute both bag-of-words vectors</div>
+        </div>
+        <p id="bow-sentences" class="demo-readout" style="margin-bottom:4px;"></p>
+        <table class="data-table" id="bow-table">
+          <thead><tr><th>Word</th><th>"the dog bit the man"</th><th>"the man bit the dog"</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p id="bow-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var sentenceA = 'the dog bit the man';
+          var sentenceB = 'the man bit the dog';
+
+          document.getElementById('bow-sentences').textContent =
+            'A: "' + sentenceA + '"   B: "' + sentenceB + '"';
+
+          function wordCounts(sentence) {
+            var counts = {};
+            sentence.split(' ').forEach(function (w) { counts[w] = (counts[w] || 0) + 1; });
+            return counts;
+          }
+
+          document.getElementById('bow-compute-btn').addEventListener('click', function () {
+            var countsA = wordCounts(sentenceA);
+            var countsB = wordCounts(sentenceB);
+            var vocab = ['the', 'dog', 'bit', 'man'];
+
+            var tbody = document.querySelector('#bow-table tbody');
+            tbody.innerHTML = '';
+            vocab.forEach(function (word) {
+              var tr = document.createElement('tr');
+              tr.innerHTML = '<td>' + word + '</td><td>' + (countsA[word] || 0) + '</td><td>' + (countsB[word] || 0) + '</td>';
+              tbody.appendChild(tr);
+            });
+
+            var vecA = vocab.map(function (w) { return countsA[w] || 0; });
+            var vecB = vocab.map(function (w) { return countsB[w] || 0; });
+            var identical = vecA.every(function (v, i) { return v === vecB[i]; });
+
+            document.getElementById('bow-readout').textContent = 'Vector A = [' + vecA.join(', ') + ']   Vector B = [' + vecB.join(', ') +
+              ']  —  ' + (identical ? 'bit-for-bit identical, despite opposite meanings.' : 'different.');
+          });
+        })();
+      </script>
+
+      <p>
+        The two vectors come out exactly the same, every single time —
+        this isn't a coincidence or a bug, it's the direct, guaranteed
+        consequence of a representation that only counts <em>which</em>
+        words showed up, never <em>where</em>. Anything downstream that
+        looks only at these vectors has no way to ever recover which
+        sentence bit whom.
+      </p>
+
+      <h2>Sequences need position, not just presence</h2>
+      <p>
+        Text, audio, and time series share this trait: they're
+        <strong>sequences</strong> — ordered lists where position
+        carries real information, and where the length itself varies
+        from example to example (a 3-word sentence and a 30-word
+        sentence are both valid sentences). Chapter 6's networks expect
+        a fixed number of inputs; a plain feedforward layer has no
+        built-in way to handle "sometimes 3 words, sometimes 30," and
+        no built-in notion of position at all. The rest of this Part
+        builds architectures designed around exactly that gap: RNNs
+        (Chapter 8.2) that process one element at a time while carrying
+        forward a memory of what came before, and attention (Chapter
+        8.4) that looks at an entire sequence at once while explicitly
+        tracking each element's position.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>A bag-of-words vector counts word occurrences but discards order entirely — two sentences with the same words in different orders produce an identical vector.</li>
+          <li>Order can carry essential meaning ("the dog bit the man" vs. "the man bit the dog"), which an order-blind representation can never recover.</li>
+          <li>Sequences (text, audio, time series) also vary in length, which plain fixed-input networks don't naturally handle.</li>
+          <li>The rest of this Part builds architectures — RNNs, then attention and Transformers — designed specifically around order and variable length.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-8-1">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. Why do "the dog bit the man" and "the man bit the dog" get the identical bag-of-words vector?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Bag-of-words counts word occurrences and discards order entirely, by design.">Bag-of-words only counts how many times each word appears, and both sentences use the exact same words the same number of times.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the two sentences use exactly the same 5 words, just reordered.">The two sentences actually use different words.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo computes the vectors from the real word counts, deterministically, every time.">It's a coincidence that only happens for this specific example.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. What makes something a "sequence" in the sense this chapter means?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Order carries real meaning, and sequences don't come in one fixed length.">An ordered list where position carries real meaning, and where the length can vary from example to example.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a fixed number of features, like Chapter 4's tabular data, is exactly what a sequence is not.">Any input with a fixed, unchanging number of features.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — plenty of sequences (like a 5-word sentence) are short; length isn't the defining trait.">Data that's always extremely long.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. Why don't Chapter 6's plain feedforward layers naturally fit sequence data?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Fixed input size and no built-in position handling are exactly the mismatch.">They expect a fixed number of inputs and have no built-in notion of position, while sequences vary in length and depend on order.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — feedforward layers are a real, useful architecture; the issue is specifically about handling variable-length, order-dependent input.">Feedforward layers can't perform any useful computation at all.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the mismatch is structural (fixed size, no position awareness), not about training speed.">They're simply too slow to train on any kind of data.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+</div>
+
+<script>
+  (function () {
+    initQuiz(document.getElementById('quiz-8-1'));
+    initProgressTracking();
+  })();
+</script>
+</body>
+</html>
