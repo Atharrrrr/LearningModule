@@ -38,7 +38,9 @@
     <a class="nav-item" data-chapter-id="7-7" href="#chapter-7-7">
       <span class="nav-dot"></span>7.7 Meet YOLO
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>7.8 Meet SuperPoint</div>
+    <a class="nav-item" data-chapter-id="7-8" href="#chapter-7-8">
+      <span class="nav-dot"></span>7.8 Meet SuperPoint
+    </a>
   </nav>
 
   <main>
@@ -1804,6 +1806,224 @@
 
     </section>
 
+    <section id="chapter-7-8">
+      <div class="chapter-eyebrow">Part VII · Chapter 7.8</div>
+      <h1 class="chapter-title">Meet SuperPoint</h1>
+
+      <p class="lede">
+        Chapter 7.3's corner detector used hand-picked kernels — someone
+        decided in advance that [-1,0,1]-style weights meant "edge."
+        SuperPoint asks a different question: what if a network learned
+        its own kernels for exactly this job, the same way Chapter 7.2's
+        CNNs learn edge detectors instead of being handed one?
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🎓 Frame of reference</div>
+        <p>
+          A hand-written rulebook for "what counts as a good landmark"
+          versus an apprentice who's shown thousands of examples and
+          works out their own criteria. The rulebook author had to
+          guess in advance what mattered. The apprentice's criteria
+          might end up looking similar — or might notice something the
+          rulebook never considered — because it came from evidence,
+          not a guess made ahead of time.
+        </p>
+      </div>
+
+      <h2>From hand-picked weights to learned weights</h2>
+      <script>initJargonBox("SuperPoint",
+        "A CNN trained to jointly detect keypoints and compute their descriptors, learning both from data instead of using hand-designed rules like SIFT or ORB (Chapter 7.3). One shared network backbone with two output heads — one for keypoint locations, one for descriptors.");</script>
+      <p>
+        <span class="jargon-term">SuperPoint</span> replaces Chapter
+        7.3's hand-designed detector and descriptor with a single CNN
+        that learns both, end to end, via backpropagation (Chapter
+        6.4). Instead of a human deciding "corners have strong gradients
+        in two directions" and hand-writing kernels to check for that,
+        the network is shown examples and finds its own weights that
+        do the job — potentially discovering criteria a human never
+        would have hand-picked.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          A tiny version of exactly that idea: train one neuron
+          (Chapter 6.1) — a 3×3 kernel plus bias — to tell corner
+          patches from non-corner patches, using real gradient descent.
+          No hand-picked weights anywhere.
+        </p>
+
+        <p style="margin:0 0 6px; font-size:12px; color:#6e7681; text-transform:uppercase;">Training examples</p>
+        <div id="sp-training-grids" style="display:flex; gap:20px; flex-wrap:wrap; margin-bottom:12px;"></div>
+
+        <div class="demo-actions">
+          <div class="quiz-option" id="sp-train-btn">🧠 Train the detector (3,000 real gradient steps)</div>
+        </div>
+        <p id="sp-train-readout" class="demo-readout"></p>
+        <p id="sp-test-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          function sigmoid(z) { return 1 / (1 + Math.exp(-z)); }
+
+          var rawPatches = [
+            { p: [[230, 230, 60], [230, 230, 60], [60, 60, 60]], label: 1, name: 'Corner A' },
+            { p: [[230, 230, 230], [230, 230, 230], [230, 230, 230]], label: 0, name: 'Flat' },
+            { p: [[230, 230, 60], [230, 230, 60], [230, 230, 60]], label: 0, name: 'Edge' },
+            { p: [[60, 230, 230], [60, 230, 230], [60, 60, 60]], label: 1, name: 'Corner B' }
+          ];
+          var patches = rawPatches.map(function (ex) {
+            return { p: ex.p.map(function (row) { return row.map(function (v) { return v / 255; }); }), label: ex.label, name: ex.name };
+          });
+
+          var gridsWrap = document.getElementById('sp-training-grids');
+          rawPatches.forEach(function (ex) {
+            var col = document.createElement('div');
+            var label = document.createElement('div');
+            label.textContent = ex.name + ' (label ' + ex.label + ')';
+            label.style.fontSize = '12px'; label.style.color = '#8b949e'; label.style.marginBottom = '4px';
+            col.appendChild(label);
+            var g = document.createElement('div');
+            g.style.display = 'grid'; g.style.gridTemplateColumns = 'repeat(3, 24px)'; g.style.gap = '1px';
+            ex.p.forEach(function (row) {
+              row.forEach(function (v) {
+                var cell = document.createElement('div');
+                cell.style.width = '24px'; cell.style.height = '24px';
+                cell.style.background = 'rgb(' + v + ',' + v + ',' + v + ')';
+                g.appendChild(cell);
+              });
+            });
+            col.appendChild(g);
+            gridsWrap.appendChild(col);
+          });
+
+          var w = [[0.1, -0.1, 0.05], [0.05, 0.1, -0.1], [-0.05, 0.05, 0.1]];
+          var b = 0;
+          var lr = 0.5;
+
+          function forward(patch) {
+            var z = b;
+            for (var i = 0; i < 3; i++) for (var j = 0; j < 3; j++) z += w[i][j] * patch[i][j];
+            return sigmoid(z);
+          }
+
+          document.getElementById('sp-train-btn').addEventListener('click', function () {
+            var loss0 = null, lossFinal = null;
+            for (var step = 0; step < 3000; step++) {
+              var gradW = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
+              var gradB = 0;
+              var totalLoss = 0;
+              patches.forEach(function (ex) {
+                var y = forward(ex.p);
+                var err = y - ex.label;
+                for (var i = 0; i < 3; i++) for (var j = 0; j < 3; j++) gradW[i][j] += err * ex.p[i][j];
+                gradB += err;
+                totalLoss += -(ex.label * Math.log(y + 1e-9) + (1 - ex.label) * Math.log(1 - y + 1e-9));
+              });
+              var avgLoss = totalLoss / patches.length;
+              if (step === 0) loss0 = avgLoss;
+              lossFinal = avgLoss;
+              for (var i = 0; i < 3; i++) for (var j = 0; j < 3; j++) w[i][j] -= lr * gradW[i][j] / patches.length;
+              b -= lr * gradB / patches.length;
+            }
+
+            var predictions = patches.map(function (ex, i) {
+              return rawPatches[i].name + ': ' + forward(ex.p).toFixed(3);
+            });
+
+            document.getElementById('sp-train-readout').textContent = 'Loss went from ' + loss0.toFixed(3) + ' to ' + lossFinal.toFixed(4) +
+              ' over 3,000 steps. Learned predictions — ' + predictions.join(', ') + '.';
+
+            var noisyCorner = [[210, 240, 80], [225, 215, 45], [70, 55, 65]].map(function (row) { return row.map(function (v) { return v / 255; }); });
+            var rotatedCorner = [[60, 60, 60], [230, 230, 60], [230, 230, 60]].map(function (row) { return row.map(function (v) { return v / 255; }); });
+
+            var predNoisy = forward(noisyCorner);
+            var predRotated = forward(rotatedCorner);
+            document.getElementById('sp-test-readout').textContent = 'Held out — a noisy version of a familiar corner: ' + predNoisy.toFixed(3) +
+              ' (generalizes fine). A corner rotated to an orientation never seen in training: ' + predRotated.toFixed(3) +
+              ' (fails completely — confidently wrong).';
+          });
+        })();
+      </script>
+
+      <p>
+        The trained neuron nails noisy versions of the corner
+        orientations it saw — real generalization, not memorization —
+        but completely misses a corner rotated to an angle it never
+        trained on. One learned neuron isn't magic; it only generalizes
+        to variation it was actually shown. SuperPoint solves this the
+        same way any real deep learning system does: many learned
+        kernels across many layers (Chapter 7.2), and enough varied
+        training data to actually cover the variation that matters.
+      </p>
+
+      <h2>Training without expensive human labels</h2>
+      <script>initJargonBox("homographic adaptation",
+        "SuperPoint's training trick: run a base detector on the same image warped in many different synthetic ways (rotated, tilted, rescaled), and trust only the keypoints detected consistently across most of those warps. This produces reliable pseudo-labels for real photos without paying humans to hand-label keypoints.");</script>
+      <p>
+        Human-labeled keypoints are expensive and genuinely ambiguous —
+        two people rarely circle the exact same corner. SuperPoint's
+        real training recipe sidesteps this with
+        <span class="jargon-term">homographic adaptation</span>: first
+        train a base detector on simple synthetic images (rendered
+        shapes with mathematically exact corners — no ambiguity at all,
+        conceptually just like this chapter's own toy examples). Then
+        run that detector on real photos warped in many different
+        synthetic ways, and keep only the keypoints detected
+        consistently across most of those warps as trustworthy
+        pseudo-labels. Retraining on those pseudo-labels is exactly the
+        varied-orientation coverage the single trained neuron above was
+        missing — at a scale no human labeling budget could match.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>SuperPoint learns both a keypoint detector and a descriptor via backpropagation, instead of hand-designing them like SIFT/ORB (Chapter 7.3).</li>
+          <li>A trained detector's weights come from data, not a human's a priori guess about what a good keypoint looks like.</li>
+          <li>A detector only generalizes to variation it actually saw in training — missing orientations produce confident, wrong predictions.</li>
+          <li>Homographic adaptation generates trustworthy training labels for real photos by checking which keypoints survive many synthetic warps, without expensive human labeling.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-7-8">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What's the core difference between SuperPoint and SIFT/ORB (Chapter 7.3)?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Learned from data via backpropagation, instead of hand-designed by a human in advance.">SuperPoint learns its detector and descriptor from data via backpropagation; SIFT and ORB use hand-designed rules decided in advance.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — SuperPoint still produces descriptor vectors used for matching, just like SIFT and ORB.">SuperPoint doesn't use descriptors at all, only keypoint locations.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — SuperPoint is specifically a learned, trainable approach, unlike the fixed formulas in SIFT and ORB.">SuperPoint and SIFT are mathematically identical, just with different names.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. In the demo, why did the trained neuron fail on the rotated corner?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! It only learned the specific orientations present in its 4 training examples.">It only ever saw two specific corner orientations during training, and had no reason to generalize to an orientation it never encountered.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the training loss dropped substantially, and the neuron correctly classified every training example and the noisy held-out patch.">Training failed completely — the loss never actually decreased.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the same trained weights were applied consistently to every test patch.">The demo used different weights for every test patch, at random.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. What problem does homographic adaptation solve?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Checking consistency across many synthetic warps produces trustworthy labels without paying humans to hand-label keypoints.">Generating reliable keypoint training labels for real photos without expensive, ambiguous human labeling.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — homographic adaptation is a training-data technique, not a change to how gradients are computed.">Making backpropagation converge faster during training.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — homographic adaptation specifically improves generalization to different orientations and viewpoints.">Removing the need for a detector to handle rotated or warped images at all.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -1816,6 +2036,7 @@
     initQuiz(document.getElementById('quiz-7-5'));
     initQuiz(document.getElementById('quiz-7-6'));
     initQuiz(document.getElementById('quiz-7-7'));
+    initQuiz(document.getElementById('quiz-7-8'));
     initProgressTracking();
   })();
 </script>
