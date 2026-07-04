@@ -20,7 +20,9 @@
     <a class="nav-item" data-chapter-id="9-1" href="#chapter-9-1">
       <span class="nav-dot"></span>9.1 Tokenization
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>9.2 Meet the LLM</div>
+    <a class="nav-item" data-chapter-id="9-2" href="#chapter-9-2">
+      <span class="nav-dot"></span>9.2 Meet the LLM
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>9.3 Scaling Laws &amp; Emergent Abilities</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>9.4 Instruction Tuning &amp; RLHF</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>9.5 Efficient Fine-Tuning (LoRA, quantization)</div>
@@ -384,12 +386,281 @@
 
     </section>
 
+    <section id="chapter-9-2">
+      <div class="chapter-eyebrow">Part IX · Chapter 9.2</div>
+      <h1 class="chapter-title">Meet the LLM</h1>
+
+      <p class="lede">
+        Chapter 9.1 turned raw text into a sequence of integer tokens.
+        Chapter 8.5's Transformer can process any sequence of vectors.
+        Put those two pieces together, add one very specific training
+        task, and you get a large language model — the thing behind
+        every chatbot this book's reader has likely already used.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">📚 Frame of reference</div>
+        <p>
+          Imagine an extremely well-read friend playing a party game:
+          you say the first half of a sentence, and they blurt out
+          whatever word feels like the single most natural way to
+          continue it. They're not reading your mind or reasoning about
+          your specific situation — they've simply absorbed so much
+          written language that the most statistically likely next word
+          just occurs to them, almost automatically. That party game,
+          repeated one word at a time until a whole reply exists, is
+          unsettlingly close to literally what a language model does.
+        </p>
+      </div>
+
+      <h2>One task, trained at enormous scale</h2>
+      <script>initJargonBox("large language model (LLM)",
+        "A Transformer (Chapter 8.5) trained on a huge amount of text to do one specific thing: given a sequence of tokens, predict a probability distribution over what the very next token should be. \"Large\" refers to both the volume of training text and the number of parameters (Chapter 1.3) in the network, often in the billions.");</script>
+      <script>initJargonBox("next-token prediction",
+        "The training task an LLM is built around: given every token that came before it, output a probability distribution (Chapter 8.4's softmax) over the entire vocabulary (Chapter 9.1) for what token comes next.");</script>
+      <p>
+        A <span class="jargon-term">large language model (LLM)</span> is
+        trained on <span class="jargon-term">next-token prediction</span>,
+        and nothing else. Feed it a huge amount of real text — a
+        meaningful fraction of the public internet, books, articles,
+        code — and repeatedly ask it: given everything up to this point,
+        what token comes next? Score it with the same cross-entropy loss
+        (Chapter 4.2) used for classification, since predicting "the
+        correct next token out of the whole vocabulary" is really just
+        classification with an enormous number of classes. Run gradient
+        descent (Chapter 4.3) to adjust the Transformer's weights
+        (Chapter 4.1) so its predicted distribution matches the token
+        that actually came next, over and over, across billions of
+        examples. Nothing about the math is new — the scale is the
+        entire story.
+      </p>
+
+      <h2>Turning next-token prediction into paragraphs</h2>
+      <script>initJargonBox("autoregressive generation",
+        "Generating text one token at a time: feed in the current sequence, get back a probability distribution for the next token, pick one, append it to the sequence, then feed that longer sequence back in and repeat. Each new token is generated using every token before it — including tokens the model itself just produced.");</script>
+      <script>initJargonBox("greedy decoding",
+        "A generation strategy that always picks the single highest-probability token at every step. Simple and deterministic, but a locally \"best\" choice at every step doesn't guarantee a good result overall — it can trap generation in a repeating loop.");</script>
+      <script>initJargonBox("sampling",
+        "A generation strategy that picks the next token randomly, weighted by the model's own predicted probabilities, instead of always taking the single most likely one. Higher-probability tokens still get picked more often, but the randomness can break out of the repetitive loops greedy decoding falls into.");</script>
+      <p>
+        A model that only predicts one next token isn't obviously useful
+        on its own. <span class="jargon-term">Autoregressive generation</span>
+        is the trick that turns it into paragraphs: predict a
+        distribution over the next token, pick one, glue it onto the
+        sequence, and feed the whole thing back in as input for
+        predicting the token after that. <span class="jargon-term">Greedy
+        decoding</span> always takes the single most likely token;
+        <span class="jargon-term">sampling</span> instead rolls a
+        weighted die using the model's own probabilities. The demo below
+        makes the difference between them concrete.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          A tiny, honestly-simplified stand-in for an LLM: a real
+          next-word probability table, counted live from 5 toy training
+          sentences (not a trained Transformer — a genuine full LLM
+          computes this same kind of distribution via attention over the
+          <em>entire</em> preceding sequence, and chooses from tens of
+          thousands of subword tokens, not 5 toy words). The task shape
+          is identical either way: tokens in, a probability distribution
+          over the whole vocabulary out, pick one, feed it back in.
+        </p>
+        <table class="data-table" id="llm-corpus-table">
+          <thead><tr><th colspan="1">Training sentences</th></tr></thead>
+          <tbody>
+            <tr><td>the cat sat on the mat</td></tr>
+            <tr><td>the cat sat on the rug</td></tr>
+            <tr><td>the dog sat on the mat</td></tr>
+            <tr><td>the dog ran in the park</td></tr>
+            <tr><td>the cat ran in the park</td></tr>
+          </tbody>
+        </table>
+        <p id="llm-generated" class="demo-readout" style="font-size:16px; margin-top:14px;"></p>
+        <table class="data-table" id="llm-dist-table">
+          <thead><tr><th>Next word (given "<span id="llm-current-word"></span>")</th><th>Count</th><th>Probability</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="demo-actions">
+          <div class="quiz-option" id="llm-greedy-btn">▶ Greedy: pick most likely next token</div>
+          <div class="quiz-option" id="llm-sample-btn">🎲 Sample: pick randomly by probability</div>
+          <div class="quiz-option" id="llm-reset-btn">↺ Reset</div>
+        </div>
+        <p id="llm-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var sentences = [
+            'the cat sat on the mat',
+            'the cat sat on the rug',
+            'the dog sat on the mat',
+            'the dog ran in the park',
+            'the cat ran in the park'
+          ];
+
+          var bigramCounts = {};
+          sentences.forEach(function (s) {
+            var words = s.split(' ');
+            for (var i = 0; i < words.length - 1; i++) {
+              var w = words[i], nw = words[i + 1];
+              bigramCounts[w] = bigramCounts[w] || {};
+              bigramCounts[w][nw] = (bigramCounts[w][nw] || 0) + 1;
+            }
+          });
+
+          function nextWordDist(word) {
+            var counts = bigramCounts[word] || {};
+            var total = 0;
+            Object.keys(counts).forEach(function (k) { total += counts[k]; });
+            var dist = {};
+            Object.keys(counts).forEach(function (k) { dist[k] = counts[k] / total; });
+            return { counts: counts, dist: dist };
+          }
+
+          function argmax(dist) {
+            var best = null, bestP = -1;
+            Object.keys(dist).forEach(function (k) {
+              if (dist[k] > bestP) { bestP = dist[k]; best = k; }
+            });
+            return best;
+          }
+
+          function sample(dist) {
+            var r = Math.random();
+            var cum = 0;
+            var keys = Object.keys(dist);
+            for (var i = 0; i < keys.length; i++) {
+              cum += dist[keys[i]];
+              if (r <= cum) return keys[i];
+            }
+            return keys[keys.length - 1];
+          }
+
+          var generated, current;
+
+          function renderDistTable() {
+            var info = nextWordDist(current);
+            document.getElementById('llm-current-word').textContent = current;
+            var tbody = document.querySelector('#llm-dist-table tbody');
+            tbody.innerHTML = '';
+            Object.keys(info.counts).forEach(function (word) {
+              var tr = document.createElement('tr');
+              tr.innerHTML = '<td>' + word + '</td><td>' + info.counts[word] + '</td><td>' + info.dist[word].toFixed(3) + '</td>';
+              tbody.appendChild(tr);
+            });
+            return info;
+          }
+
+          function render() {
+            document.getElementById('llm-generated').textContent = 'Generated so far: "' + generated.join(' ') + '"';
+            var info = renderDistTable();
+            var hasContinuation = Object.keys(info.dist).length > 0;
+            document.getElementById('llm-greedy-btn').style.opacity = hasContinuation ? 1 : 0.4;
+            document.getElementById('llm-sample-btn').style.opacity = hasContinuation ? 1 : 0.4;
+            if (!hasContinuation) {
+              document.getElementById('llm-readout').textContent = '"' + current + '" never had a followup word in training — generation has nowhere left to go. Click Reset to try again.';
+            }
+          }
+
+          function step(picker, label) {
+            var info = nextWordDist(current);
+            if (Object.keys(info.dist).length === 0) return;
+            var next = picker(info.dist);
+            generated.push(next);
+            current = next;
+            render();
+            document.getElementById('llm-readout').textContent = label + ': picked "' + next + '" (probability ' + info.dist[next].toFixed(3) + ').';
+          }
+
+          document.getElementById('llm-greedy-btn').addEventListener('click', function () {
+            step(argmax, 'Greedy');
+          });
+          document.getElementById('llm-sample-btn').addEventListener('click', function () {
+            step(sample, 'Sample');
+          });
+          document.getElementById('llm-reset-btn').addEventListener('click', function () {
+            generated = ['the'];
+            current = 'the';
+            document.getElementById('llm-readout').textContent = 'Reset to starting token "the". Click a generation button to continue.';
+            render();
+          });
+
+          generated = ['the'];
+          current = 'the';
+          render();
+          document.getElementById('llm-readout').textContent = 'Starting token: "the". Click a generation button to predict the next token.';
+        })();
+      </script>
+
+      <p>
+        Click "Greedy" repeatedly from "the": it always takes the single
+        highest-probability word, and quickly settles into
+        <span class="mono">the cat sat on the cat sat on the cat sat
+        ...</span> — a genuine, well-known failure mode of real LLMs
+        too, not just this toy version. Once greedy decoding revisits a
+        word it's seen before, it's guaranteed to take the exact same
+        path again, forever. Click "Reset," then click "Sample" a few
+        times instead: the same probabilities are used, but a weighted
+        roll of the dice can pick "mat," "rug," "dog," or "park" instead
+        of always "cat," breaking the loop and producing a different
+        continuation each time.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>A large language model is a Transformer trained on one task: next-token prediction — given every token so far, output a probability distribution over what token comes next.</li>
+          <li>"Large" refers to both the volume of training text and the number of parameters in the network, trained with the same cross-entropy loss and gradient descent used since Chapter 4.</li>
+          <li>Autoregressive generation turns single-token predictions into paragraphs: predict, pick one, append it, feed the longer sequence back in, repeat — each new token conditioned on everything before it, including tokens the model itself just generated.</li>
+          <li>Greedy decoding (always the top choice) can trap generation in repetitive loops; sampling (weighted randomness) is one way to avoid that, at the cost of some predictability.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-9-2">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What single task is a large language model actually trained to perform?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Every other capability an LLM appears to have emerges from this one training task, run at enormous scale.">Given a sequence of tokens, predict a probability distribution over what the next token should be.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — an LLM has no separate fact-checking objective; its only training signal is next-token prediction.">Directly verifying whether a statement is factually true.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that's a description of supervised classification in general terms Chapter 1 introduced; an LLM's specific training task is always next-token prediction over text.">Sorting training examples into a fixed set of labeled categories.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. In the demo, why does clicking "Greedy" repeatedly from "the" eventually loop forever on "the cat sat on the cat sat on..."?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Greedy decoding is deterministic — the same current word always produces the same next word, so revisiting a word repeats its entire future path.">Greedy decoding always picks the exact same highest-probability word for a given current word, so once the sequence revisits that word, it's forced to retrace the identical path again.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the probability table is computed fresh from the same fixed training counts every time; nothing changes between clicks.">The training data itself changes with every click.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — this is a real, deterministic consequence of always picking the single most likely token, not a coding mistake.">This only happens because of a bug in the demo, not because of how greedy decoding actually works.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. What does "autoregressive" mean in autoregressive generation?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Each new token is predicted using the entire sequence so far, including tokens the model itself already generated earlier in the same response.">The model's own previously generated tokens get fed back in as part of the input for predicting the next one, over and over.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the model doesn't regenerate its earlier tokens; it appends new ones and keeps the earlier tokens fixed.">The model repeatedly rewrites tokens it already generated earlier.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — generation happens one token at a time in sequence; the whole reply is not produced simultaneously in one shot.">All output tokens are produced simultaneously, in a single step.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
 <script>
   (function () {
     initQuiz(document.getElementById('quiz-9-1'));
+    initQuiz(document.getElementById('quiz-9-2'));
     initProgressTracking();
   })();
 </script>
