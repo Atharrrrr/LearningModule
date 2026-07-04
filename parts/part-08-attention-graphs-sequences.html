@@ -32,7 +32,9 @@
     <a class="nav-item" data-chapter-id="8-5" href="#chapter-8-5">
       <span class="nav-dot"></span>8.5 The Transformer, Piece by Piece
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>8.6 Meet SuperGlue</div>
+    <a class="nav-item" data-chapter-id="8-6" href="#chapter-8-6">
+      <span class="nav-dot"></span>8.6 Meet SuperGlue
+    </a>
   </nav>
 
   <main>
@@ -1054,6 +1056,193 @@
 
     </section>
 
+    <section id="chapter-8-6">
+      <div class="chapter-eyebrow">Part VIII · Chapter 8.6</div>
+      <h1 class="chapter-title">Meet SuperGlue</h1>
+
+      <p class="lede">
+        Chapter 7.3's descriptor matching compared each keypoint to its
+        closest match in isolation — one pair at a time, blind to
+        everyone else. SuperGlue asks a sharper question: what if
+        keypoints could compare notes with each other before anyone
+        commits to a match?
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🏫 Frame of reference</div>
+        <p>
+          Matching students in this year's class photo to last year's,
+          using only face crops compared one-on-one — no memory of
+          who's standing near whom. Twins, or two students with similar
+          haircuts, get confused constantly, because each face is
+          judged in total isolation. Now let the students compare notes:
+          "I'm standing between the two tallest kids in both photos" —
+          suddenly ambiguous individual matches resolve using the
+          relationships between everyone, not just isolated
+          appearances.
+        </p>
+      </div>
+
+      <h2>Keypoints as a graph, attention as message-passing</h2>
+      <script>initJargonBox("SuperGlue",
+        "A learned matching system that uses attention (Chapter 8.4) both within each image's set of keypoints and across the two images being matched, letting keypoints share context before committing to correspondences — instead of matching each one in isolation, the way Chapter 7.3's nearest-neighbor descriptor matching does.");</script>
+      <p>
+        Treat every keypoint (Chapter 7.3, or Chapter 7.8's SuperPoint)
+        as a node in a graph. <span class="jargon-term">SuperGlue</span>
+        runs attention (Chapter 8.4) as message-passing on that graph:
+        <strong>self-attention</strong> lets keypoints within the same
+        image exchange context with each other; <strong>cross-attention</strong>
+        lets keypoints in image A directly attend to keypoints in image
+        B. Stack several rounds of this — a Transformer-style block
+        (Chapter 8.5) — and by the time matching actually happens, every
+        keypoint's representation already encodes its relationships to
+        everything else, not just its own isolated descriptor.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          A simplified, honest illustration of why context helps (real
+          SuperGlue learns this via attention; here we compute a
+          geometric-consistency score by hand). Two keypoints have
+          ambiguous, near-tied descriptors — does the correct match win?
+        </p>
+
+        <table class="data-table" id="sg-desc-table">
+          <thead><tr><th></th><th>descriptor distance to Q2</th><th>descriptor distance to Q3</th></tr></thead>
+          <tbody>
+            <tr><td>P2</td><td>0.640</td><td>0.292</td></tr>
+            <tr><td>P3</td><td>0.173</td><td>0.187</td></tr>
+          </tbody>
+        </table>
+        <p style="font-size:12.5px; color:#6e7681;">
+          By descriptor distance alone, P2 looks closer to Q3 and P3
+          looks closer to Q2 — nearest-neighbor matching (Chapter 7.3)
+          would confidently swap them. The true correspondence is
+          actually P2↔Q2 and P3↔Q3.
+        </p>
+
+        <div class="demo-controls">
+          <label class="demo-slider-label">Weight on geometric consistency (λ): <span id="sg-lambda-value">0.0</span>
+            <input type="range" id="sg-lambda-slider" min="0" max="4" step="0.1" value="0">
+          </label>
+        </div>
+        <p id="sg-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          // P1,Q1 unambiguous anchor; positions define a real geometric scene (Q = P scaled 2x)
+          var posP = { P1: [0, 0], P2: [4, 0], P3: [0, 3] };
+          var posQ = { Q1: [0, 0], Q2: [8, 0], Q3: [0, 6] };
+          function dist2(a, b) { return Math.hypot(a[0] - b[0], a[1] - b[1]); }
+
+          var P1P2 = dist2(posP.P1, posP.P2), P1P3 = dist2(posP.P1, posP.P3), P2P3 = dist2(posP.P2, posP.P3);
+          var Q1Q2 = dist2(posQ.Q1, posQ.Q2), Q1Q3 = dist2(posQ.Q1, posQ.Q3), Q2Q3 = dist2(posQ.Q2, posQ.Q3);
+
+          function variance(arr) {
+            var mean = arr.reduce(function (a, b) { return a + b; }, 0) / arr.length;
+            return arr.reduce(function (s, v) { return s + Math.pow(v - mean, 2); }, 0) / arr.length;
+          }
+
+          var ratiosCorrect = [Q1Q2 / P1P2, Q1Q3 / P1P3, Q2Q3 / P2P3];
+          var ratiosSwapped = [Q1Q3 / P1P2, Q1Q2 / P1P3, Q2Q3 / P2P3];
+          var varCorrect = variance(ratiosCorrect);
+          var varSwapped = variance(ratiosSwapped);
+
+          var descCostCorrect = 0.640 + 0.187;
+          var descCostSwapped = 0.292 + 0.173;
+
+          var slider = document.getElementById('sg-lambda-slider');
+          var lambdaValue = document.getElementById('sg-lambda-value');
+          var readout = document.getElementById('sg-readout');
+
+          function render() {
+            var lambda = parseFloat(slider.value);
+            lambdaValue.textContent = lambda.toFixed(1);
+
+            var totalCorrect = descCostCorrect + lambda * varCorrect;
+            var totalSwapped = descCostSwapped + lambda * varSwapped;
+            var winner = totalCorrect < totalSwapped ? 'correct (P2↔Q2, P3↔Q3)' : 'swapped (P2↔Q3, P3↔Q2) — WRONG';
+
+            readout.textContent = 'Total cost — correct assignment: ' + totalCorrect.toFixed(3) + ' (descriptor 0.827 + λ×' + varCorrect.toFixed(3) +
+              ')   swapped assignment: ' + totalSwapped.toFixed(3) + ' (descriptor 0.465 + λ×' + varSwapped.toFixed(3) +
+              ').  Winner: ' + winner + '.';
+          }
+
+          slider.addEventListener('input', render);
+          render();
+        })();
+      </script>
+
+      <p>
+        At λ = 0 (descriptors only, exactly Chapter 7.3's approach), the
+        swapped, wrong assignment wins — its descriptor distances are
+        just slightly smaller. Raise λ past about 1.6 and the correct
+        assignment takes over: the swapped pairing badly distorts the
+        real geometric relationships between all three points, while
+        the correct pairing preserves them perfectly. SuperGlue's
+        attention learns something in this spirit automatically —
+        using every keypoint's relationship to every other keypoint,
+        not just one isolated descriptor comparison.
+      </p>
+
+      <p>
+        Real SuperGlue adds one more real detail worth knowing: not
+        every keypoint has a match at all (an object might be visible
+        in one image and occluded in the other). Rather than forcing
+        every point to match something, SuperGlue adds a "dustbin" —
+        an explicit option to match nothing — and solves the whole
+        assignment as an optimal transport problem, letting points
+        legitimately go unmatched instead of forcing a wrong pairing.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Nearest-neighbor descriptor matching (Chapter 7.3) judges each keypoint pair in isolation, with no awareness of other keypoints.</li>
+          <li>SuperGlue treats keypoints as nodes in a graph, using self-attention within each image and cross-attention between images to share context before matching.</li>
+          <li>Incorporating relationships between keypoints (like preserved geometric consistency) can correct matches that descriptor similarity alone gets wrong.</li>
+          <li>SuperGlue includes a "dustbin" option so keypoints with no true match aren't forced into a wrong pairing.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-8-6">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What's the main limitation of Chapter 7.3's nearest-neighbor descriptor matching?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Isolated comparisons can't use relationships between keypoints to resolve ambiguity.">It judges each keypoint pair in isolation, with no way to use relationships between different keypoints to resolve ambiguous matches.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — nearest-neighbor matching is a real technique that does use descriptor distances; its limitation is what it ignores, not what it computes.">It doesn't use descriptor vectors at all.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — nearest-neighbor matching works on real descriptor vectors regardless of how many dimensions they have.">It only works for 2-dimensional descriptors.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. What is cross-attention doing in SuperGlue?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Cross-attention lets keypoints in one image directly gather evidence from the other image.">Letting keypoints in one image directly attend to keypoints in the other image, gathering evidence about potential matches.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that's self-attention's role; cross-attention specifically connects the two separate images.">Comparing keypoints only within the same single image.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — cross-attention is a real, specific mechanism connecting the two images being matched, not a generic catch-all step.">Randomly shuffling keypoints between images.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. In the demo, why did the correct assignment only win once λ was raised high enough?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! At low λ, the descriptor-only advantage of the wrong swap outweighs the (unweighted) consistency signal; a high enough λ flips that.">At low λ, the swapped assignment's slightly better descriptor match dominated the total cost; only once geometric consistency was weighted heavily enough did its huge advantage for the correct assignment take over.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the descriptor distances themselves never change; only how heavily the consistency term counts in the total score changes.">The descriptor distances themselves changed as λ increased.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the geometric positions of the keypoints are fixed throughout the demo; only the weighting λ is adjustable.">λ controls the actual positions of the keypoints in the scene.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -1064,6 +1253,7 @@
     initQuiz(document.getElementById('quiz-8-3'));
     initQuiz(document.getElementById('quiz-8-4'));
     initQuiz(document.getElementById('quiz-8-5'));
+    initQuiz(document.getElementById('quiz-8-6'));
     initProgressTracking();
   })();
 </script>

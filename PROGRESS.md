@@ -1,17 +1,37 @@
 # Progress
 
 ## Status
-In progress. 60 of 98 chapters written. Parts I, II, III, IV, V, VI, and
-VII are all complete.
+In progress. 61 of 98 chapters written. Parts I, II, III, IV, V, VI, VII,
+and VIII are all complete.
 
 ## Next chapter due
-Part VIII, Chapter 8.6 — Meet SuperGlue
-(parts/part-08-attention-graphs-sequences.html already exists — insert
-the new <section> before </main> and flip 8.6's sidebar entry from
-unwritten to live. IMPORTANT: 8.6 is an anchor chapter (see CLAUDE.md) —
-must be written ALONE. This is also the LAST chapter of Part VIII —
-completing it finishes the Part, so do the write-book-chapter skill
-self-check afterward per the resumable-autonomous-loop rule.)
+Part IX, Chapter 9.1 — Tokenization
+(parts/part-09-language-models.html does not exist yet — create it with
+a full sidebar TOC for all 9 chapters of Part IX, titles from
+CURRICULUM.md: 9.1 Tokenization [C], 9.2 Meet the LLM [C], 9.3 Scaling
+Laws & Emergent Abilities [D], 9.4 Instruction Tuning & RLHF [C], 9.5
+Efficient Fine-Tuning (LoRA, quantization) [D], 9.6 Prompting &
+In-Context Learning [C], 9.7 Retrieval-Augmented Generation (RAG) [C],
+9.8 Agents & Tool Use [D], 9.9 Hallucination & Evaluation [C]. Every
+chapter except 9.1 starts as class="nav-item unwritten". NOTE: 9.2 (Meet
+the LLM) and 9.4 (Instruction Tuning & RLHF) are anchor chapters (see
+CLAUDE.md) — must each be written ALONE, one per turn.)
+
+## Part VIII self-check (write-book-chapter skill compliance)
+Reviewed all 6 chapters (8.1–8.6) against the required rhythm: every
+chapter has a frame-of-reference analogy, plain concept explanation, a
+worked/interactive example with real computed values (verified via
+Node scripts and headless-Chromium checks, not faked), a "what you can
+now explain" recap, and a 3-question quiz. Real algorithms implemented
+throughout: bag-of-words counting (8.1), a real sigmoid RNN step-through
+plus the vanishing-gradient formula reused from 6.7 (8.2), a 2D toy
+word-embedding analogy demo (8.3), real scaled dot-product attention
+with softmax (8.4), real sinusoidal positional encoding plus a
+click-to-highlight Transformer block diagram reusing the 6.9 UI pattern
+(8.5), and a real geometric-consistency-vs-naive-matching cost function
+with a verified λ crossover (8.6). All new jargon terms were boxed on
+first use and cross-checked against GLOSSARY_TRACKER.md before writing.
+No structural or quality issues found.
 
 ## Part VII self-check (write-book-chapter skill compliance)
 Reviewed all 8 chapters (7.1–7.8) against the required rhythm: every
@@ -85,6 +105,7 @@ issues found.
 - 8.3 Word Embeddings (word2vec) — parts/part-08-attention-graphs-sequences.html
 - 8.4 Attention — parts/part-08-attention-graphs-sequences.html
 - 8.5 The Transformer, Piece by Piece — parts/part-08-attention-graphs-sequences.html
+- 8.6 Meet SuperGlue — parts/part-08-attention-graphs-sequences.html
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in
