@@ -20,7 +20,9 @@
     <a class="nav-item" data-chapter-id="15-1" href="#chapter-15-1">
       <span class="nav-dot"></span>15.1 How to Read a Research Paper
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>15.2 Choosing a Specialization</div>
+    <a class="nav-item" data-chapter-id="15-2" href="#chapter-15-2">
+      <span class="nav-dot"></span>15.2 Choosing a Specialization
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>15.3 Portfolio Projects Mapped to Every Part</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>15.4 The Job Search</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>15.5 Glossary</div>
@@ -203,12 +205,174 @@
 
     </section>
 
+    <section id="chapter-15-2">
+      <div class="chapter-eyebrow">Part XV · Chapter 15.2</div>
+      <h1 class="chapter-title">Choosing a Specialization</h1>
+
+      <p class="lede">
+        Chapter 1.5 covered one axis of "which AI job" — Research
+        Scientist, ML Engineer, MLOps, or Data Scientist, a question about
+        which <em>function</em> you'd do. Having now built something from
+        nearly every Part of this book, a second, independent axis opens
+        up: which <em>domain</em>. A Research Scientist working on
+        generative image models and a Research Scientist working on LLM
+        alignment do genuinely different work, day to day, despite sharing
+        a job title. This chapter is about that second axis.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🔪 Frame of reference</div>
+        <p>
+          Culinary school teaches every working chef the same
+          foundation — knife skills, heat control, sauces, food safety —
+          regardless of what they'll cook for a living. Nobody graduates
+          and then tries to be simultaneously world-class at pastry,
+          sushi, butchery, and fine dining all at once. A working chef
+          keeps the general foundation everywhere, but goes deliberately
+          deep in one station. This book just gave you the culinary
+          school. This chapter is about picking a station.
+        </p>
+      </div>
+
+      <h2>Depth in one area, a real foundation everywhere else</h2>
+      <script>initJargonBox("T-shaped skill set",
+        "A working shape of expertise: broad, working knowledge across an entire field (the horizontal bar of the T) combined with deep, specialized expertise in one particular area of it (the vertical stroke) — as opposed to being equally shallow everywhere, or narrow everywhere with no broader context.");</script>
+      <p>
+        What this book has built, chapter by chapter, is the horizontal
+        bar of a <span class="jargon-term">T-shaped skill set</span> — a
+        real, working foundation across classical ML, neural networks,
+        vision, language, multimodal systems, generative models, RL, and
+        deployment. Almost nobody gets hired to be equally expert at all
+        of it simultaneously; real teams hire for depth in one vertical
+        stroke, resting on exactly that kind of broad foundation. Picking
+        where to go deep is what this chapter helps with.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          Click a domain to see what it actually involves day to day,
+          which Parts of this book already gave you its foundation, and
+          real job titles it shows up under.
+        </p>
+        <div class="demo-actions" id="domain-buttons">
+          <div class="quiz-option" data-domain="vision">Computer Vision</div>
+          <div class="quiz-option" data-domain="language">Language / LLMs</div>
+          <div class="quiz-option" data-domain="multimodal">Multimodal</div>
+          <div class="quiz-option" data-domain="generative">Generative AI</div>
+          <div class="quiz-option" data-domain="rl">Reinforcement Learning</div>
+          <div class="quiz-option" data-domain="responsible">Responsible / Applied Research</div>
+          <div class="quiz-option" data-domain="infra">ML Infrastructure</div>
+          <div class="quiz-option" data-domain="classical">Classical ML / Data Science</div>
+        </div>
+        <p id="domain-explain-readout" class="demo-readout">Click a domain above.</p>
+      </div>
+
+      <script>
+        (function () {
+          var domains = {
+            vision: 'Detecting, segmenting, and matching things in images and video — Chapters 7.1–7.8 (CNNs, YOLO, SuperPoint) and 8.6\'s SuperGlue are the foundation. Shows up under titles like Computer Vision Engineer, Perception Engineer (robotics/autonomous vehicles), or Imaging Scientist.',
+            language: 'Building and adapting large language models and the systems around them — Chapters 9.1–9.9 (tokenization through RAG and agents) are the foundation. Shows up under titles like NLP Engineer, LLM Engineer, or Applied Scientist (Language).',
+            multimodal: 'Systems connecting more than one kind of data — vision-and-language, speech-and-text. Chapters 10.1–10.3 (CLIP, captioning/VQA, Whisper) are the foundation. Shows up under titles like Multimodal ML Engineer or Applied Scientist (Multimodal).',
+            generative: 'Models that produce new images, audio, or text rather than just classifying or predicting. Chapters 11.1–11.5 (autoencoders through diffusion and text-to-image) are the foundation. Shows up under titles like Generative AI Engineer or Research Scientist (Generative Models).',
+            rl: 'Systems that learn by acting and receiving reward rather than from a fixed labeled dataset. Chapters 12.1–12.4 (bandits through deep RL and RLHF) are the foundation. Shows up under titles like RL Research Engineer, or as the RLHF specialty inside LLM teams.',
+            responsible: 'Evaluating and improving fairness, safety, privacy, and interpretability of deployed models. Chapters 13.1–13.3 are the foundation. Shows up under titles like Responsible AI Researcher, AI Safety Researcher, or Trust & Safety ML Engineer.',
+            infra: 'Making models train efficiently and run reliably in production at scale. Chapters 14.1–14.8 (version control through a full pipeline) are the foundation. Shows up under titles like ML Platform Engineer, MLOps Engineer (Chapter 1.5), or ML Infrastructure Engineer.',
+            classical: 'Tabular data, forecasting, and predictive modeling for business problems that don\'t need deep learning at all. Chapters 3.1–5.4 (data through regularization) are the foundation. Shows up under titles like Data Scientist (Chapter 1.5) or Applied ML Engineer at most non-tech-first companies.'
+          };
+
+          var buttons = document.querySelectorAll('#domain-buttons .quiz-option');
+          var explain = document.getElementById('domain-explain-readout');
+
+          buttons.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+              var d = btn.getAttribute('data-domain');
+              buttons.forEach(function (b) { b.classList.remove('correct'); });
+              btn.classList.add('correct');
+              explain.textContent = domains[d];
+            });
+          });
+        })();
+      </script>
+
+      <p>
+        Notice the two axes really are independent: "ML Engineer" from
+        Chapter 1.5 could mean shipping a computer vision feature, an LLM
+        product feature, or a recommendation system built on classical
+        ML — same function, three entirely different domains. A real job
+        search benefits from being clear-eyed about both: which function
+        do you want, and which domain's foundation from this book did you
+        find yourself most drawn to going deeper on?
+      </p>
+
+      <h2>Choosing honestly, not just prestige-chasing</h2>
+      <p>
+        Generative AI and LLMs currently attract the most attention, but
+        attention isn't the same as fit or opportunity. Classical ML and
+        data science roles (Chapters 3–5) remain the largest single
+        category of ML jobs across ordinary companies, not just
+        AI-native ones. Computer vision remains foundational to robotics,
+        manufacturing, and medical imaging. ML infrastructure roles
+        (Chapter 14) are consistently in demand and require real software
+        engineering skill many candidates underestimate. The honest
+        question isn't "which domain is trending" — it's which chapters
+        in this book you found yourself wanting to keep exploring after
+        the required demo was already done.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Chapter 1.5's four roles (function) and this chapter's domains (subject matter) are two independent axes of an ML job — the same role can apply to very different domains.</li>
+          <li>A T-shaped skill set combines broad foundational knowledge across a field with deep specialized expertise in one particular area of it.</li>
+          <li>This book's Parts map directly onto real specialization domains: vision (VII), language (IX), multimodal (X), generative (XI), RL (XII), responsible AI (XIII), and ML infrastructure (XIV) — plus classical ML/data science (III–V), still the largest single category of real ML jobs.</li>
+          <li>Choosing a specialization is best driven by genuine interest in a domain's material, not simply which domain currently attracts the most attention.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-15-2">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. How does this chapter's "domain" axis relate to Chapter 1.5's "role" axis?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! An ML Engineer (a role) could work in computer vision, LLMs, or classical ML (all different domains) — the two axes vary independently.">They're independent axes — the same role (like ML Engineer) can apply to entirely different domains (like computer vision or LLMs), and choosing a job means considering both.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the chapter's whole point is that role and domain are two separate, independent questions, not the same one.">They're the exact same axis, just described with different words.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — Chapter 1.5's roles apply across every domain in this chapter; a Research Scientist, for example, could work in vision, language, or generative AI.">Chapter 1.5's roles only apply to one specific domain covered in this chapter.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. What does a "T-shaped skill set" actually describe?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Broad, working knowledge everywhere, plus real depth in one particular area — not equally shallow everywhere, and not narrow with no broader context.">Broad, working knowledge across a whole field, combined with deep, specialized expertise in one particular area of it.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the chapter's whole point is that real expertise requires depth in at least one area, not uniform shallowness everywhere.">Being equally shallow across every possible domain, with no area of particular depth.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a T-shaped skill set specifically includes the broad horizontal foundation too, not depth in isolation.">Being deeply expert in one narrow area with no broader foundational knowledge at all.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. According to the chapter, what's the most honest way to choose which domain to specialize in?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! The chapter explicitly argues attention isn't the same as fit, and points to genuine interest — which chapters you wanted to keep exploring — as the better signal.">Based on which domain's material you found yourself genuinely wanting to explore further, not simply which domain currently attracts the most attention.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the chapter explicitly warns against choosing based purely on current trendiness, using generative AI and LLMs as the example of a currently-trendy-but-not-automatically-right-for-everyone domain.">Always choosing whichever domain is currently the most talked-about, since that guarantees the most opportunity.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the chapter explicitly states classical ML and data science remain the largest single category of real ML jobs, not a negligible or outdated one.">Avoiding classical ML and data science entirely, since the chapter describes them as outdated.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
 <script>
   (function () {
     initQuiz(document.getElementById('quiz-15-1'));
+    initQuiz(document.getElementById('quiz-15-2'));
     initProgressTracking();
   })();
 </script>

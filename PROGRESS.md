@@ -1,16 +1,16 @@
 # Progress
 
 ## Status
-In progress. 94 of 98 chapters written. Parts I-XIV are all complete.
-Part XV is in progress (1 of 5 chapters done) — this is the FINAL Part
+In progress. 95 of 98 chapters written. Parts I-XIV are all complete.
+Part XV is in progress (2 of 5 chapters done) — this is the FINAL Part
 of the book.
 
 ## Next chapter due
-Part XV, Chapter 15.2 — Choosing a Specialization.
+Part XV, Chapter 15.3 — Portfolio Projects Mapped to Every Part.
 (parts/part-15-becoming-ml-engineer.html already exists — insert the new
-<section> before </main> and flip 15.2's sidebar entry from unwritten to
+<section> before </main> and flip 15.3's sidebar entry from unwritten to
 live.) Not an anchor chapter. No anchor chapters remain anywhere in the
-curriculum — 15.2, 15.3, and 15.4 can be batched normally per the
+curriculum — 15.3 and 15.4 can be batched normally per the
 2-3-chapters-per-turn rule. 15.5 (Glossary) is the LAST chapter of the
 entire 98-chapter book — after it verifies and commits cleanly, the book
 is complete; do a final whole-book self-check at that point rather than
@@ -254,6 +254,7 @@ issues found.
 - 14.7 Monitoring & Drift — parts/part-14-notebook-to-product.html
 - 14.8 A Real Pipeline, Start to Finish — parts/part-14-notebook-to-product.html
 - 15.1 How to Read a Research Paper — parts/part-15-becoming-ml-engineer.html
+- 15.2 Choosing a Specialization — parts/part-15-becoming-ml-engineer.html
 
 ## Part XIV self-check (write-book-chapter skill compliance)
 Reviewed all 8 chapters (14.1–14.8) against the required rhythm: every
