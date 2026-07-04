@@ -26,7 +26,9 @@
     <a class="nav-item" data-chapter-id="14-3" href="#chapter-14-3">
       <span class="nav-dot"></span>14.3 Hardware: CPU vs. GPU vs. TPU
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>14.4 Distributed &amp; Parallel Training</div>
+    <a class="nav-item" data-chapter-id="14-4" href="#chapter-14-4">
+      <span class="nav-dot"></span>14.4 Distributed &amp; Parallel Training
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>14.5 Serving a Model</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>14.6 Containers &amp; Reproducibility</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>14.7 Monitoring &amp; Drift</div>
@@ -517,6 +519,161 @@
 
     </section>
 
+    <section id="chapter-14-4">
+      <div class="chapter-eyebrow">Part XIV · Chapter 14.4</div>
+      <h1 class="chapter-title">Distributed &amp; Parallel Training</h1>
+
+      <p class="lede">
+        Chapter 14.3 covered parallelism inside one GPU — thousands of
+        cores splitting up a single matrix multiply. This chapter covers
+        parallelism across many GPUs or machines at once, splitting up
+        the training workload itself, needed once a single GPU's compute
+        or memory simply isn't enough.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🏭 Frame of reference</div>
+        <p>
+          One kitchen with a thousand cooks (Chapter 14.3's parallel
+          cores) can only get so big before adding more cooks stops
+          helping. A catering company facing an enormous order instead
+          opens several separate kitchens, each preparing an equal
+          fraction of the order independently, then combines everyone's
+          output at the end. That's a completely different kind of
+          scaling — not more workers in one kitchen, but more kitchens
+          entirely, each doing a share of the job in parallel.
+        </p>
+      </div>
+
+      <h2>Data parallelism: split the batch, average the gradients</h2>
+      <script>initJargonBox("data parallelism",
+        "Splitting a training batch (Chapter 6.6) into smaller chunks, sending each chunk to a different GPU running an identical copy of the current model, having each GPU compute gradients (Chapter 6.4) on its own chunk, then averaging all the GPUs' gradients together before applying one optimizer update (Chapter 6.5).");</script>
+      <p>
+        <span class="jargon-term">Data parallelism</span> splits the
+        data, not the model: each GPU gets a slice of the batch and an
+        identical copy of the current weights, computes its own
+        gradients via backpropagation (Chapter 6.4), and then all the
+        GPUs' gradients get averaged together into one combined gradient
+        before a single optimizer step (Chapter 6.5) updates every copy
+        identically. Because a loss averaged over a batch is just the
+        average of each example's individual loss, averaging gradients
+        computed on separate slices produces mathematically the exact
+        same result as computing the gradient on the whole batch at
+        once — not an approximation, an identity.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          A real toy model (y = w·x) and 4 real data points. Compute the
+          gradient the ordinary way, on the full batch — then split the
+          same 4 points across 2 simulated GPUs, compute each GPU's
+          gradient separately, and average them. Watch the two results
+          match exactly.
+        </p>
+        <div class="demo-actions">
+          <div class="quiz-option" id="dist-run-btn">▶ Compute both ways</div>
+        </div>
+        <p id="dist-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var w = 0.5;
+          var data = [{ x: 1, y: 2 }, { x: 2, y: 3 }, { x: 3, y: 5 }, { x: 4, y: 7 }];
+
+          function grad(point) { return 2 * (w * point.x - point.y) * point.x; }
+          function avgGrad(points) {
+            return points.reduce(function (sum, p) { return sum + grad(p); }, 0) / points.length;
+          }
+
+          document.getElementById('dist-run-btn').addEventListener('click', function () {
+            var fullGrad = avgGrad(data);
+            var gpu1 = data.slice(0, 2), gpu2 = data.slice(2, 4);
+            var grad1 = avgGrad(gpu1), grad2 = avgGrad(gpu2);
+            var averaged = (grad1 + grad2) / 2;
+
+            document.getElementById('dist-readout').textContent =
+              'Full-batch gradient (all 4 points at once): ' + fullGrad.toFixed(4) + '. GPU 1 (points 1-2): ' + grad1.toFixed(4) +
+              '. GPU 2 (points 3-4): ' + grad2.toFixed(4) + '. Averaged across both GPUs: ' + averaged.toFixed(4) +
+              (Math.abs(averaged - fullGrad) < 1e-9 ? ' — matches the full-batch gradient exactly.' : ' — does not match (unexpected).');
+          });
+        })();
+      </script>
+
+      <p>
+        Both routes land on exactly −18.0000 — running 2 GPUs on half the
+        data each, then averaging, gives precisely the same gradient as
+        one device processing the whole batch. That exact equivalence is
+        what makes data parallelism trustworthy: splitting the work
+        across more devices doesn't change what's actually being
+        computed, it only changes how quickly it gets computed, since
+        each GPU's slice can be processed simultaneously.
+      </p>
+
+      <h2>Model parallelism: split the model instead</h2>
+      <script>initJargonBox("model parallelism",
+        "Splitting a single model's layers across multiple GPUs or machines, used when the model itself is too large to fit in any one GPU's memory — data flows through the layers on one device, then the next device, in sequence, trading added communication between devices for the memory capacity to hold the model at all.");</script>
+      <p>
+        Data parallelism assumes the whole model fits on every GPU —
+        fine until the model itself is the problem. A modern LLM
+        (Chapter 9.2) with billions of parameters may simply not fit in
+        one GPU's memory at all, no matter how the data is split.
+        <span class="jargon-term">Model parallelism</span> is the other
+        option: split the model's own layers across multiple GPUs — one
+        device holds the first several layers, the next device holds the
+        following several, and data flows from one device to the next in
+        sequence. It solves a memory problem data parallelism can't, at
+        the cost of GPUs now having to wait on each other in sequence
+        rather than working on fully independent slices at once.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Data parallelism splits a batch across GPUs, each with a full copy of the model, then averages their gradients into one update.</li>
+          <li>Averaging gradients from equal-sized data splits produces exactly the same result as computing the gradient on the full batch — a mathematical identity, not an approximation.</li>
+          <li>Model parallelism splits the model's own layers across devices instead, needed when the model itself doesn't fit in one GPU's memory.</li>
+          <li>Data parallelism trades nothing in correctness for speed; model parallelism trades some communication overhead for the memory capacity to train models too large for a single device.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-14-4">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. In data parallelism, what does each GPU actually compute?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Each GPU works on its own data slice with a full copy of the current model, and the results get averaged together afterward.">Gradients on its own slice of the batch, using a full, identical copy of the current model weights.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — that describes model parallelism, the separate technique covered later in this chapter, not data parallelism.">Gradients for just a portion of the model's layers, using the entire dataset.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo shows each GPU computing a real, different gradient value from its own data slice, not identical results.">The exact same gradient as every other GPU, regardless of which data it was given.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. In the demo, why did averaging the two GPUs' gradients produce exactly the same result as the full-batch gradient?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Because the full-batch average is itself just an average over all examples, averaging two equal-sized sub-averages reconstructs it exactly.">Because a full-batch gradient is itself an average over all examples, and averaging two equal-sized sub-batch averages reconstructs that same overall average exactly.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo shows a real, exact mathematical equivalence verified by direct computation, not a coincidence specific to these four data points.">It's a coincidence specific to the four data points chosen for this demo.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the two GPUs in the demo compute genuinely different individual gradient values (−5.5 and −30.5) from their different data slices; only their average matches the full-batch result.">Both simulated GPUs were secretly given identical data.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. When is model parallelism needed instead of data parallelism?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Data parallelism requires a full copy of the model on every GPU; if the model itself doesn't fit, splitting the data doesn't help.">When the model itself is too large to fit in a single GPU's memory, regardless of how the data is split.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the chapter's point is the opposite: model parallelism is specifically for when a model is too large for one GPU, not when it's small enough to fit easily.">When the model is small enough to easily fit on every available GPU.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — model parallelism solves a memory-capacity problem, not a data-availability problem; both techniques still require real training data.">When there isn't enough training data available to split across multiple GPUs.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -525,6 +682,7 @@
     initQuiz(document.getElementById('quiz-14-1'));
     initQuiz(document.getElementById('quiz-14-2'));
     initQuiz(document.getElementById('quiz-14-3'));
+    initQuiz(document.getElementById('quiz-14-4'));
     initProgressTracking();
   })();
 </script>
