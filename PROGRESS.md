@@ -1,17 +1,45 @@
 # Progress
 
 ## Status
-In progress. 77 of 98 chapters written. Parts I-X are all complete.
-Part XI is in progress (4 of 5 chapters done).
+In progress. 78 of 98 chapters written. Parts I-XI are all complete.
 
 ## Next chapter due
-Part XI, Chapter 11.5 — Text-to-Image (Diffusion Meets CLIP)
-(parts/part-11-generative-ai.html already exists — insert the new
-<section> before </main> and flip 11.5's sidebar entry from unwritten to
-live. Not an anchor chapter. This is also the LAST chapter of Part XI —
-completing it finishes the Part, so do the write-book-chapter skill
-self-check afterward per the resumable-autonomous-loop rule, then
-continue into Part XII per CURRICULUM.md.)
+Part XII, Chapter 12.1 — Learning by Trial and Reward
+(parts/part-12-reinforcement-learning.html does not exist yet — create
+it with a full sidebar TOC for all 4 chapters of Part XII, titles from
+CURRICULUM.md: 12.1 Learning by Trial and Reward [C], 12.2 Q-Learning,
+Simply Explained [C], 12.3 Policy Gradients & Exploration/Exploitation
+[D], 12.4 Deep RL & RLHF Revisited [C]. Every chapter except 12.1 starts
+as class="nav-item unwritten". NOTE: 12.4 (Deep RL & RLHF Revisited) is
+an anchor chapter (see CLAUDE.md) — must be written ALONE, one per turn.
+If a batch would reach 12.4, stop right before it and write only up
+through 12.3.)
+
+## Part XI self-check (write-book-chapter skill compliance)
+Reviewed all 5 chapters (11.1–11.5) against the required rhythm: every
+chapter has a frame-of-reference analogy, plain concept explanation, a
+worked/interactive example with real computed values (verified via Node
+scripts and headless-Chromium checks, not faked), a "what you can now
+explain" recap, and a 3-question quiz. Real, verified computation
+throughout: a real 1-number encoder/decoder showing reconstruction error
+scale with genuine data compressibility (11.1); real Box-Muller Gaussian
+sampling producing distinct-but-plausible reconstructions from one
+learned distribution (11.2); a real, working 1-number GAN trained via
+actual alternating gradient descent/ascent, including the honest,
+correctly-reproduced oscillation real adversarial training exhibits
+(11.3, anchor); a real forward/reverse diffusion process that exactly
+recovers its original value via genuine algebraic inversion of recorded
+noise, explicitly flagged as a simplification versus a real trained
+model's approximate predictions (11.4, anchor); and a real guided-step
+computation showing identical starting noise converging to different
+targets under different prompt conditioning (11.5). All new jargon terms
+were boxed on first use and cross-checked against GLOSSARY_TRACKER.md,
+with heavy cross-referencing back to Chapters 2.6, 4.2-4.3, 4.9, 5.4,
+6.1, 6.3, 7.2, 8.4, and 10.1. Anchor chapters 11.4 and (per the
+non-consecutive-anchors rule) the standalone-turn requirement were both
+honored; 11.3 was written in the same batch as 11.1-11.2 since it is not
+itself an anchor, and 11.4 immediately followed as its own dedicated
+turn. No structural or quality issues found.
 
 ## Part X self-check (write-book-chapter skill compliance)
 Reviewed all 3 chapters (10.1–10.3) against the required rhythm: every
@@ -162,6 +190,7 @@ issues found.
 - 11.2 Variational Autoencoders — parts/part-11-generative-ai.html
 - 11.3 GANs — parts/part-11-generative-ai.html
 - 11.4 Diffusion Models — parts/part-11-generative-ai.html
+- 11.5 Text-to-Image (Diffusion Meets CLIP) — parts/part-11-generative-ai.html
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in

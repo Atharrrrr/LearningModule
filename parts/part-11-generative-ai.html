@@ -29,7 +29,9 @@
     <a class="nav-item" data-chapter-id="11-4" href="#chapter-11-4">
       <span class="nav-dot"></span>11.4 Diffusion Models
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>11.5 Text-to-Image (Diffusion Meets CLIP)</div>
+    <a class="nav-item" data-chapter-id="11-5" href="#chapter-11-5">
+      <span class="nav-dot"></span>11.5 Text-to-Image (Diffusion Meets CLIP)
+    </a>
   </nav>
 
   <main>
@@ -771,6 +773,183 @@
 
     </section>
 
+    <section id="chapter-11-5">
+      <div class="chapter-eyebrow">Part XI · Chapter 11.5</div>
+      <h1 class="chapter-title">Text-to-Image (Diffusion Meets CLIP)</h1>
+
+      <p class="lede">
+        Chapter 11.4's diffusion model can generate a realistic-looking
+        image from pure noise — but nothing about that process, on its
+        own, lets you ask for a specific image. Text-to-image models
+        add exactly one more ingredient: at every single denoising step,
+        steer the process using Chapter 10.1's CLIP-style text
+        understanding, so the image that emerges matches a written
+        prompt, not just "looks realistic in general."
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🗿 Frame of reference</div>
+        <p>
+          A sculptor works a rough block of marble down toward a
+          finished statue, one small chisel strike at a time — Chapter
+          11.4's gradual denoising. Now imagine a critic standing beside
+          them the entire time, holding a written description, and
+          murmuring after every single strike: "more like that, less
+          like this." Each individual strike is still just a small,
+          modest correction — but with that steady whisper guiding every
+          one of them, the statue that gradually emerges resembles the
+          written description specifically, not just "some statue or
+          other."
+        </p>
+      </div>
+
+      <h2>Conditioning every denoising step on a text prompt</h2>
+      <script>initJargonBox("conditioning",
+        "Feeding extra information — here, a text prompt's CLIP embedding (Chapter 10.1) — into a generative model's every step, so its output is steered toward matching that information, not left to generate something generic.");</script>
+      <p>
+        Chapter 11.4's denoiser, unconditioned, only ever answers "what
+        noise was likely added here?" — nothing points it toward any
+        particular subject. Text-to-image diffusion adds
+        <span class="jargon-term">conditioning</span>: encode the text
+        prompt using a CLIP-style text encoder (Chapter 10.1), and feed
+        that embedding into the denoising network at every single step,
+        through the same attention mechanism (Chapter 8.4) that's
+        already inside the network — the image being denoised supplies
+        the queries, and the text embedding supplies the keys and
+        values, letting every part of the image "look at" the prompt at
+        every step. The denoiser's prediction shifts accordingly: not
+        just "plausible noise to remove," but "noise to remove in a way
+        that steers toward this prompt."
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          A real, simplified guided-denoising trace: the exact same
+          starting noisy value (x = 0.15) pulled toward two different
+          conditioning targets, real number computed live at each step
+          via x ← x + 0.15·(target − x). A real trained model doesn't
+          move directly toward a fixed target this way — the text
+          embedding shifts its noise prediction instead — but the
+          outcome shown here is real and honest: identical starting
+          noise, different prompt, different result.
+        </p>
+        <div class="demo-actions">
+          <div class="quiz-option" id="t2i-dog-btn">🐕 Prompt: "a dog" (target 0.8)</div>
+          <div class="quiz-option" id="t2i-cat-btn">🐈 Prompt: "a cat" (target −0.5)</div>
+          <div class="quiz-option" id="t2i-reset-btn">↺ Reset</div>
+        </div>
+        <table class="data-table" id="t2i-table">
+          <thead><tr><th>Step</th><th>x (same start, steered by prompt)</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p id="t2i-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var xStart = 0.15;
+          var stepSize = 0.15;
+
+          function runPrompt(targetLabel, target) {
+            var x = xStart;
+            var trace = [x];
+            for (var i = 0; i < 20; i++) {
+              x = x + stepSize * (target - x);
+              trace.push(x);
+            }
+
+            var tbody = document.querySelector('#t2i-table tbody');
+            tbody.innerHTML = '';
+            [0, 1, 2, 5, 10, 20].forEach(function (i) {
+              var tr = document.createElement('tr');
+              tr.innerHTML = '<td>' + i + '</td><td>' + trace[i].toFixed(4) + '</td>';
+              tbody.appendChild(tr);
+            });
+
+            document.getElementById('t2i-readout').textContent =
+              'Prompt "' + targetLabel + '" (target=' + target + '): started at x=' + xStart.toFixed(4) +
+              ', after 20 guided steps → x=' + trace[trace.length - 1].toFixed(4) + '.';
+          }
+
+          document.getElementById('t2i-dog-btn').addEventListener('click', function () { runPrompt('a dog', 0.8); });
+          document.getElementById('t2i-cat-btn').addEventListener('click', function () { runPrompt('a cat', -0.5); });
+          document.getElementById('t2i-reset-btn').addEventListener('click', function () {
+            document.querySelector('#t2i-table tbody').innerHTML = '';
+            document.getElementById('t2i-readout').textContent = 'Reset. Pick a prompt to steer the exact same starting noise (x=0.15) toward it.';
+          });
+
+          document.getElementById('t2i-reset-btn').click();
+        })();
+      </script>
+
+      <p>
+        Click "a dog," then "a cat": the exact same starting value,
+        x=0.15, ends up at two completely different places — 0.7748 and
+        -0.4748 — purely because a different target steered every one
+        of the 20 steps. Nothing about the starting noise changed
+        between the two runs; only the conditioning did. That's the
+        entire mechanism, scaled up from one number to millions of
+        pixels: the same trained denoiser, the same step-by-step
+        process, steered toward wildly different results by whatever
+        text prompt's embedding is feeding in at every step.
+      </p>
+
+      <p>
+        This is why text-to-image models can produce an enormous range
+        of outputs from one trained network: the diffusion process
+        (Chapter 11.4) supplies the "generate something realistic"
+        half, and CLIP's shared embedding space (Chapter 10.1) supplies
+        the "make it match this description" half — two ideas from two
+        different chapters, combined into one guided generation loop.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Text-to-image generation combines Chapter 11.4's diffusion denoising loop with Chapter 10.1's CLIP-style text-image embedding.</li>
+          <li>A text prompt is encoded into an embedding, and that embedding conditions the denoising network at every single step, typically through attention (Chapter 8.4).</li>
+          <li>Conditioning steers the denoiser's noise prediction toward the prompt, not just toward "a plausible image in general."</li>
+          <li>The same starting noise, guided by different text conditioning, produces different final results — demonstrated directly in the interactive demo with real numbers.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-11-5">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What does conditioning add to Chapter 11.4's plain diffusion process?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Conditioning feeds the prompt's embedding into every step, steering the denoiser's prediction toward matching that specific prompt.">A way to steer every denoising step toward a specific text prompt, instead of just producing some plausible-looking image in general.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — conditioning doesn't remove any steps from the diffusion process; it adds extra information (the prompt's embedding) that steers each existing step.">A way to skip most of the denoising steps and jump straight to a finished image.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — conditioning specifically uses a real, computed text embedding (Chapter 10.1) to steer generation; it isn't a random adjustment.">A random adjustment applied to make each generated image look different from the last.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. In the demo, why did the exact same starting value (x=0.15) end up in two different places for "a dog" versus "a cat"?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! The starting point was identical both times; only the conditioning target — standing in for the prompt's embedding — differed, and it's what pulled x in different directions.">Each prompt supplied a different conditioning target, and every one of the 20 steps pulled x toward that specific target — different target, different final result.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo explicitly starts both runs from the identical value x=0.15; nothing about the starting point changes between prompts.">The starting noise value was actually different for each prompt.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — every step applies the same real, deterministic formula (x ← x + 0.15·(target − x)); nothing here is randomized.">The step-by-step updates are randomized, so any two runs would differ regardless of the prompt.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. Which two ideas from earlier chapters does text-to-image generation combine?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Diffusion supplies realistic step-by-step generation; CLIP's shared embedding space supplies the ability to match a specific text description.">Chapter 11.4's diffusion denoising process, and Chapter 10.1's CLIP-style shared text-image embedding space.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — text-to-image models are built specifically on diffusion (Chapter 11.4) and CLIP-style conditioning (Chapter 10.1), not on GAN adversarial training.">Chapter 11.3's GAN adversarial training, and Chapter 9.2's next-token prediction.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — this chapter's whole point is that generation is guided by an actual text embedding at every step, not left undirected.">Chapter 11.1's autoencoder bottleneck, with no text guidance involved at all.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -780,6 +959,7 @@
     initQuiz(document.getElementById('quiz-11-2'));
     initQuiz(document.getElementById('quiz-11-3'));
     initQuiz(document.getElementById('quiz-11-4'));
+    initQuiz(document.getElementById('quiz-11-5'));
     initProgressTracking();
   })();
 </script>
