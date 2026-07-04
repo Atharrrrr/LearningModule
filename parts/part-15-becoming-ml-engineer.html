@@ -23,7 +23,9 @@
     <a class="nav-item" data-chapter-id="15-2" href="#chapter-15-2">
       <span class="nav-dot"></span>15.2 Choosing a Specialization
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>15.3 Portfolio Projects Mapped to Every Part</div>
+    <a class="nav-item" data-chapter-id="15-3" href="#chapter-15-3">
+      <span class="nav-dot"></span>15.3 Portfolio Projects Mapped to Every Part
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>15.4 The Job Search</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>15.5 Glossary</div>
   </nav>
@@ -366,6 +368,155 @@
 
     </section>
 
+    <section id="chapter-15-3">
+      <div class="chapter-eyebrow">Part XV · Chapter 15.3</div>
+      <h1 class="chapter-title">Portfolio Projects Mapped to Every Part</h1>
+
+      <p class="lede">
+        Chapter 15.2 helped narrow down a domain. This chapter is about
+        proving you can actually work in it — not by describing your
+        skills on a resume, but by pointing to something real you built.
+        Below is one concrete project idea for every major Part of this
+        book, plus what actually separates a strong portfolio project
+        from a weak one.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🎻 Frame of reference</div>
+        <p>
+          No orchestra hires a violinist on the strength of a resume line
+          that says "I can play Bach." They ask for a recording. A
+          portfolio project is the recording — concrete, checkable
+          evidence of exactly the skill a resume can only claim in
+          the abstract.
+        </p>
+      </div>
+
+      <h2>What separates a strong project from a weak one</h2>
+      <script>initJargonBox("MVP (Minimum Viable Project)",
+        "A project deliberately scoped down to something small enough to actually finish, end to end, rather than an ambitious project left half-built. A complete small thing demonstrates far more than an incomplete large one.");</script>
+      <p>
+        The single most common portfolio mistake isn't picking the wrong
+        project — it's picking one too big to finish. An
+        <span class="jargon-term">MVP (Minimum Viable Project)</span>
+        is scoped deliberately small enough to actually reach a finished,
+        working, honestly-evaluated end state. A tiny classifier trained
+        on 500 images, properly split into train/val/test (Chapter 5.2),
+        with real metrics (Chapter 5.3) and a documented failure case, is
+        a stronger portfolio piece than an ambitious multi-model system
+        that never got past a half-working notebook.
+      </p>
+      <p>
+        Four things separate a strong project from a weak one, regardless
+        of domain: it runs end to end, not just in a notebook (ideally
+        with the deployment layer from Part XIV — a model nobody else can
+        run isn't much of a demonstration); it's specific enough to
+        discuss in real depth in an interview, not a copied tutorial; it
+        documents what didn't work as honestly as what did, since real
+        engineering judgment shows up in how failures get handled, not
+        just successes; and it's actually public — a GitHub repository
+        with a working README, not a private folder on a laptop.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          Click a domain to see one concrete, honestly-scoped project
+          idea for it, and which chapters it draws on.
+        </p>
+        <div class="demo-actions" id="project-buttons">
+          <div class="quiz-option" data-proj="classical">Classical ML / Data Science</div>
+          <div class="quiz-option" data-proj="vision">Computer Vision</div>
+          <div class="quiz-option" data-proj="language">Language / LLMs</div>
+          <div class="quiz-option" data-proj="multimodal">Multimodal</div>
+          <div class="quiz-option" data-proj="generative">Generative AI</div>
+          <div class="quiz-option" data-proj="rl">Reinforcement Learning</div>
+          <div class="quiz-option" data-proj="pipeline">Full Pipeline (MLOps)</div>
+        </div>
+        <p id="project-explain-readout" class="demo-readout">Click a domain above.</p>
+      </div>
+
+      <script>
+        (function () {
+          var projects = {
+            classical: 'Pick a real, messy tabular dataset (Chapter 3.1–3.2) and predict something genuinely useful from it. Use a proper train/val/test split and cross-validation (Chapter 5.2), report precision/recall/F1 or ROC-AUC (Chapter 5.3) honestly — including for whichever class the model handles worst.',
+            vision: 'Train a small CNN classifier from scratch (Chapter 7.2) on a narrow, specific image category, then fine-tune a pretrained model on the same data (Chapter 7.5\'s transfer learning) and report the accuracy difference — a real, first-hand demonstration of why transfer learning matters, not just a claim.',
+            language: 'Build a small retrieval-augmented generation system (Chapter 9.7) over a real, personal set of documents — genuinely useful, and lets you speak concretely in an interview about retrieval quality and hallucination (Chapter 9.9), not just "I used an LLM API."',
+            multimodal: 'Build a small CLIP-based image search tool (Chapter 10.1): type a text query, get back the most similar images from a small personal photo collection, using real cosine similarity over real embeddings, not a black-box wrapper.',
+            generative: 'Train a small GAN or diffusion model (Chapter 11.3–11.4) on a narrow, low-resolution, deliberately small dataset — and document sample quality honestly, including where it clearly fails, since a small honestly-evaluated generative model teaches more than a giant one you can only describe secondhand.',
+            rl: 'Train a Q-learning agent (Chapter 12.2) on a small custom grid-world you design yourself, and plot its Q-values converging over episodes — a live demonstration of the exact mechanism, not just a library call.',
+            pipeline: 'Take any project above and run it through Chapter 14\'s full pipeline: version the data, track the experiment, containerize it, serve it behind a small API, and add one real monitoring check. This is often the single strongest portfolio piece, since it demonstrates the operational half of the job most other candidates\' notebooks skip entirely.'
+          };
+
+          var buttons = document.querySelectorAll('#project-buttons .quiz-option');
+          var explain = document.getElementById('project-explain-readout');
+
+          buttons.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+              var p = btn.getAttribute('data-proj');
+              buttons.forEach(function (b) { b.classList.remove('correct'); });
+              btn.classList.add('correct');
+              explain.textContent = projects[p];
+            });
+          });
+        })();
+      </script>
+
+      <p>
+        Notice the "Full Pipeline" option isn't tied to any one domain —
+        it's a wrapper you can apply to whichever domain project you
+        actually chose. A vision classifier that's containerized, served,
+        and monitored (Chapter 14.6–14.7) demonstrates meaningfully more
+        than the identical model sitting only in a notebook, regardless of
+        which domain it's in.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>A portfolio project is concrete, checkable evidence of a skill — the equivalent of an audition recording rather than a resume claim.</li>
+          <li>An MVP (Minimum Viable Project) is deliberately scoped small enough to actually finish end to end, which demonstrates more than an ambitious, half-built project.</li>
+          <li>A strong project runs end to end, is specific enough to discuss in depth, honestly documents what didn't work, and is genuinely public.</li>
+          <li>Wrapping any domain project in Chapter 14's deployment pipeline (versioning, containerizing, serving, monitoring) is often the single strongest addition, since it demonstrates the operational half of the job most portfolios skip.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-15-3">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What's the single most common portfolio mistake described in this chapter?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! An overly ambitious project that never reaches a finished, honestly-evaluated state demonstrates less than a small, completed one.">Choosing a project too large or ambitious to actually finish, rather than one properly scoped down to something completable end to end.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the chapter's whole point is that even a small, narrowly-scoped project can be a strong portfolio piece if it's actually finished and honestly evaluated.">Choosing a project that's too small or simple to be impressive.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the chapter explicitly lists domain choice (covered in Chapter 15.2) separately from what actually makes a project strong or weak.">Choosing the wrong domain to specialize in.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. Why does the chapter suggest documenting what didn't work, not just what did?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Documenting failure cases honestly demonstrates real engineering judgment, which is a genuine, valuable signal separate from just showing a final success.">Because honestly documenting failure cases demonstrates real engineering judgment, a signal that a polished success story alone doesn't provide.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the chapter's whole point is that honest documentation of failures is a positive signal of real engineering judgment, not something to minimize.">Because interviewers only ever care about failures, never successes.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the chapter recommends documenting failure cases specifically, not padding a project with unrelated information.">Because a longer README is always better regardless of content.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. Why does the chapter suggest wrapping a project in Chapter 14's deployment pipeline, regardless of domain?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Deployment and monitoring demonstrate the operational half of a real ML job — most competing portfolios only ever show a notebook, so this addition is a genuine differentiator.">Because it demonstrates the operational half of a real ML job — versioning, containerizing, serving, and monitoring — which most competing portfolios skip entirely, leaving only a notebook.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the chapter explicitly frames this as an addition applicable to any domain project already chosen, not a replacement for picking one.">Because it replaces the need to choose a domain at all.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the chapter's whole argument is that this addition demonstrates meaningfully more than a notebook alone, not that it makes no real difference.">Because it makes no real difference to how a project is perceived, one way or the other.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -373,6 +524,7 @@
   (function () {
     initQuiz(document.getElementById('quiz-15-1'));
     initQuiz(document.getElementById('quiz-15-2'));
+    initQuiz(document.getElementById('quiz-15-3'));
     initProgressTracking();
   })();
 </script>
