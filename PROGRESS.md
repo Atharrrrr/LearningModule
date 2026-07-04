@@ -1,19 +1,21 @@
 # Progress
 
 ## Status
-In progress. 92 of 98 chapters written. Parts I-XIII are all complete.
-Part XIV is in progress (7 of 8 chapters done).
+In progress. 93 of 98 chapters written. Parts I-XIV are all complete.
+Only Part XV remains (0 of 5 chapters done).
 
 ## Next chapter due
-Part XIV, Chapter 14.8 — A Real Pipeline, Start to Finish (the LAST
-chapter of Part XIV — do a Part XIV self-check afterward per the
-resumable-autonomous-loop rule).
-(parts/part-14-notebook-to-product.html already exists — insert the new
-<section> before </main> and flip 14.8's sidebar entry from unwritten to
-live. Not an anchor chapter. No anchor chapters remain anywhere in the
-curriculum — the rest of Part XIV and all of Part XV can be batched
-normally per the 2-3-chapters-per-turn rule all the way to the end of
-the book.)
+Part XV — Becoming an ML Engineer, Chapter 15.1 — How to Read a Research
+Paper (worked example: the SuperPoint paper, Chapter 7.8). This is the
+FIRST chapter of the FINAL Part of the book — parts/part-15-becoming-ml-
+engineer.html does not exist yet. Create it with a full sidebar TOC for
+all 5 chapters of Part XV (15.1 How to Read a Research Paper, 15.2
+Choosing a Specialization, 15.3 Portfolio Projects Mapped to Every Part,
+15.4 The Job Search, 15.5 Glossary), from CURRICULUM.md. Not an anchor
+chapter. No anchor chapters remain anywhere in the curriculum — all 5
+remaining chapters can be batched normally per the 2-3-chapters-per-turn
+rule all the way to the end of the book. After 15.5, the entire 98-
+chapter book is complete.
 
 ## Part XIII self-check (write-book-chapter skill compliance)
 Reviewed all 3 chapters (13.1–13.3) against the required rhythm: every
@@ -251,6 +253,33 @@ issues found.
 - 14.5 Serving a Model — parts/part-14-notebook-to-product.html
 - 14.6 Containers & Reproducibility — parts/part-14-notebook-to-product.html
 - 14.7 Monitoring & Drift — parts/part-14-notebook-to-product.html
+- 14.8 A Real Pipeline, Start to Finish — parts/part-14-notebook-to-product.html
+
+## Part XIV self-check (write-book-chapter skill compliance)
+Reviewed all 8 chapters (14.1–14.8) against the required rhythm: every
+chapter has a frame-of-reference analogy, plain concept explanation, a
+worked/interactive example with real computed values (verified via Node
+scripts and headless-Chromium checks, not faked), a "what you can now
+explain" recap, and a 3-question quiz. Real, verified computation
+throughout: a real 20-number weight-file diff showing 100% changed versus
+a 4-line code file's 25% changed (14.1); real gradient descent on
+L(w)=(w-3)² at 6 learning rates, including a genuine divergence at
+lr=1.05 (14.2); a real N³ matmul op-count/time comparison, CPU vs. GPU,
+verified at N=4096 (14.3); a real gradient-averaging-equals-full-batch-
+gradient identity demo (14.4); real latency/throughput arithmetic across
+batch sizes (14.5); a real floating-point non-associativity demo showing
+forward vs. backward summation of the same 12 numbers genuinely differ
+(14.6); a real ~7-standard-deviation mean-shift drift computation between
+training and live samples (14.7); and a capstone pipeline demo running
+all seven prior stages' real formulas end to end on one small model,
+including a second, healthy (non-drifted) run of Chapter 14.7's exact
+monitoring computation to honestly show the opposite verdict (14.8). All
+new jargon terms were boxed on first use and cross-checked against
+GLOSSARY_TRACKER.md, with heavy cross-referencing back to Chapters 1.3,
+2.1, 2.3, 2.11, 4.3, 6.2, 6.4-6.6, 5.1-5.2, 7.8, 8.5, and 9.2. No
+structural or quality issues found. This completes Part XIV and all
+operational/deployment material in the book — only Part XV (career-
+facing capstone material) remains.
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in

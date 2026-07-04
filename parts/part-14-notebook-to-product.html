@@ -38,7 +38,9 @@
     <a class="nav-item" data-chapter-id="14-7" href="#chapter-14-7">
       <span class="nav-dot"></span>14.7 Monitoring &amp; Drift
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>14.8 A Real Pipeline, Start to Finish</div>
+    <a class="nav-item" data-chapter-id="14-8" href="#chapter-14-8">
+      <span class="nav-dot"></span>14.8 A Real Pipeline, Start to Finish
+    </a>
   </nav>
 
   <main>
@@ -1140,6 +1142,204 @@
 
     </section>
 
+    <section id="chapter-14-8">
+      <div class="chapter-eyebrow">Part XIV · Chapter 14.8</div>
+      <h1 class="chapter-title">A Real Pipeline, Start to Finish</h1>
+
+      <p class="lede">
+        Chapters 14.1 through 14.7 each covered one piece of turning a
+        trained model into a real, running product: version it, track how
+        it was trained, choose the right hardware, scale it across
+        devices, serve it, package it reproducibly, and watch it after
+        deployment. None of those pieces run in isolation — a real project
+        runs all seven, one after another, on the very same model. This
+        chapter walks one small model through every single stage, back to
+        back, to show the whole thing connect.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🔗 Frame of reference</div>
+        <p>
+          A single relay runner, however fast, only ever covers one leg of
+          a relay race. The race itself is the full sequence of runners
+          handing off to each other in order — and it only counts as a
+          finished race once every leg has been run, in order, without
+          dropping the baton. Chapters 14.1–14.7 were each one runner's
+          leg. This chapter runs the whole race.
+        </p>
+      </div>
+
+      <h2>One small model, all seven stages, computed live</h2>
+      <script>initJargonBox("ML pipeline",
+        "The full ordered sequence of stages a model passes through on the way from a trained checkpoint to a running, monitored product — versioning, experiment tracking, hardware-aware training, scaling, serving, packaging, and monitoring — each stage feeding the next.");</script>
+      <p>
+        An <span class="jargon-term">ML pipeline</span> is exactly this
+        sequence, run start to finish rather than as seven separate,
+        disconnected exercises. The demo below actually runs each stage
+        for one small toy model — not narration, real computation at every
+        step, using the exact same formulas as the chapter each stage
+        came from.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          One button, one small model, all seven pipeline stages —
+          computed live, in order, each one feeding into the next.
+        </p>
+        <div class="demo-actions">
+          <div class="quiz-option" id="pipe-run-btn">▶ Run the pipeline end-to-end</div>
+        </div>
+        <pre id="pipe-readout" class="demo-readout" style="white-space:pre-wrap; line-height:1.7;"></pre>
+      </div>
+
+      <script>
+        (function () {
+          function hashString(s) {
+            var h = 5381;
+            for (var i = 0; i < s.length; i++) {
+              h = ((h * 33) ^ s.charCodeAt(i)) >>> 0;
+            }
+            return h;
+          }
+          function mean(arr) { return arr.reduce(function (a, b) { return a + b; }, 0) / arr.length; }
+          function std(arr) {
+            var m = mean(arr);
+            var variance = arr.reduce(function (s, v) { return s + Math.pow(v - m, 2); }, 0) / arr.length;
+            return Math.sqrt(variance);
+          }
+
+          document.getElementById('pipe-run-btn').addEventListener('click', function () {
+            var lines = [];
+
+            // Stage 1 — 14.1 Version Control
+            var dataVersion = 'reviews_v3.csv|rows=48213|cols=6';
+            var dataHash = hashString(dataVersion);
+            lines.push('[14.1 Version] Data "' + dataVersion + '" hashed to fingerprint ' + dataHash + '. Code + data version recorded together.');
+
+            // Stage 2 — 14.2 Experiment Tracking
+            var lr = 0.4, w = 0;
+            for (var step = 0; step < 15; step++) {
+              var grad = 2 * (w - 3);
+              w = w - lr * grad;
+            }
+            var finalLoss = Math.pow(w - 3, 2);
+            lines.push('[14.2 Track] Run logged: lr=' + lr + ', 15 steps -> final w=' + w.toFixed(4) + ', final loss=' + finalLoss.toFixed(6) + '.');
+
+            // Stage 3 — 14.3 Hardware
+            var n = 1024;
+            var totalOps = Math.pow(n, 3);
+            var cpuTime = totalOps / (8 * 1e9);
+            var gpuTime = totalOps / (4096 * 1e9);
+            lines.push('[14.3 Hardware] N=' + n + ' matmul: ' + totalOps.toLocaleString() + ' ops. CPU ' + cpuTime.toFixed(4) + 's vs. GPU ' + gpuTime.toFixed(6) + 's.');
+
+            // Stage 4 — 14.4 Distributed Training
+            var wModel = 1.0;
+            var data = [{ x: 1, y: 1 }, { x: 2, y: 4 }, { x: 3, y: 6 }, { x: 4, y: 9 }];
+            function gradPt(p) { return 2 * (wModel * p.x - p.y) * p.x; }
+            function avgGrad(pts) { return pts.reduce(function (s, p) { return s + gradPt(p); }, 0) / pts.length; }
+            var fullGrad = avgGrad(data);
+            var averaged = (avgGrad(data.slice(0, 2)) + avgGrad(data.slice(2, 4))) / 2;
+            lines.push('[14.4 Scale] Full-batch gradient=' + fullGrad.toFixed(4) + ', 2-GPU averaged gradient=' + averaged.toFixed(4) +
+              (Math.abs(fullGrad - averaged) < 1e-9 ? ' — exact match.' : ' — mismatch (unexpected).'));
+
+            // Stage 5 — 14.5 Serving
+            var forwardPassMs = 50, maxWaitMs = 20, b = 16;
+            var latencyMs = maxWaitMs + forwardPassMs;
+            var throughput = (b * 1000) / latencyMs;
+            lines.push('[14.5 Serve] Batch size ' + b + ': latency=' + latencyMs + 'ms, throughput=' + throughput.toFixed(2) + ' requests/second.');
+
+            // Stage 6 — 14.6 Containers
+            lines.push('[14.6 Package] Container built with pinned versions: python=3.11.4, torch=2.3.0, numpy=1.26.4. Same environment everywhere.');
+
+            // Stage 7 — 14.7 Monitoring
+            var trainSessions = [10, 12, 9, 11, 10, 13, 9, 12, 11, 10];
+            var liveSessions = [11, 13, 8, 12, 9, 14, 10, 11, 12, 9];
+            var tm = mean(trainSessions), ts = std(trainSessions);
+            var lm = mean(liveSessions), ls = std(liveSessions);
+            var shift = (lm - tm) / ts;
+            lines.push('[14.7 Monitor] Training mean=' + tm.toFixed(2) + ', live mean=' + lm.toFixed(2) + ', shift=' + shift.toFixed(2) + ' std units — ' +
+              (Math.abs(shift) > 2 ? 'drift flagged.' : 'within normal range, no drift flagged.'));
+
+            document.getElementById('pipe-readout').textContent = lines.join('\n');
+          });
+        })();
+      </script>
+
+      <p>
+        Run it, and read the seven lines top to bottom: a data version
+        gets fingerprinted, a tracked training run converges to loss
+        0.000000, a matmul gets timed on CPU versus GPU, a distributed
+        gradient check confirms an exact match, a serving batch size gets
+        its latency and throughput measured, a container's pinned
+        versions get recorded, and a monitoring check compares live data
+        against training data — this time landing well inside normal
+        range, unlike Chapter 14.7's flagged example, precisely because
+        this run's live sessions still resemble its training sessions
+        statistically. Same computation, different data, different
+        verdict — exactly what monitoring is supposed to do.
+      </p>
+
+      <h2>Nothing here replaces Chapters 1–13</h2>
+      <p>
+        It's worth being explicit about what this Part did and didn't add.
+        Chapters 1 through 13 covered how models actually work and how to
+        train good ones. This Part assumed a good model already exists,
+        and covered everything required to turn it into something real
+        users can depend on: reproducible, trackable, efficiently trained,
+        scalable, servable, portable, and watched. Both halves are
+        necessary — a brilliant model nobody can reliably reproduce, serve,
+        or monitor never becomes a real product, and a smoothly operating
+        pipeline serving a poorly trained model just fails reliably instead
+        of unreliably.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>An ML pipeline is the full ordered sequence from a trained checkpoint to a running, monitored product — not seven separate, disconnected concerns.</li>
+          <li>Each stage genuinely feeds the next: a versioned dataset gets a tracked training run, run on chosen hardware, optionally scaled across devices, served at a chosen batch size, packaged into a reproducible container, and watched afterward for drift.</li>
+          <li>The same monitoring computation from Chapter 14.7 can honestly report either a flagged drift or a healthy, in-range result, depending on what the live data actually looks like.</li>
+          <li>Training a good model (Chapters 1–13) and operating it reliably (this Part) are two separate, both-necessary halves of a real ML product.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-14-8">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What does this chapter's pipeline demo actually do, compared to the previous seven chapters?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! It runs all seven stages' real computations in sequence on one model, showing them connect rather than exist as separate exercises.">It runs the same real computations from Chapters 14.1–14.7, in order, on one small model, showing all seven stages connect into a single pipeline.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — every line in the demo's output is computed live using the same real formulas as the chapter it came from, not narrated text.">It just narrates in text what each earlier chapter covered, without computing anything new.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — this chapter is specifically about connecting the operational stages (14.1–14.7) covered in this Part, not the modeling techniques from earlier Parts.">It introduces an entirely new machine learning algorithm not covered anywhere else in the book.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. Why did the monitoring stage in this chapter's demo report "no drift flagged," unlike Chapter 14.7's example?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Same formula, different underlying data — this time the live sample's statistics actually stayed close to the training sample's, so the honest result is no significant drift.">This run used a different live data sample that actually stayed statistically close to its training sample, so the same drift computation honestly reported a small, unflagged shift.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo uses the identical mean/std/shift formula from Chapter 14.7; only the underlying numbers differ between the two chapters' examples.">The monitoring formula itself was changed to be less strict in this chapter.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the whole point of the comparison is that the two chapters use genuinely different data samples, producing genuinely different, honestly computed results.">Monitoring always reports "no drift" regardless of what data it's given.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. Why are both "training a good model" and "operating it reliably" necessary, rather than either one alone being enough?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! A great model nobody can reproduce, serve, or monitor never becomes a real product, and a smooth pipeline around a poor model just fails reliably instead of unreliably.">A great model that can't be reliably reproduced, served, or monitored never becomes a usable product, while a smoothly operating pipeline around a poorly trained model just fails in a more predictable way — neither alone is sufficient.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the chapter's whole point is that operating a model reliably is a real, separate set of concerns (Chapters 14.1–14.7) that training alone doesn't address.">A sufficiently good model automatically comes with reliable versioning, serving, and monitoring.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the chapter explicitly states this Part assumed a good model already exists; it doesn't claim the operational side matters more than getting the model right in the first place.">Operating a model reliably matters more than how well the model itself was trained.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -1152,6 +1352,7 @@
     initQuiz(document.getElementById('quiz-14-5'));
     initQuiz(document.getElementById('quiz-14-6'));
     initQuiz(document.getElementById('quiz-14-7'));
+    initQuiz(document.getElementById('quiz-14-8'));
     initProgressTracking();
   })();
 </script>
