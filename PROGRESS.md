@@ -1,17 +1,41 @@
 # Progress
 
 ## Status
-In progress. 69 of 98 chapters written. Parts I, II, III, IV, V, VI, VII,
-and VIII are all complete. Part IX is in progress (8 of 9 chapters done).
+In progress. 70 of 98 chapters written. Parts I-IX are all complete.
 
 ## Next chapter due
-Part IX, Chapter 9.9 — Hallucination & Evaluation
-(parts/part-09-language-models.html already exists — insert the new
-<section> before </main> and flip 9.9's sidebar entry from unwritten to
-live. Not an anchor chapter. This is also the LAST chapter of Part IX —
-completing it finishes the Part, so do the write-book-chapter skill
-self-check afterward per the resumable-autonomous-loop rule, then
-continue into Part X per CURRICULUM.md.)
+Part X, Chapter 10.1 — Meet the VLM (CLIP)
+(parts/part-10-multimodal-ai.html does not exist yet — create it with a
+full sidebar TOC for all 3 chapters of Part X, titles from CURRICULUM.md:
+10.1 Meet the VLM (CLIP) [C], 10.2 Captioning & Visual Question
+Answering [D], 10.3 Speech & Audio Models (Whisper) [D]. Every chapter
+except 10.1 starts as class="nav-item unwritten". None of Part X's
+chapters are anchor chapters, so 10.1-10.3 can be batched per the normal
+2-3-chapters-per-turn rule — likely the whole Part in one batch.)
+
+## Part IX self-check (write-book-chapter skill compliance)
+Reviewed all 9 chapters (9.1–9.9) against the required rhythm: every
+chapter has a frame-of-reference analogy, plain concept explanation, a
+worked/interactive example with real computed values (verified via
+Node scripts and headless-Chromium checks, not faked), a "what you can
+now explain" recap, and a 3-question quiz. Real, verified computation
+throughout: a live Byte-Pair Encoding merge stepper and tokenizer (9.1);
+a real bigram next-token model with greedy vs. weighted-sampling
+autoregressive generation (9.2); a real power-law loss curve and a
+per-step-accuracy-raised-to-a-power "emergent ability" illustration
+(9.3); a real dot-product toy reward model and an exponentiated-weights
+RLHF policy-update simulation (9.4); real LoRA parameter-count arithmetic
+and real int8 quantization/dequantization with measured rounding error
+(9.5); a real context-length disambiguation demo (river bank vs. money
+bank) and a real few-shot pattern-application demo (9.6); real cosine-
+similarity document retrieval over toy embeddings (9.7); a real live
+agent-trace calculator tool call (9.8); and a real fallback-to-mode
+hallucination simulation plus a real graded true/false benchmark (9.9).
+All new jargon terms were boxed on first use and cross-checked against
+GLOSSARY_TRACKER.md before writing, with heavy cross-referencing back to
+Chapters 2.4, 4.2-4.3, 6.1, 6.4-6.5, 7.5, and all of Part VIII. Anchor
+chapters 9.2 and 9.4 each received a full solo turn per CLAUDE.md. No
+structural or quality issues found.
 
 ## Part VIII self-check (write-book-chapter skill compliance)
 Reviewed all 6 chapters (8.1–8.6) against the required rhythm: every
@@ -110,6 +134,7 @@ issues found.
 - 9.6 Prompting & In-Context Learning — parts/part-09-language-models.html
 - 9.7 Retrieval-Augmented Generation (RAG) — parts/part-09-language-models.html
 - 9.8 Agents & Tool Use — parts/part-09-language-models.html
+- 9.9 Hallucination & Evaluation — parts/part-09-language-models.html
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in

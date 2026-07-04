@@ -41,7 +41,9 @@
     <a class="nav-item" data-chapter-id="9-8" href="#chapter-9-8">
       <span class="nav-dot"></span>9.8 Agents &amp; Tool Use
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>9.9 Hallucination &amp; Evaluation</div>
+    <a class="nav-item" data-chapter-id="9-9" href="#chapter-9-9">
+      <span class="nav-dot"></span>9.9 Hallucination &amp; Evaluation
+    </a>
   </nav>
 
   <main>
@@ -2064,6 +2066,228 @@
 
     </section>
 
+    <section id="chapter-9-9">
+      <div class="chapter-eyebrow">Part IX · Chapter 9.9</div>
+      <h1 class="chapter-title">Hallucination &amp; Evaluation</h1>
+
+      <p class="lede">
+        This Part has covered how LLMs are built, trained to be helpful,
+        made cheaper to adapt, prompted effectively, and given tools and
+        documents to draw on. This last chapter covers the honest limits
+        of all of that: LLMs confidently state things that are simply
+        false, and measuring how good — or how wrong — a model really is
+        turns out to be its own real challenge.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🎓 Frame of reference</div>
+        <p>
+          A student who didn't study for an essay exam, but who writes
+          fluently and confidently, doesn't leave the answer blank —
+          they write something plausible-sounding anyway, in the same
+          confident tone as an answer they actually knew. A reader
+          without independent knowledge of the subject often can't tell
+          the two apart just from how the answer sounds. That's exactly
+          the risk with an LLM: fluency and confidence are not the same
+          thing as being correct, and nothing in how the text is
+          produced automatically tells you which one you're looking at.
+        </p>
+      </div>
+
+      <h2>Hallucination: confident, fluent, and wrong</h2>
+      <script>initJargonBox("hallucination",
+        "An LLM producing fluent, confident-sounding text that is factually false or entirely made up, with no internal signal distinguishing it from a true statement. A direct consequence of next-token prediction (Chapter 9.2) rewarding plausible continuations, not verified truth.");</script>
+      <p>
+        <span class="jargon-term">Hallucination</span> traces directly
+        back to Chapter 9.2's training objective: next-token prediction
+        rewards producing a plausible continuation, and plausible is not
+        the same property as true. Nothing about the training loss
+        distinguishes "confidently stating a real fact" from "confidently
+        stating a fabricated one" — both can look identical as text.
+        Instruction tuning and RLHF (Chapter 9.4) shape tone and
+        helpfulness, but a reward model trained on human preferences
+        doesn't automatically catch every subtle falsehood either.
+        RAG (Chapter 9.7) helps by grounding answers in retrieved real
+        text, but only when retrieval finds the right chunk and the
+        model actually uses it — none of these techniques eliminate
+        hallucination outright.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          A toy model "trained" on 3 real facts: Alice → Engineer, Bob →
+          Engineer, Carol → Teacher. Ask about someone who was never in
+          its training data, and watch what a next-token predictor with
+          no "I don't know" option actually does.
+        </p>
+        <div class="demo-actions">
+          <div class="quiz-option" id="hall-alice-btn">Alice's job?</div>
+          <div class="quiz-option" id="hall-bob-btn">Bob's job?</div>
+          <div class="quiz-option" id="hall-carol-btn">Carol's job?</div>
+          <div class="quiz-option" id="hall-dave-btn">Dave's job?</div>
+        </div>
+        <p id="hall-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var facts = { alice: 'Engineer', bob: 'Engineer', carol: 'Teacher' };
+
+          function lookupJob(name) {
+            name = name.toLowerCase();
+            if (facts[name]) return { job: facts[name], real: true };
+            var counts = {};
+            Object.keys(facts).forEach(function (k) { counts[facts[k]] = (counts[facts[k]] || 0) + 1; });
+            var best = null, bestCount = -1;
+            Object.keys(counts).forEach(function (k) { if (counts[k] > bestCount) { best = k; bestCount = counts[k]; } });
+            return { job: best, real: false };
+          }
+
+          function ask(name) {
+            var r = lookupJob(name);
+            var label = name.charAt(0).toUpperCase() + name.slice(1);
+            var readout = document.getElementById('hall-readout');
+            if (r.real) {
+              readout.textContent = '"' + label + "'s job is: " + r.job + '." — a real fact, actually seen in training.';
+            } else {
+              readout.textContent = '"' + label + "'s job is: " + r.job + '." — stated with exactly the same confidence as a real fact. ⚠️ ' +
+                label + ' was never in the training data at all. The model has no representation for "I don\'t know" — it just fell back to ' +
+                'the single most common job among the people it actually does know (Engineer, 2 out of 3), and presented that guess as if it were a fact. This is a hallucination.';
+            }
+          }
+
+          document.getElementById('hall-alice-btn').addEventListener('click', function () { ask('alice'); });
+          document.getElementById('hall-bob-btn').addEventListener('click', function () { ask('bob'); });
+          document.getElementById('hall-carol-btn').addEventListener('click', function () { ask('carol'); });
+          document.getElementById('hall-dave-btn').addEventListener('click', function () { ask('dave'); });
+        })();
+      </script>
+
+      <p>
+        Click "Dave's job?": the toy model answers "Engineer" with
+        exactly the same confident phrasing as Alice's real answer —
+        because structurally, it has no other option. There's no
+        built-in "insufficient data" output; the model always produces
+        its single best guess given whatever patterns it learned, and
+        nothing about the output's tone reveals whether that guess is
+        grounded in real training data or entirely fabricated.
+      </p>
+
+      <h2>Evaluation: measuring how good a model actually is</h2>
+      <script>initJargonBox("benchmark",
+        "A standardized, fixed set of test questions or tasks with known correct answers, used to measure and compare LLMs' capabilities with a single number — Chapter 5.3's accuracy idea, applied to language models.");</script>
+      <p>
+        A <span class="jargon-term">benchmark</span> is Chapter 5's
+        train/test evaluation, applied to language models: a fixed set
+        of questions with known correct answers, run against a model,
+        scored the same way Chapter 5.3 scored a classifier — accuracy,
+        the fraction answered correctly. Benchmarks are useful and
+        widely reported, but they have an honest limit: scoring well on
+        one fixed set of questions says nothing certain about a
+        completely different question the benchmark never covered.
+        High benchmark accuracy and zero hallucination are not the same
+        claim.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          A real 5-question true/false benchmark, graded live against a
+          toy model's actual answers.
+        </p>
+        <table class="data-table" id="bench-table">
+          <thead><tr><th>Question</th><th>Model answered</th><th>Correct answer</th><th>Result</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p id="bench-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var questions = [
+            'Is Paris the capital of France?',
+            'Is the sun a planet?',
+            'Is water H2O?',
+            'Is 7 a prime number?',
+            'Is Mount Everest in Africa?'
+          ];
+          var correctAnswers = [true, false, true, true, false];
+          var modelAnswers = [true, false, true, true, true];
+
+          var tbody = document.querySelector('#bench-table tbody');
+          var numCorrect = 0;
+          questions.forEach(function (q, i) {
+            var ok = modelAnswers[i] === correctAnswers[i];
+            if (ok) numCorrect++;
+            var tr = document.createElement('tr');
+            tr.innerHTML = '<td>' + q + '</td><td>' + modelAnswers[i] + '</td><td>' + correctAnswers[i] + '</td><td>' + (ok ? '✅ correct' : '❌ wrong') + '</td>';
+            tbody.appendChild(tr);
+          });
+
+          var accuracy = numCorrect / questions.length;
+          document.getElementById('bench-readout').textContent =
+            'Accuracy: ' + numCorrect + '/' + questions.length + ' = ' + (accuracy * 100).toFixed(0) + '%. ' +
+            'The one miss (Everest) was a confident, specific, wrong answer — a real hallucination sitting right inside an 80% benchmark score.';
+        })();
+      </script>
+
+      <p>
+        80% accuracy sounds solid — and on this benchmark, it is exactly
+        that. But it's still compatible with a confident, specific,
+        wrong answer to a real question, sitting right next to four
+        correct ones. That's the honest takeaway of this whole Part:
+        every technique covered — RLHF, RAG, agents, benchmarks — makes
+        LLMs more capable and more reliable, without making any single
+        output a guaranteed fact.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Hallucination is fluent, confident, false output — a direct consequence of next-token prediction optimizing for plausibility, not verified truth.</li>
+          <li>A next-token predictor has no built-in "I don't know": faced with a genuinely unknown case, it still produces its single best guess, with the same confident tone as a real fact.</li>
+          <li>RLHF and RAG reduce hallucination but don't eliminate it — a reward model can miss subtle falsehoods, and RAG only helps when retrieval finds the right text and the model actually uses it.</li>
+          <li>Benchmarks measure accuracy on one fixed set of known-answer questions — a useful, widely reported number, but not a guarantee against confident errors on questions the benchmark never covered.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-9-9">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. Why does an LLM's training objective make hallucination possible in the first place?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Next-token prediction rewards plausibility, and a fabricated statement can be just as plausible-sounding as a true one.">Next-token prediction only rewards producing plausible continuations of text, and nothing about that objective distinguishes a plausible true statement from a plausible false one.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — LLMs are trained on an enormous amount of real text; the issue isn't a lack of training data volume.">The model simply wasn't trained on enough text to learn anything reliably.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — hallucination is a real, well-documented behavior with a specific cause (Chapter 9.2's training objective), not randomness in general.">Hallucination happens completely at random, with no underlying cause.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. In the demo, why did asking about "Dave" produce a confident answer, even though Dave was never in the training data?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! There's no built-in \"insufficient data\" output — the model always returns its single best guess, phrased identically to a real fact.">The toy model has no representation for "I don't know" — it always outputs its single best guess (here, the most common training answer) with the same confident phrasing as a real fact.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — Dave is deliberately excluded from the training facts in this demo; the fallback answer comes from the other three people's data, not from Dave himself.">Dave was secretly included in the training data after all.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the fallback answer is computed deterministically (the most common job among known people), not chosen at random.">The demo picks a random job whenever it doesn't recognize a name.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. What's the honest limitation of benchmark accuracy, according to this chapter?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! A high score on one fixed set of known-answer questions doesn't guarantee correctness on questions outside that set.">A model can score well on a fixed benchmark while still confidently hallucinating on real questions that benchmark never covered.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the chapter's point is the opposite: a high benchmark score does not guarantee zero hallucination elsewhere.">A perfect benchmark score is mathematically proof that a model never hallucinates.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo computes a real, meaningful accuracy score (80%) from real graded answers; benchmarks are useful, just not a complete guarantee.">Benchmarks provide no useful information about a model at all.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -2077,6 +2301,7 @@
     initQuiz(document.getElementById('quiz-9-6'));
     initQuiz(document.getElementById('quiz-9-7'));
     initQuiz(document.getElementById('quiz-9-8'));
+    initQuiz(document.getElementById('quiz-9-9'));
     initProgressTracking();
   })();
 </script>
