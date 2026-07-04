@@ -217,12 +217,16 @@
       </div>
 
     </section>
+    <div class="part-nav">
+      <a class="part-nav-link next" href="part-01-orientation.html"><span class="part-nav-eyebrow">Next Part &rarr;</span>Part I — Orientation</a>
+    </div>
 
   </main>
 </div>
 
 <script>
   (function () {
+    initSiteNav({ atRoot: false, current: '00' });
     initQuiz(document.getElementById('quiz-0-1'));
     initProgressTracking();
   })();
