@@ -26,7 +26,9 @@
     <a class="nav-item" data-chapter-id="11-3" href="#chapter-11-3">
       <span class="nav-dot"></span>11.3 GANs
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>11.4 Diffusion Models</div>
+    <a class="nav-item" data-chapter-id="11-4" href="#chapter-11-4">
+      <span class="nav-dot"></span>11.4 Diffusion Models
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>11.5 Text-to-Image (Diffusion Meets CLIP)</div>
   </nav>
 
@@ -553,6 +555,222 @@
 
     </section>
 
+    <section id="chapter-11-4">
+      <div class="chapter-eyebrow">Part XI · Chapter 11.4</div>
+      <h1 class="chapter-title">Diffusion Models</h1>
+
+      <p class="lede">
+        Chapter 11.3's GAN generates an entire realistic output in one
+        single, difficult forward pass — and pays for it with the
+        unstable, oscillating training seen in that chapter's demo.
+        Diffusion models take the opposite trade: instead of one hard
+        generation step, they use hundreds or thousands of very small,
+        very easy steps. That trade turns out to be remarkably effective,
+        and today's leading image generators are built on it.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">📺 Frame of reference</div>
+        <p>
+          Imagine a photograph slowly dissolving into television static
+          — not all at once, but one tiny sprinkle of static added at a
+          time, over a thousand tiny steps, until nothing recognizable
+          remains. Now imagine training a restorer whose only job, ever,
+          is this: given an image with one sprinkle too much static,
+          guess what it looked like one sprinkle earlier. That's a much
+          easier job than "turn pure static into a finished photo" in
+          one leap. But run that tiny, easy correction a thousand times
+          in a row, starting from pure static, and a coherent photograph
+          can gradually emerge — built entirely out of small, individually
+          modest corrections.
+        </p>
+      </div>
+
+      <h2>Forward diffusion: gradually destroying structure, on purpose</h2>
+      <script>initJargonBox("forward diffusion process",
+        "A fixed, mechanical procedure that gradually adds a small amount of Gaussian noise (Chapter 2.6) to real data over many steps, until after enough steps the result is indistinguishable from pure random noise. Requires no training at all — just a known noise-adding schedule, applied step by step.");</script>
+      <p>
+        The <span class="jargon-term">forward diffusion process</span>
+        takes real data and destroys it on purpose, a little at a time:
+        at each step, mix in a small amount of random Gaussian noise
+        (Chapter 2.6, the same real sampling mechanism as Chapter 11.2's
+        VAE demo). After enough steps, whatever structure the original
+        data had is completely gone, and the result looks exactly like
+        random noise. Nothing here is learned — it's a fixed recipe, and
+        because it's fixed and mechanical, exactly how much noise was
+        added at every single step is always known.
+      </p>
+
+      <h2>Reverse diffusion: undoing it, one small step at a time</h2>
+      <script>initJargonBox("reverse diffusion process (denoising)",
+        "A neural network trained to look at a noisy sample at some step and predict the noise that was added to reach it, using ordinary supervised learning (Chapter 4.3) — since the forward process's real noise at each step is always known during training, providing a genuine target. Generation then runs this trained denoiser backward, starting from pure random noise and removing a small amount at a time, until a coherent new sample emerges.");</script>
+      <p>
+        <span class="jargon-term">Reverse diffusion (denoising)</span> is
+        where learning happens. During training, the network is shown a
+        noisy sample from some step of the forward process and asked to
+        predict the specific noise that was mixed in to produce it —
+        a genuine, known target, since the forward process is fixed and
+        fully recorded. That's an ordinary supervised regression problem
+        (Chapter 4.3), repeated across every step of the noise schedule.
+        Once trained, generation reverses the direction entirely: start
+        from pure random noise, run the trained denoiser to estimate and
+        remove a small amount of it, repeat that hundreds or thousands
+        of times, and a coherent, novel sample gradually emerges — never
+        needing to jump straight from noise to a finished result in one
+        leap.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          A real 1-number forward/reverse diffusion process. Forward
+          step: x ← √(1−β)·x + √β·noise, with noise a real Gaussian
+          sample (Chapter 11.2's Box-Muller transform) and β=0.05.
+          Starting value x₀ = 0.8 — click forward until it's
+          unrecognizable as noise, then click reverse to undo it exactly,
+          step by step, using the real noise values that were actually
+          added.
+        </p>
+        <div class="demo-actions">
+          <div class="quiz-option" id="diff-fwd-btn">▶ Forward: add one noise step</div>
+          <div class="quiz-option" id="diff-rev-btn">◀ Reverse: remove one noise step</div>
+          <div class="quiz-option" id="diff-reset-btn">↺ Reset</div>
+        </div>
+        <p id="diff-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          function gaussianSample() {
+            var u1 = Math.random(), u2 = Math.random();
+            return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+          }
+
+          var beta = 0.05;
+          var x0 = 0.8;
+          var xs, noises, t;
+
+          function reset() {
+            xs = [x0];
+            noises = [];
+            t = 0;
+            render();
+          }
+
+          function render() {
+            var readout = document.getElementById('diff-readout');
+            if (t === 0) {
+              readout.textContent = 'Step 0 (original): x₀ = ' + xs[0].toFixed(4) + '. Click "Forward" to start adding noise.';
+            } else {
+              var looksLikeNoise = t >= 15;
+              readout.textContent = 'Step ' + t + ': x_' + t + ' = ' + xs[t].toFixed(4) +
+                (looksLikeNoise ? ' — no longer recognizably related to x₀ = 0.8.' : ' — still visibly close to x₀ = 0.8.') +
+                ' (' + noises.length + ' real noise values recorded so far.)';
+            }
+          }
+
+          document.getElementById('diff-fwd-btn').addEventListener('click', function () {
+            var noise = gaussianSample();
+            var xNext = Math.sqrt(1 - beta) * xs[t] + Math.sqrt(beta) * noise;
+            xs.push(xNext);
+            noises.push(noise);
+            t++;
+            render();
+          });
+
+          document.getElementById('diff-rev-btn').addEventListener('click', function () {
+            if (t === 0) { return; }
+            var xPrev = (xs[t] - Math.sqrt(beta) * noises[t - 1]) / Math.sqrt(1 - beta);
+            t--;
+            xs[t] = xPrev;
+            noises.pop();
+            render();
+            if (t === 0) {
+              document.getElementById('diff-readout').textContent += '  Recovered x₀ = ' + xPrev.toFixed(4) + ' — exactly the original 0.8000.';
+            }
+          });
+
+          document.getElementById('diff-reset-btn').addEventListener('click', reset);
+          reset();
+        })();
+      </script>
+
+      <p>
+        Click "Forward" 15-20 times: the value wanders far from 0.8 and
+        becomes statistically indistinguishable from any other random
+        number. Now click "Reverse" the same number of times: each click
+        exactly undoes one forward step, using the real noise value that
+        step actually added, and the value walks precisely back to
+        0.8000. This demo can cheat — it recorded the real noise added at
+        every step, so reversing it is exact algebra, not prediction.
+        A real trained diffusion model doesn't get to see the real
+        noise; it only has an approximate, learned guess at each
+        step. But run that approximate guess enough times, in the same
+        small-step-by-small-step structure just demonstrated here, and it
+        reliably converges to a coherent result anyway.
+      </p>
+
+      <h2>Why trade one hard step for a thousand easy ones?</h2>
+      <p>
+        Chapter 11.3's GAN generator has to be right about an entire
+        realistic output in a single forward pass, trained against a
+        constantly shifting discriminator — genuinely unstable, as that
+        chapter's wobbling demo showed directly. A diffusion model's
+        network only ever has to solve one much narrower problem:
+        "given this noise level, what noise was just added?" — the same
+        modest regression question, answered the same way, at every
+        step. That narrower, repeated task is a large part of why
+        diffusion models train more stably than GANs, at a real cost:
+        generating one sample means running the network many times in
+        sequence, not once.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>The forward diffusion process is a fixed, unlearned procedure that gradually adds Gaussian noise to real data until it becomes indistinguishable from pure noise.</li>
+          <li>The reverse diffusion process is a trained network that predicts the noise added at each step, since the forward process's real noise is always a known training target.</li>
+          <li>Generation runs the trained denoiser backward from pure random noise, removing a small amount at each step, until a coherent new sample emerges.</li>
+          <li>Diffusion trades a GAN's single hard, unstable generation step for many small, easy denoising steps — more stable to train, at the cost of needing many sequential steps to generate one sample.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-11-4">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What does the forward diffusion process actually do, and does it require training?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! The forward process is a fixed recipe — no learning happens there at all; learning happens only in the reverse process.">It's a fixed, mechanical procedure that gradually adds Gaussian noise to real data over many steps, and it requires no training — the noise schedule is simply applied directly.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the forward process is specifically the fixed, unlearned noise-adding step; training happens in the reverse (denoising) process instead.">It's the trained neural network that learns to predict and remove noise.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the forward process specifically adds noise to data, moving it toward randomness, not the other way around.">It removes noise from a random starting point to produce a coherent sample.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. In the demo, why could clicking "Reverse" recover exactly 0.8000, rather than just an approximate value?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Because the exact noise added at each forward step was recorded, reversing it is exact algebra — an honest simplification the chapter explicitly flags as different from a real trained model's approximate predictions.">The demo recorded the exact real noise value added at every forward step, so reversing was exact algebra, not a neural network's approximate prediction like a real diffusion model would use.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo explicitly states this exact-recovery trick only works because the real noise values were recorded; a real trained model only has an approximate, learned guess at each step.">A real trained diffusion model always recovers the exact original value too, with no approximation involved.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the forward and reverse steps in the demo are computed from a real, deterministic formula using the recorded noise; nothing here is coincidental or random luck.">It's a coincidence specific to the number 0.8 that happened to work in this one case.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. What's the key tradeoff diffusion models make compared to a GAN's generator?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Many small, easy steps train more stably than one hard, adversarially-trained step, at the cost of needing to run the network many times to generate one sample.">Diffusion trades a GAN's single, hard, unstable generation step for many small, individually easier denoising steps — more stable to train, but requiring many sequential steps to generate one output.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a diffusion model's reverse process is trained with ordinary supervised learning against a known noise target, not two networks trained adversarially against each other like a GAN.">Diffusion models use the exact same adversarial generator-vs-discriminator setup as a GAN.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — generating one sample from a diffusion model specifically requires running the denoising network many times in sequence, one step at a time.">Diffusion models generate a finished sample in a single step, exactly like a GAN's generator.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -561,6 +779,7 @@
     initQuiz(document.getElementById('quiz-11-1'));
     initQuiz(document.getElementById('quiz-11-2'));
     initQuiz(document.getElementById('quiz-11-3'));
+    initQuiz(document.getElementById('quiz-11-4'));
     initProgressTracking();
   })();
 </script>

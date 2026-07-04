@@ -1,15 +1,17 @@
 # Progress
 
 ## Status
-In progress. 76 of 98 chapters written. Parts I-X are all complete.
-Part XI is in progress (3 of 5 chapters done).
+In progress. 77 of 98 chapters written. Parts I-X are all complete.
+Part XI is in progress (4 of 5 chapters done).
 
 ## Next chapter due
-Part XI, Chapter 11.4 — Diffusion Models
+Part XI, Chapter 11.5 — Text-to-Image (Diffusion Meets CLIP)
 (parts/part-11-generative-ai.html already exists — insert the new
-<section> before </main> and flip 11.4's sidebar entry from unwritten to
-live. IMPORTANT: 11.4 is an anchor chapter (see CLAUDE.md) — must be
-written ALONE, no other chapters batched with it.)
+<section> before </main> and flip 11.5's sidebar entry from unwritten to
+live. Not an anchor chapter. This is also the LAST chapter of Part XI —
+completing it finishes the Part, so do the write-book-chapter skill
+self-check afterward per the resumable-autonomous-loop rule, then
+continue into Part XII per CURRICULUM.md.)
 
 ## Part X self-check (write-book-chapter skill compliance)
 Reviewed all 3 chapters (10.1–10.3) against the required rhythm: every
@@ -159,6 +161,7 @@ issues found.
 - 11.1 Autoencoders — parts/part-11-generative-ai.html
 - 11.2 Variational Autoencoders — parts/part-11-generative-ai.html
 - 11.3 GANs — parts/part-11-generative-ai.html
+- 11.4 Diffusion Models — parts/part-11-generative-ai.html
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in
