@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Part X — Multimodal AI | AI/ML From Zero to Job-Ready</title>
+<link rel="stylesheet" href="../assets/styles.css">
+<script src="../assets/components.js"></script>
+</head>
+<body>
+<div class="book-shell">
+
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">AI/ML: Zero to Job-Ready</div>
+    </div>
+    <div class="progress-bar-track"><div class="progress-bar-fill"></div></div>
+
+    <div class="sidebar-part">Part X — Multimodal AI</div>
+    <a class="nav-item" data-chapter-id="10-1" href="#chapter-10-1">
+      <span class="nav-dot"></span>10.1 Meet the VLM (CLIP)
+    </a>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>10.2 Captioning &amp; Visual Question Answering</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>10.3 Speech &amp; Audio Models (Whisper)</div>
+  </nav>
+
+  <main>
+
+    <section id="chapter-10-1">
+      <div class="chapter-eyebrow">Part X · Chapter 10.1</div>
+      <h1 class="chapter-title">Meet the VLM (CLIP)</h1>
+
+      <p class="lede">
+        Chapter 7 gave a model the ability to understand images.
+        Chapters 8-9 gave a model the ability to understand and generate
+        text. A vision-language model connects the two: it learns a
+        single shared space where both a picture and a sentence
+        describing it can be represented as the same kind of thing.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🗂️ Frame of reference</div>
+        <p>
+          Imagine a librarian filing both photographs and written
+          descriptions into the same set of drawers, organized purely by
+          subject matter — every photo of a dog, and every caption that
+          describes a dog, lands in the same drawer, regardless of
+          whether it's a picture or a sentence. Ask for "a photo of a
+          dog" and the librarian can pull the exact right photo from
+          that drawer, having never needed the two to look alike in any
+          literal sense — only to belong to the same drawer. That shared
+          filing system, for images and text at once, is exactly what a
+          vision-language model learns.
+        </p>
+      </div>
+
+      <h2>One shared embedding space for two different kinds of input</h2>
+      <script>initJargonBox("VLM (vision-language model)",
+        "A model that processes both images and text and represents them in a shared embedding space (Chapter 8.3), so that an image and a text description of that same thing end up with similar embeddings — even though the two started as completely different kinds of input.");</script>
+      <p>
+        A <span class="jargon-term">VLM (vision-language model)</span>
+        uses two separate encoders — one for images, built from Chapter
+        7's CNN or Transformer-based vision architectures, and one for
+        text, built from Chapter 8-9's Transformer machinery — but
+        trains them together so that both encoders land their outputs in
+        the exact same embedding space. An image of a dog and the
+        sentence "a photo of a dog" end up as two nearby points in that
+        one shared space, exactly like Chapter 8.3's word embeddings,
+        but now spanning two different modalities at once.
+      </p>
+
+      <h2>CLIP: learning the space by contrasting matches against mismatches</h2>
+      <script>initJargonBox("CLIP (Contrastive Language-Image Pretraining)",
+        "A VLM trained on a huge number of (image, caption) pairs scraped from the internet, using a contrastive loss: for a batch of pairs, pull each image's embedding close to its own caption's embedding, and push it away from every other caption's embedding in the same batch.");</script>
+      <script>initJargonBox("contrastive learning",
+        "A training approach that doesn't require exact correct-answer labels for every input — instead, for a batch of matched pairs, it pulls each true pair's embeddings close together (Chapter 2.4's cosine similarity, maximized) and pushes every mismatched pair apart, learning structure purely from which items belong together.");</script>
+      <p>
+        <span class="jargon-term">CLIP</span> is the model that made this
+        approach practical at scale. It trains on hundreds of millions of
+        real (image, caption) pairs collected from the web — no one had
+        to hand-label what's "in" each image; the existing caption is the
+        label. <span class="jargon-term">Contrastive learning</span> is
+        the mechanism: take a batch of image-caption pairs, compute every
+        image's embedding and every caption's embedding, and use gradient
+        descent (Chapter 4.3) to push each image's embedding toward high
+        cosine similarity with its own caption, and toward low similarity
+        with every other caption in that batch. Repeated over enough
+        batches, the space organizes itself so "matching content" means
+        "nearby embeddings" — for images and text alike.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          Three toy images (represented as 2D embeddings, exactly
+          Chapter 8.3's style — a real trained CLIP uses hundreds of
+          dimensions) and three captions in the same shared space. Pick
+          an image and watch real cosine similarity, computed live, rank
+          every caption — the top match is what CLIP would retrieve.
+        </p>
+        <div class="demo-actions">
+          <div class="quiz-option" id="clip-dog-btn">🐕 Photo of a dog</div>
+          <div class="quiz-option" id="clip-cat-btn">🐈 Photo of a cat</div>
+          <div class="quiz-option" id="clip-car-btn">🚗 Photo of a car</div>
+        </div>
+        <table class="data-table" id="clip-table">
+          <thead><tr><th>Caption</th><th>Cosine similarity to image</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p id="clip-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var images = {
+            dog: { label: 'Photo of a dog', vec: [4, 1] },
+            cat: { label: 'Photo of a cat', vec: [1, 4] },
+            car: { label: 'Photo of a car', vec: [-3, -3] }
+          };
+          var captions = {
+            dog: { label: '"a photo of a dog"', vec: [4.2, 0.8] },
+            cat: { label: '"a photo of a cat"', vec: [0.9, 4.1] },
+            car: { label: '"a photo of a car"', vec: [-3.1, -2.9] }
+          };
+
+          function dot(a, b) { return a[0] * b[0] + a[1] * b[1]; }
+          function norm(a) { return Math.sqrt(a[0] * a[0] + a[1] * a[1]); }
+          function cosine(a, b) { return dot(a, b) / (norm(a) * norm(b)); }
+
+          function runImage(imgKey) {
+            var imgVec = images[imgKey].vec;
+            var results = Object.keys(captions).map(function (capKey) {
+              return { label: captions[capKey].label, sim: cosine(imgVec, captions[capKey].vec) };
+            });
+            results.sort(function (a, b) { return b.sim - a.sim; });
+
+            var tbody = document.querySelector('#clip-table tbody');
+            tbody.innerHTML = '';
+            results.forEach(function (r, i) {
+              var tr = document.createElement('tr');
+              tr.innerHTML = '<td>' + (i === 0 ? '🏆 ' : '') + r.label + '</td><td>' + r.sim.toFixed(4) + '</td>';
+              tbody.appendChild(tr);
+            });
+
+            document.getElementById('clip-readout').textContent =
+              'Query: "' + images[imgKey].label + '" → best-matching caption: ' + results[0].label + ' (similarity ' + results[0].sim.toFixed(4) + ').';
+          }
+
+          document.getElementById('clip-dog-btn').addEventListener('click', function () { runImage('dog'); });
+          document.getElementById('clip-cat-btn').addEventListener('click', function () { runImage('cat'); });
+          document.getElementById('clip-car-btn').addEventListener('click', function () { runImage('car'); });
+
+          runImage('dog');
+        })();
+      </script>
+
+      <p>
+        Every image retrieves its true matching caption with similarity
+        above 0.998, while every mismatched pairing scores far lower —
+        even negative for the most unrelated pair (dog photo vs. "a
+        photo of a car," at -0.874). That wide, reliable gap between
+        matches and mismatches is exactly what contrastive training is
+        built to produce, and it's the same nearest-neighbor mechanism
+        Chapter 9.7's RAG used for document retrieval — just applied
+        across images and text instead of within text alone.
+      </p>
+
+      <p>
+        This shared space is what makes CLIP so reusable: it powers
+        image search from a text query, zero-shot image classification
+        (comparing an image's embedding against candidate class-name
+        captions with no task-specific training at all), and — as
+        Chapter 11.5 covers later — guiding image generation itself.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>A vision-language model uses separate image and text encoders, trained together so both land in the same shared embedding space.</li>
+          <li>CLIP trains on real (image, caption) pairs from the web, using contrastive learning: pull matched pairs together, push mismatched pairs apart, purely from cosine similarity in that shared space.</li>
+          <li>No manual labeling of image contents is needed — the existing caption that came with each image is the training signal.</li>
+          <li>A well-trained CLIP-style space reliably separates true matches (similarity near 1) from mismatches (similarity low or negative), the same nearest-neighbor mechanism behind Chapter 9.7's RAG retrieval.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-10-1">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What does it mean for a VLM to have a "shared embedding space"?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Both encoders are trained together so their outputs land in the same space, letting similarity be measured between an image and a text description directly.">Images and text are both converted into vectors that live in the same space, so an image and a matching text description end up with similar vectors even though they started as different kinds of input.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a VLM keeps separate encoders for images and text; it's their outputs, not the encoders themselves, that are trained to land in one shared space.">Images are converted into text before any processing happens.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a VLM's whole design is representing images and text in a single comparable space, not keeping them in two unrelated spaces.">Images and text are processed in two completely separate, unrelated spaces that can never be compared.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. What does CLIP's contrastive training actually push its embedding space to do?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! That's exactly the contrastive objective, verified in the demo: true pairs land close together, everything else lands far apart.">Pull each image's embedding close to its true matching caption's embedding, and push it away from every other, mismatched caption's embedding.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — contrastive training specifically separates matches from mismatches; making everything close together would erase that distinction entirely.">Make every image and every caption's embedding equally close together, regardless of content.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — CLIP's whole training signal comes from real (image, caption) pairs; nothing about contrastive learning here is random.">Randomly shuffle embeddings with no relationship to the actual image or caption content.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. Why didn't CLIP's training require anyone to manually label what's inside each training image?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! The (image, caption) pair itself supplies the training signal — no separate manual labeling step is needed.">The caption that already came attached to each image on the web serves as its label, so the pairing itself is the training signal.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — CLIP is trained on real (image, caption) pairs; it doesn't skip labeled data, it uses naturally occurring captions as the labels instead.">CLIP doesn't use any training data at all.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo's image-caption similarities are computed from real, deliberately chosen embeddings representing genuine matches and mismatches.">Every image and caption in training were randomly and arbitrarily paired together.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+</div>
+
+<script>
+  (function () {
+    initQuiz(document.getElementById('quiz-10-1'));
+    initProgressTracking();
+  })();
+</script>
+</body>
+</html>

@@ -1,17 +1,18 @@
 # Progress
 
 ## Status
-In progress. 70 of 98 chapters written. Parts I-IX are all complete.
+In progress. 71 of 98 chapters written. Parts I-IX are all complete.
+Part X is in progress (1 of 3 chapters done).
 
 ## Next chapter due
-Part X, Chapter 10.1 — Meet the VLM (CLIP)
-(parts/part-10-multimodal-ai.html does not exist yet — create it with a
-full sidebar TOC for all 3 chapters of Part X, titles from CURRICULUM.md:
-10.1 Meet the VLM (CLIP) [C], 10.2 Captioning & Visual Question
-Answering [D], 10.3 Speech & Audio Models (Whisper) [D]. Every chapter
-except 10.1 starts as class="nav-item unwritten". None of Part X's
-chapters are anchor chapters, so 10.1-10.3 can be batched per the normal
-2-3-chapters-per-turn rule — likely the whole Part in one batch.)
+Part X, Chapter 10.2 — Captioning & Visual Question Answering
+(parts/part-10-multimodal-ai.html already exists — insert the new
+<section> before </main> and flip 10.2's sidebar entry from unwritten to
+live. Not an anchor chapter. 10.2 and 10.3 (the rest of Part X) can be
+batched together per the normal 2-3-chapters-per-turn rule — completing
+10.3 finishes Part X, so do the write-book-chapter skill self-check
+afterward per the resumable-autonomous-loop rule, then continue into
+Part XI per CURRICULUM.md.)
 
 ## Part IX self-check (write-book-chapter skill compliance)
 Reviewed all 9 chapters (9.1–9.9) against the required rhythm: every
@@ -135,6 +136,7 @@ issues found.
 - 9.7 Retrieval-Augmented Generation (RAG) — parts/part-09-language-models.html
 - 9.8 Agents & Tool Use — parts/part-09-language-models.html
 - 9.9 Hallucination & Evaluation — parts/part-09-language-models.html
+- 10.1 Meet the VLM (CLIP) — parts/part-10-multimodal-ai.html
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in
