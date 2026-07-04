@@ -20,7 +20,9 @@
     <a class="nav-item" data-chapter-id="12-1" href="#chapter-12-1">
       <span class="nav-dot"></span>12.1 Learning by Trial and Reward
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>12.2 Q-Learning, Simply Explained</div>
+    <a class="nav-item" data-chapter-id="12-2" href="#chapter-12-2">
+      <span class="nav-dot"></span>12.2 Q-Learning, Simply Explained
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>12.3 Policy Gradients &amp; Exploration/Exploitation</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>12.4 Deep RL &amp; RLHF Revisited</div>
   </nav>
@@ -217,12 +219,206 @@
 
     </section>
 
+    <section id="chapter-12-2">
+      <div class="chapter-eyebrow">Part XII · Chapter 12.2</div>
+      <h1 class="chapter-title">Q-Learning, Simply Explained</h1>
+
+      <p class="lede">
+        Chapter 12.1's bandit had no state and no delay: pull an arm,
+        get an immediate reward, done. Real problems rarely work that
+        way — where you are matters, and a good action now might not
+        pay off for several more steps. Q-learning is the classic
+        algorithm for learning good behavior in exactly that fuller,
+        more realistic setting.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🚚 Frame of reference</div>
+        <p>
+          A delivery driver learning a new route doesn't get paid the
+          instant they turn left at some intersection — the payoff for
+          that turn might not arrive until several more turns later,
+          when it finally leads to the depot. Over enough trips, the
+          driver builds up a sense of "how good is turning left from
+          <em>this specific</em> intersection," even though that
+          goodness is really about where the turn eventually leads, not
+          anything that happens immediately. That's exactly what a
+          Q-value captures.
+        </p>
+      </div>
+
+      <h2>From bandits to states: Q-values</h2>
+      <script>initJargonBox("Q-value",
+        "The expected total future reward of taking a specific action in a specific state, and acting well from then on. Written Q(s, a) — one number for every state-action pair, capturing not just the immediate reward but everything that action leads to afterward.");</script>
+      <script>initJargonBox("Q-learning",
+        "An algorithm that learns Q-values purely from experience: after taking action a in state s, observing reward r and landing in state s', nudge Q(s, a) toward r plus the best Q-value available from s' — bootstrapping off its own current estimate of the future, the same nudge-toward-a-target idea as gradient descent (Chapter 4.3), applied to a table of values instead of model weights.");</script>
+      <p>
+        A <span class="jargon-term">Q-value</span> answers a more
+        useful question than "what reward did this action just give
+        me?" — it answers "how good is this action, counting everything
+        it eventually leads to?" <span class="jargon-term">Q-learning</span>
+        learns these values with a simple, repeated update: take an
+        action, see the real reward and the real next state, and nudge
+        the current Q-value estimate toward
+        <span class="mono">reward + (the best Q-value available from
+        the next state)</span>. That's genuinely similar to Chapter
+        4.3's gradient descent — repeatedly nudge an estimate toward a
+        target, a little at a time — except the "target" here is built
+        from the agent's own current (still-imperfect) guesses about the
+        future, not a fixed label.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          A real 4-cell corridor: states 0-1-2-3, goal at state 3
+          (reward +1, episode ends). Actions: move Left or Right.
+          Starting from state 0 every episode, a real Q-learning update
+          runs after every single step — even though the moves
+          themselves are chosen completely at random. Watch the real
+          Q-table converge toward favoring "Right" everywhere, purely
+          from that repeated update rule.
+        </p>
+        <div class="demo-actions">
+          <div class="quiz-option" id="ql-run1-btn">▶ Run 1 episode</div>
+          <div class="quiz-option" id="ql-run50-btn">▶▶ Run 50 episodes</div>
+          <div class="quiz-option" id="ql-reset-btn">↺ Reset</div>
+        </div>
+        <table class="data-table" id="ql-table">
+          <thead><tr><th>State</th><th>Q(Left)</th><th>Q(Right)</th><th>Better action</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p id="ql-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var numStates = 4;
+          var alpha = 0.5, gamma = 0.9;
+          var Q, episodeCount;
+
+          function reset() {
+            Q = {};
+            for (var s = 0; s < numStates; s++) Q[s] = { L: 0, R: 0 };
+            episodeCount = 0;
+            render();
+            document.getElementById('ql-readout').textContent = 'Q-table reset to all zeros. No episodes run yet.';
+          }
+
+          function stepEnv(s, a) {
+            var next = a === 'L' ? Math.max(0, s - 1) : Math.min(numStates - 1, s + 1);
+            var reward = (next === numStates - 1) ? 1 : 0;
+            return { next: next, reward: reward };
+          }
+
+          function runEpisode() {
+            var s = 0, steps = 0;
+            while (s !== numStates - 1 && steps < 100) {
+              var a = Math.random() < 0.5 ? 'L' : 'R';
+              var res = stepEnv(s, a);
+              var maxNextQ = Math.max(Q[res.next].L, Q[res.next].R);
+              var target = res.reward + gamma * maxNextQ;
+              Q[s][a] = Q[s][a] + alpha * (target - Q[s][a]);
+              s = res.next;
+              steps++;
+            }
+            episodeCount++;
+          }
+
+          function render() {
+            var tbody = document.querySelector('#ql-table tbody');
+            tbody.innerHTML = '';
+            for (var s = 0; s < numStates; s++) {
+              var better = s === numStates - 1 ? '—' : (Q[s].R > Q[s].L ? 'Right' : (Q[s].R < Q[s].L ? 'Left' : 'tie'));
+              var tr = document.createElement('tr');
+              tr.innerHTML = '<td>' + s + (s === numStates - 1 ? ' (goal)' : '') + '</td><td>' +
+                Q[s].L.toFixed(4) + '</td><td>' + Q[s].R.toFixed(4) + '</td><td>' + better + '</td>';
+              tbody.appendChild(tr);
+            }
+          }
+
+          document.getElementById('ql-run1-btn').addEventListener('click', function () {
+            runEpisode();
+            render();
+            document.getElementById('ql-readout').textContent = episodeCount + ' episode' + (episodeCount > 1 ? 's' : '') + ' run so far.';
+          });
+          document.getElementById('ql-run50-btn').addEventListener('click', function () {
+            for (var i = 0; i < 50; i++) runEpisode();
+            render();
+            document.getElementById('ql-readout').textContent = episodeCount + ' episodes run so far — Q-values are converging.';
+          });
+          document.getElementById('ql-reset-btn').addEventListener('click', reset);
+
+          reset();
+        })();
+      </script>
+
+      <p>
+        Click "Run 50 episodes" a few times: even though every single
+        move inside every episode was picked completely at random, the
+        Q-table reliably converges to Q(Right) &gt; Q(Left) in every
+        non-goal state — and the values themselves make sense: state 2
+        (one step from the goal) converges toward Q(Right) ≈ 1.0, state
+        1 toward ≈ 0.9, and state 0 toward ≈ 0.81, each one discounted
+        by γ=0.9 for every extra step away from the reward. Q-learning
+        never needed a good policy to explore with — random moves were
+        enough, because the update rule itself is what extracts a
+        sensible ranking of actions from the real rewards experienced.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>A Q-value, Q(s, a), estimates the total future reward of taking action a in state s — not just the immediate reward.</li>
+          <li>Q-learning updates its Q-values by nudging Q(s, a) toward the actual reward received plus the best Q-value available from the resulting next state.</li>
+          <li>This bootstrapped update is similar in spirit to gradient descent (Chapter 4.3) — repeatedly nudging an estimate toward a target — except the target is built from the agent's own evolving estimates, not a fixed external label.</li>
+          <li>Q-learning can converge to sensible values even from a completely random exploration policy, as long as it experiences enough real state-action-reward transitions.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-12-2">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What does a Q-value, Q(s, a), actually represent?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! A Q-value looks past the immediate reward to everything that action eventually leads to.">The expected total future reward of taking action a in state s, and acting well from then on — not just the immediate reward for that one action.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a Q-value specifically accounts for future consequences too, not only the reward received on the very next step.">Only the immediate reward received right after taking that action, ignoring anything that happens afterward.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a Q-value is tied to one specific state-action pair; a single Q-value doesn't average across every possible state at once.">A single number describing the entire environment, averaged across all possible states at once.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. In the demo, why did Q(Right) at state 2 converge to almost exactly 1.0, while state 0's Q(Right) converged to only about 0.81?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Each additional step away from the goal multiplies in another factor of γ=0.9, exactly matching 0.9² ≈ 0.81 for state 0.">State 2 is one step from the goal, so its reward is barely discounted; state 0 is three steps away, so the same +1 reward gets discounted by γ multiple times, shrinking its Q-value.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the reward for reaching the goal is a fixed +1 no matter which state the episode started in; what differs is how many discounting steps separate each state from that reward.">State 2 has a bigger actual reward waiting at the goal than state 0 does.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the Q-learning update rule is applied identically to every state; nothing about the algorithm treats state 0 differently from state 2.">The update rule is applied differently depending on which state the agent happens to be in.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. Why could the demo's Q-table converge to sensible values even though every move was chosen completely at random?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! As long as every state-action pair gets tried enough times, the update rule itself extracts a sensible ranking of actions from the real rewards experienced — no smart behavior policy is required.">Q-learning's update rule extracts a sensible ranking of actions directly from real experienced rewards, regardless of how those actions were chosen, as long as enough exploration happens.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo's action selection genuinely is uniform random (a coin flip between Left and Right) every single step; it doesn't secretly favor the better action.">The random action selection was secretly biased toward the better action all along.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the Q-table's final values are a real, deterministic consequence of the update rule applied over many real episodes, not a lucky coincidence.">It was pure luck, and running the demo again would likely produce a completely different, nonsensical result.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
 <script>
   (function () {
     initQuiz(document.getElementById('quiz-12-1'));
+    initQuiz(document.getElementById('quiz-12-2'));
     initProgressTracking();
   })();
 </script>

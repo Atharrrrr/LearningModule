@@ -1,17 +1,18 @@
 # Progress
 
 ## Status
-In progress. 79 of 98 chapters written. Parts I-XI are all complete.
-Part XII is in progress (1 of 4 chapters done).
+In progress. 80 of 98 chapters written. Parts I-XI are all complete.
+Part XII is in progress (2 of 4 chapters done).
 
 ## Next chapter due
-Part XII, Chapter 12.2 — Q-Learning, Simply Explained
+Part XII, Chapter 12.3 — Policy Gradients & Exploration/Exploitation
 (parts/part-12-reinforcement-learning.html already exists — insert the
-new <section> before </main> and flip 12.2's sidebar entry from
-unwritten to live. Not an anchor chapter — 12.2 and 12.3 can be batched
-together. NOTE: 12.4 (Deep RL & RLHF Revisited) is an anchor chapter
-(see CLAUDE.md) — must be written ALONE, one per turn. If a batch would
-reach 12.4, stop right before it and write only up through 12.3.)
+new <section> before </main> and flip 12.3's sidebar entry from
+unwritten to live. Not an anchor chapter. NOTE: 12.4 (Deep RL & RLHF
+Revisited), immediately after, is an anchor chapter (see CLAUDE.md) —
+must be written ALONE, one per turn. Since 12.3 is the last chapter
+before that anchor, stop the batch right after 12.3 and give 12.4 its
+own turn.)
 
 ## Part XI self-check (write-book-chapter skill compliance)
 Reviewed all 5 chapters (11.1–11.5) against the required rhythm: every
@@ -190,6 +191,7 @@ issues found.
 - 11.4 Diffusion Models — parts/part-11-generative-ai.html
 - 11.5 Text-to-Image (Diffusion Meets CLIP) — parts/part-11-generative-ai.html
 - 12.1 Learning by Trial and Reward — parts/part-12-reinforcement-learning.html
+- 12.2 Q-Learning, Simply Explained — parts/part-12-reinforcement-learning.html
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in
