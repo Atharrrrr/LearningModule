@@ -1,13 +1,13 @@
 # Progress
 
 ## Status
-In progress. 86 of 98 chapters written. Parts I-XIII are all complete.
-Part XIV is in progress (1 of 8 chapters done).
+In progress. 87 of 98 chapters written. Parts I-XIII are all complete.
+Part XIV is in progress (2 of 8 chapters done).
 
 ## Next chapter due
-Part XIV, Chapter 14.2 — Experiment Tracking
+Part XIV, Chapter 14.3 — Hardware: CPU vs. GPU vs. TPU
 (parts/part-14-notebook-to-product.html already exists — insert the new
-<section> before </main> and flip 14.2's sidebar entry from unwritten to
+<section> before </main> and flip 14.3's sidebar entry from unwritten to
 live. Not an anchor chapter. No anchor chapters remain anywhere in the
 curriculum — the rest of Part XIV and all of Part XV can be batched
 normally per the 2-3-chapters-per-turn rule all the way to the end of
@@ -243,6 +243,7 @@ issues found.
 - 13.2 Privacy, Safety & Misuse — parts/part-13-responsible-ai.html
 - 13.3 Interpretability — parts/part-13-responsible-ai.html
 - 14.1 Version Control for ML — parts/part-14-notebook-to-product.html
+- 14.2 Experiment Tracking — parts/part-14-notebook-to-product.html
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in

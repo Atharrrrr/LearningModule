@@ -20,7 +20,9 @@
     <a class="nav-item" data-chapter-id="14-1" href="#chapter-14-1">
       <span class="nav-dot"></span>14.1 Version Control for ML
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>14.2 Experiment Tracking</div>
+    <a class="nav-item" data-chapter-id="14-2" href="#chapter-14-2">
+      <span class="nav-dot"></span>14.2 Experiment Tracking
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>14.3 Hardware: CPU vs. GPU vs. TPU</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>14.4 Distributed &amp; Parallel Training</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>14.5 Serving a Model</div>
@@ -202,12 +204,165 @@
 
     </section>
 
+    <section id="chapter-14-2">
+      <div class="chapter-eyebrow">Part XIV · Chapter 14.2</div>
+      <h1 class="chapter-title">Experiment Tracking</h1>
+
+      <p class="lede">
+        Chapter 14.1 covered tracking versions of code, data, and
+        checkpoints. Training a real model is rarely one run — it's
+        dozens or hundreds of runs, each with different settings, and
+        without a systematic record of which settings produced which
+        result, comparing them (or reproducing the good one) becomes
+        genuinely impossible.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🧪 Frame of reference</div>
+        <p>
+          A scientist who runs the same experiment dozens of times with
+          slightly different settings, but never writes down which
+          setting went with which result, has no way to know which
+          combination actually worked — or to run it again. A proper lab
+          notebook logs every run's exact conditions and outcome side by
+          side, so results can be compared honestly and the best one can
+          be reproduced deliberately, not remembered by guesswork.
+        </p>
+      </div>
+
+      <h2>Hyperparameters, and why tracking them matters</h2>
+      <script>initJargonBox("hyperparameter",
+        "A setting chosen before training begins — like a learning rate (Chapter 6.5) or batch size (Chapter 6.6) — as opposed to a parameter (Chapter 1.3), which is learned from data during training itself.");</script>
+      <script>initJargonBox("experiment tracking",
+        "Systematically logging every training run's hyperparameters, resulting metrics, and a pointer to the resulting model checkpoint (Chapter 14.1), so different runs can be compared and the best one identified and reproduced later.");</script>
+      <p>
+        A <span class="jargon-term">hyperparameter</span> is chosen
+        before training starts, not learned during it — learning rate,
+        batch size, network depth. Different choices can produce wildly
+        different results from the exact same model and data.
+        <span class="jargon-term">Experiment tracking</span> means
+        logging every run's hyperparameters alongside its actual
+        outcome, so instead of vaguely remembering "the run with the
+        smaller learning rate seemed better," there's a real, searchable
+        record of exactly which setting produced exactly which result.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          A real toy experiment log: gradient descent (Chapter 4.3)
+          minimizing L(w) = (w−3)², starting from w=0, run for 20 real
+          steps at 6 different learning rates. Watch how dramatically
+          the same task's outcome depends on one single hyperparameter.
+        </p>
+        <div class="demo-actions">
+          <div class="quiz-option" id="exp-run-btn">▶ Run all 6 experiments</div>
+        </div>
+        <table class="data-table" id="exp-table">
+          <thead><tr><th>Run</th><th>Learning rate</th><th>Final w (target: 3)</th><th>Final loss</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p id="exp-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          function runExperiment(lr, steps) {
+            var w = 0;
+            for (var i = 0; i < steps; i++) {
+              var grad = 2 * (w - 3);
+              w = w - lr * grad;
+            }
+            return { finalW: w, finalLoss: Math.pow(w - 3, 2) };
+          }
+
+          document.getElementById('exp-run-btn').addEventListener('click', function () {
+            var lrs = [0.01, 0.1, 0.3, 0.5, 0.9, 1.05];
+            var results = lrs.map(function (lr, i) {
+              var r = runExperiment(lr, 20);
+              return { run: i + 1, lr: lr, finalW: r.finalW, finalLoss: r.finalLoss };
+            });
+
+            var tbody = document.querySelector('#exp-table tbody');
+            tbody.innerHTML = '';
+            results.forEach(function (r) {
+              var tr = document.createElement('tr');
+              tr.innerHTML = '<td>' + r.run + '</td><td>' + r.lr + '</td><td>' + r.finalW.toFixed(4) + '</td><td>' + r.finalLoss.toFixed(6) + '</td>';
+              tbody.appendChild(tr);
+            });
+
+            var best = results.reduce(function (b, r) { return r.finalLoss < b.finalLoss ? r : b; });
+            document.getElementById('exp-readout').textContent =
+              'Best run: lr=' + best.lr + ' (final loss ' + best.finalLoss.toFixed(6) + '). Worst run: lr=1.05 diverges to a final loss of ' +
+              results[results.length - 1].finalLoss.toFixed(1) + ' — a real demonstration that "higher learning rate" is not "better learning rate."';
+          });
+        })();
+      </script>
+
+      <p>
+        Run it: lr=0.3 and lr=0.5 both converge essentially perfectly
+        (final loss ≈ 0), lr=0.01 is still far from converged after 20
+        steps, and lr=1.05 doesn't converge at all — it diverges to a
+        final loss over 400. Six real training runs, one real
+        hyperparameter varied, six completely different real outcomes.
+        Without a logged record connecting each learning rate to its
+        actual result, there'd be no way to know afterward which run
+        was which, or why one configuration crushed the others.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>A hyperparameter is chosen before training starts, unlike a parameter, which is learned from data during training.</li>
+          <li>Experiment tracking logs every run's hyperparameters, resulting metrics, and checkpoint together, so runs can be compared and reproduced.</li>
+          <li>Small changes to a single hyperparameter, like learning rate, can produce dramatically different real outcomes — from near-perfect convergence to complete divergence.</li>
+          <li>Without a systematic record connecting settings to outcomes, comparing many training runs honestly becomes essentially impossible.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-14-2">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What's the difference between a hyperparameter and a parameter?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! A hyperparameter like learning rate is set before training starts; a parameter like a weight is learned during training via gradient descent.">A hyperparameter is chosen before training begins; a parameter is learned from data during training itself.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the chapter draws a specific, meaningful distinction between the two: one is chosen beforehand, the other is learned.">They're the exact same thing, just two different names for it.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a hyperparameter, like learning rate, directly and dramatically affects the outcome, as the demo's diverging run at lr=1.05 shows.">A hyperparameter never affects a model's actual training outcome.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. In the demo, why did the run with learning rate 1.05 end up with such a dramatically higher final loss than the others?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! A learning rate too large causes gradient descent to overshoot the minimum by more and more each step, diverging instead of converging.">A learning rate that large caused gradient descent to overshoot the target on every step by an increasing amount, diverging instead of converging.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — every run in the demo uses the exact same real gradient descent update rule and the same starting point; only the learning rate differs.">That run used a completely different starting point than the others.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the final loss for each learning rate is computed deterministically from the real gradient descent formula, not randomly.">The final losses shown are randomly generated and don't reflect real computation.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. Why does experiment tracking matter once you're running many training experiments?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Without a systematic log connecting hyperparameters to outcomes, comparing runs honestly or reproducing the best one becomes essentially impossible.">Without logging which hyperparameters produced which result, there's no reliable way to compare runs or reproduce the best one later.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the chapter's whole point is that comparing runs without a systematic record is unreliable, not that tracking is unnecessary busywork.">It's unnecessary busywork, since every training run always produces the same result regardless of settings.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — experiment tracking specifically requires recording the actual hyperparameters and outcomes; it doesn't work by memory alone.">You can always just remember which settings worked best without writing anything down.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
 <script>
   (function () {
     initQuiz(document.getElementById('quiz-14-1'));
+    initQuiz(document.getElementById('quiz-14-2'));
     initProgressTracking();
   })();
 </script>
