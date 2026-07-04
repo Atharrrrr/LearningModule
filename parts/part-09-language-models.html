@@ -32,7 +32,9 @@
     <a class="nav-item" data-chapter-id="9-5" href="#chapter-9-5">
       <span class="nav-dot"></span>9.5 Efficient Fine-Tuning (LoRA, quantization)
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>9.6 Prompting &amp; In-Context Learning</div>
+    <a class="nav-item" data-chapter-id="9-6" href="#chapter-9-6">
+      <span class="nav-dot"></span>9.6 Prompting &amp; In-Context Learning
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>9.7 Retrieval-Augmented Generation (RAG)</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>9.8 Agents &amp; Tool Use</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>9.9 Hallucination &amp; Evaluation</div>
@@ -1442,6 +1444,259 @@
 
     </section>
 
+    <section id="chapter-9-6">
+      <div class="chapter-eyebrow">Part IX · Chapter 9.6</div>
+      <h1 class="chapter-title">Prompting &amp; In-Context Learning</h1>
+
+      <p class="lede">
+        Every technique so far in this Part — instruction tuning, RLHF,
+        LoRA, quantization — changes the model itself: its weights get
+        updated (or frozen and supplemented) through actual training.
+        Prompting changes nothing about the model at all. It works
+        entirely by changing what's fed into a completely frozen model,
+        and it turns out that alone can dramatically change the output.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">📝 Frame of reference</div>
+        <p>
+          Ask someone "write something" and you'll get almost anything.
+          Ask "write a two-line birthday message for a coworker" and
+          you'll get something far more useful — same person, same
+          skills, same knowledge, zero retraining. Now show them three
+          examples of turning "cat" into "cta," "dog" into "dgo," and
+          "sun" into "sun" — wait, that last one doesn't fit the pattern.
+          Show consistent examples instead, and most people can spot the
+          rule and apply it to a brand-new word they've never seen,
+          purely from those examples, without ever being told the rule
+          in words. Both of those — better wording, and learning a
+          pattern from a few examples — are exactly what this chapter
+          covers.
+        </p>
+      </div>
+
+      <h2>A prompt is the only thing you're allowed to change</h2>
+      <script>initJargonBox("prompt",
+        "The text input given to an LLM — instructions, context, examples, or all three — that the model conditions its next-token predictions (Chapter 9.2) on. Changing the prompt changes the output without changing the model's weights at all.");</script>
+      <script>initJargonBox("zero-shot",
+        "Asking a model to perform a task by describing it directly in the prompt, with no worked examples included.");</script>
+      <p>
+        A <span class="jargon-term">prompt</span> is everything handed to
+        an LLM as input for a given request. Chapter 9.2 already
+        established that an LLM's output is a probability distribution
+        over the next token, conditioned on every token that came
+        before — which means the exact wording, structure, and content
+        of the prompt directly shapes that distribution, every time,
+        with the model's weights never changing. Describing a task
+        directly with no examples is <span class="jargon-term">zero-shot</span>
+        prompting — often enough for simple, common requests, but not
+        always the most reliable option.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          Chapter 9.2's toy next-word model, extended: real counts from a
+          tiny corpus, comparing what the exact same frozen model
+          predicts after the word "bank" alone, versus after two words
+          of context ("river bank" or "money bank"). Nothing about the
+          model changes between these — only how much of the prompt it
+          gets to condition on.
+        </p>
+        <table class="data-table" id="ctx-table">
+          <thead><tr><th>Context given to the model</th><th>Next-word distribution</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p id="ctx-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var sentences = [
+            'the river bank was flooded yesterday',
+            'the river bank was muddy today',
+            'the money bank approved the loan',
+            'the money bank approved the transfer',
+            'the money bank rejected the request'
+          ];
+
+          var bigramCounts = {};
+          var trigramCounts = {};
+
+          sentences.forEach(function (s) {
+            var words = s.split(' ');
+            for (var i = 0; i < words.length - 1; i++) {
+              if (words[i] === 'bank') {
+                var nw = words[i + 1];
+                bigramCounts[nw] = (bigramCounts[nw] || 0) + 1;
+              }
+              if (i >= 1 && words[i] === 'bank') {
+                var ctx = words[i - 1] + ' ' + words[i];
+                var nw2 = words[i + 1];
+                trigramCounts[ctx] = trigramCounts[ctx] || {};
+                trigramCounts[ctx][nw2] = (trigramCounts[ctx][nw2] || 0) + 1;
+              }
+            }
+          });
+
+          function toDist(counts) {
+            var total = 0;
+            Object.keys(counts).forEach(function (k) { total += counts[k]; });
+            var dist = {};
+            Object.keys(counts).forEach(function (k) { dist[k] = (counts[k] / total); });
+            return dist;
+          }
+
+          function distText(dist) {
+            return Object.keys(dist).map(function (k) { return k + ': ' + (dist[k] * 100).toFixed(0) + '%'; }).join(', ');
+          }
+
+          var tbody = document.querySelector('#ctx-table tbody');
+          var row1 = document.createElement('tr');
+          row1.innerHTML = '<td>"...bank" (1 word of context)</td><td>' + distText(toDist(bigramCounts)) + '</td>';
+          tbody.appendChild(row1);
+
+          Object.keys(trigramCounts).forEach(function (ctx) {
+            var tr = document.createElement('tr');
+            tr.innerHTML = '<td>"...' + ctx + '" (2 words of context)</td><td>' + distText(toDist(trigramCounts[ctx])) + '</td>';
+            tbody.appendChild(tr);
+          });
+
+          document.getElementById('ctx-readout').textContent =
+            'With only "bank," the model can\'t tell which sense you mean, so its prediction blends both. With "river bank" or "money bank," the exact same underlying corpus produces a sharply different, appropriate prediction — driven entirely by two extra words of context.';
+        })();
+      </script>
+
+      <p>
+        With only the single word "bank" as context, the model's real
+        computed distribution blends every sense of the word it's ever
+        seen — "was" and "approved" and "rejected" all show up, muddled
+        together. Give that exact same frozen model two more words of
+        context and its prediction cleanly separates by meaning. That's
+        the entire mechanism behind "better prompting produces better
+        answers": more, or more precisely chosen, context genuinely
+        changes what a frozen model predicts next.
+      </p>
+
+      <h2>In-context learning: inferring a task from a few examples</h2>
+      <script>initJargonBox("few-shot prompting",
+        "Including a handful of worked examples directly in the prompt before asking the model to handle a new case — as opposed to zero-shot, which only describes the task in words.");</script>
+      <script>initJargonBox("in-context learning",
+        "An LLM's ability to infer a task or pattern purely from a few examples shown in the prompt, and apply it to a new input — without any weights being updated at all. The \"learning\" happens entirely within one prompt's context, not through training.");</script>
+      <p>
+        <span class="jargon-term">Few-shot prompting</span> goes further
+        than just adding context: instead of describing a task in words,
+        show a handful of worked (input, output) examples directly in
+        the prompt, then give a new input with no output. Remarkably,
+        LLMs are often able to infer the pattern connecting each
+        example's input to its output, and apply that same pattern to
+        the new input — an ability called <span class="jargon-term">
+        in-context learning</span>. No weights change; the "learning" is
+        entirely contained within that one prompt.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          Three worked examples of a simple text transformation — the
+          rule itself is never stated in words. Type a new word and see
+          the same rule applied. (A real LLM would infer this pattern
+          purely from the examples via its trained next-token machinery;
+          simulating that inference in the browser isn't feasible, so
+          this demo applies the actual rule directly — check for
+          yourself that it matches the pattern shown in the examples.)
+        </p>
+        <table class="data-table" id="icl-table">
+          <thead><tr><th>Input</th><th>Output</th></tr></thead>
+          <tbody>
+            <tr><td>pig</td><td>igpay</td></tr>
+            <tr><td>latin</td><td>atinlay</td></tr>
+            <tr><td>hello</td><td>ellohay</td></tr>
+          </tbody>
+        </table>
+        <div class="demo-controls">
+          <label class="demo-slider-label">New input:
+            <input type="text" id="icl-input" value="book" style="margin-left:8px; background:#0d1117; color:#e6edf3; border:1px solid #30363d; border-radius:6px; padding:4px 8px; font-family:inherit;">
+          </label>
+        </div>
+        <div class="demo-actions">
+          <div class="quiz-option" id="icl-run-btn">▶ Apply the pattern</div>
+        </div>
+        <p id="icl-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          function applyPattern(word) {
+            word = word.toLowerCase().trim();
+            return word.slice(1) + word[0] + 'ay';
+          }
+
+          document.getElementById('icl-run-btn').addEventListener('click', function () {
+            var word = document.getElementById('icl-input').value;
+            if (!word) return;
+            var output = applyPattern(word);
+            document.getElementById('icl-readout').textContent = '"' + word + '" → "' + output + '"  — same rule as the three examples above, applied to a word never shown in the prompt.';
+          });
+        })();
+      </script>
+
+      <p>
+        Try "chapter": it becomes "haptercay" — move the first letter to
+        the end, then add "ay," exactly the pattern in all three
+        examples, applied to a word that was never one of them. Real
+        in-context learning works this way on far richer tasks —
+        translating a made-up format, following a style, classifying
+        text into custom categories — all from a few examples, all
+        without a single weight update.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Prompting changes an LLM's output by changing its input, not by updating any weights — a completely frozen model can behave very differently depending on what's in its context.</li>
+          <li>Zero-shot prompting describes a task in words alone; few-shot prompting shows worked examples directly in the prompt instead.</li>
+          <li>In-context learning is an LLM's ability to infer a pattern from a few examples in the prompt and apply it to a new input, entirely within that one prompt, without any training taking place.</li>
+          <li>More or better-chosen context genuinely changes a frozen model's next-token predictions — that's the entire mechanism prompting relies on.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-9-6">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What's the key difference between prompting and the fine-tuning methods from Chapter 9.5?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Prompting works entirely by changing the input to a model whose weights never move.">Prompting changes only the input given to a completely frozen model; fine-tuning methods like LoRA actually update some of the model's weights.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — prompting specifically involves no weight updates at all; that's exactly what distinguishes it from fine-tuning.">Prompting and fine-tuning both update the model's weights, just by different amounts.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo shows prompting genuinely changing a frozen model's real output distribution; it's a real, well-documented effect.">Prompting has no real effect on a model's output at all.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. In the river bank / money bank demo, why does giving the model two words of context instead of one change its prediction?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! With only \"bank,\" every sense of the word blends together; two words of context lets the model distinguish which meaning applies.">The one-word context "bank" blends every sense of the word from training, while two words of context ("river bank" vs "money bank") lets the same frozen model condition on which meaning is actually intended.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the underlying training corpus and counts never change in this demo; only how much of it gets used as context for a given prediction changes.">The training corpus itself changes depending on how much context is given.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the model conditioning on more context is a real, deterministic effect computed directly from real counts, not a coincidence.">It's a coincidence specific to this one example, not a general effect.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. What makes in-context learning different from the training stages covered earlier in this Part?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! In-context learning happens entirely at prompt time, with no training step and no weight update involved anywhere.">It happens entirely within a single prompt — the model infers a pattern from examples shown there, with no weights updated anywhere.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — in-context learning specifically involves no gradient descent or weight updates; that's what makes it distinct from instruction tuning and RLHF.">It uses the exact same gradient descent process as instruction tuning and RLHF.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the examples shown in a prompt are exactly what in-context learning relies on; without them, there's no pattern for the model to infer.">It requires no examples of any kind to work.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -1452,6 +1707,7 @@
     initQuiz(document.getElementById('quiz-9-3'));
     initQuiz(document.getElementById('quiz-9-4'));
     initQuiz(document.getElementById('quiz-9-5'));
+    initQuiz(document.getElementById('quiz-9-6'));
     initProgressTracking();
   })();
 </script>
