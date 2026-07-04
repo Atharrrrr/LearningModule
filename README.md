@@ -46,3 +46,9 @@ assets/components.js            — shared JS: quizzes, jargon boxes, progress t
 CURRICULUM.md                    — the full chapter list with [C]ore/[D]eep-dive tags
 GLOSSARY_TRACKER.md              — every jargon term defined, and where (source for Ch 15.5)
 ```
+
+## Attribution
+
+Curriculum, structure, and pedagogical design by Athar Ahmed
+([linkedin.com/in/athar-ahmed-2ba617208](https://linkedin.com/in/athar-ahmed-2ba617208)).
+Written and assembled with Claude Code.
