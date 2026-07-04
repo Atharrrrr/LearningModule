@@ -32,7 +32,9 @@
     <a class="nav-item" data-chapter-id="14-5" href="#chapter-14-5">
       <span class="nav-dot"></span>14.5 Serving a Model
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>14.6 Containers &amp; Reproducibility</div>
+    <a class="nav-item" data-chapter-id="14-6" href="#chapter-14-6">
+      <span class="nav-dot"></span>14.6 Containers &amp; Reproducibility
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>14.7 Monitoring &amp; Drift</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>14.8 A Real Pipeline, Start to Finish</div>
   </nav>
@@ -827,6 +829,151 @@
 
     </section>
 
+    <section id="chapter-14-6">
+      <div class="chapter-eyebrow">Part XIV · Chapter 14.6</div>
+      <h1 class="chapter-title">Containers &amp; Reproducibility</h1>
+
+      <p class="lede">
+        Chapter 14.1 established that reproducibility needs the exact
+        code, data version, and hyperparameters that produced a result.
+        There's a fourth piece easy to overlook: the exact software
+        environment those ran in. Get that one wrong, and even identical
+        code, data, and settings can behave differently.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🍞 Frame of reference</div>
+        <p>
+          A recipe that works perfectly in one kitchen can come out
+          differently in another — a different oven that runs a little
+          hotter, a different altitude, a different brand of flour. The
+          written recipe is identical; the environment it's executed in
+          isn't, and that's enough to change the result. Software has the
+          exact same problem: identical code can behave differently
+          depending on which library versions, operating system, or
+          drivers happen to be installed on the machine running it.
+        </p>
+      </div>
+
+      <h2>Identical code, different environment, different result</h2>
+      <p>
+        This isn't hypothetical — it can be demonstrated with plain
+        arithmetic. Floating-point numbers (Chapter 2.1) aren't perfectly
+        associative: adding the exact same set of numbers in a different
+        order can produce a subtly different final result, due to
+        rounding at each intermediate step. Different library versions,
+        hardware, or execution paths can sum numbers internally in
+        different orders — meaning "the same" mathematical operation can
+        genuinely return a different real number depending on the
+        environment it ran in.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          The exact same 12 real numbers, summed in two different real
+          orders — forward and backward — nothing else different.
+        </p>
+        <div class="demo-actions">
+          <div class="quiz-option" id="cont-run-btn">▶ Sum both ways</div>
+        </div>
+        <p id="cont-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var nums = [0.1, 0.2, 0.3, 0.1, 0.2, 0.7, 0.05, 0.15, 0.25, 0.35, 1e10, -1e10];
+
+          document.getElementById('cont-run-btn').addEventListener('click', function () {
+            var forward = 0;
+            for (var i = 0; i < nums.length; i++) forward += nums[i];
+            var backward = 0;
+            for (var i = nums.length - 1; i >= 0; i--) backward += nums[i];
+
+            document.getElementById('cont-readout').textContent =
+              'Forward sum: ' + forward.toPrecision(17) + '. Backward sum: ' + backward.toPrecision(17) + '. ' +
+              (forward === backward ? 'Identical.' : 'Different, by ' + (forward - backward).toExponential(3) +
+               ' — the exact same numbers, only the order of addition changed.');
+          });
+        })();
+      </script>
+
+      <p>
+        The two sums genuinely differ, in the real floating-point
+        arithmetic your browser just performed — not a rounding display
+        artifact, an actual different number. Now imagine that
+        difference happening not because someone reordered a list on
+        purpose, but because a training run happened on a machine with a
+        slightly different library version internally summing numbers in
+        a different order. Two "identical" runs, silently producing
+        different results, for a reason that has nothing to do with the
+        code or the data at all.
+      </p>
+
+      <h2>Containers: packaging the whole environment</h2>
+      <script>initJargonBox("container",
+        "A package bundling code together with its exact software dependencies — library versions, system tools, configuration — into one portable, self-contained unit that runs identically regardless of the underlying machine it's deployed on.");</script>
+      <script>initJargonBox("pinning (dependency versions)",
+        "Specifying an exact, fixed version of every software dependency a project relies on, instead of \"whatever the latest version happens to be\" — guaranteeing the same library behavior every time the project runs, anywhere.");</script>
+      <p>
+        A <span class="jargon-term">container</span> solves this by
+        packaging code together with its entire software environment —
+        every library at an exact version, every system dependency — into
+        one portable unit that behaves identically no matter which
+        machine runs it. Building one properly means
+        <span class="jargon-term">pinning (dependency versions)</span>:
+        writing down the exact version of every library used, not just
+        "the newest one available," so the environment itself becomes
+        part of the reproducible record alongside Chapter 14.1's code,
+        data, and hyperparameters.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Identical code, data, and hyperparameters can still produce different results if the underlying software environment differs.</li>
+          <li>Floating-point addition isn't perfectly associative — summing the same real numbers in a different order can produce a genuinely different result, a real, demonstrable fact, not a hypothetical.</li>
+          <li>A container packages code together with its exact software dependencies into one portable, self-contained unit.</li>
+          <li>Pinning dependency versions — recording the exact version of every library used — is what makes the environment itself part of a reproducible record.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-14-6">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. In the demo, why did summing the same 12 numbers forward versus backward produce different results?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Floating-point addition isn't perfectly associative — rounding at each intermediate step can lead to a genuinely different final result depending on the order of operations.">Floating-point arithmetic isn't perfectly associative, so rounding at each intermediate addition step can produce a genuinely different final result depending on the order the numbers are added in.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — both sums use the exact same 12 numbers; only the order of addition differs between them.">The backward sum secretly used different numbers than the forward sum.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the difference is a real, deterministic, well-known consequence of floating-point rounding, verifiable by running the exact same computation again.">It's a random JavaScript bug with no real mathematical explanation.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. What does a container actually package together?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! A container bundles the code with its exact software environment, so it behaves identically regardless of the underlying machine.">Code together with its exact software dependencies and environment, into one portable, self-contained unit.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — Chapter 14.1's model checkpoints and hashing already address large trained-file versioning; a container's job is specifically bundling the software environment.">Only the trained model's weight file, with nothing about the surrounding software environment.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a container's entire purpose is making an environment behave identically across different machines, not depending on whatever happens to already be installed.">Nothing — a container just relies on whatever software is already installed on the host machine.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. Why does pinning exact dependency versions matter for reproducibility?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Without pinning, \"the latest version\" can silently change between runs, and different library versions can behave subtly differently — including at the level of exact numeric results.">Without pinning, "the latest version" of a library can differ between two runs, and different library versions can behave subtly differently, even producing different exact numeric results.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the chapter's whole point is that unpinned, constantly-updating dependencies are precisely what breaks reproducibility.">Pinning versions has no real effect on whether a result can be reproduced.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — pinning dependency versions is about the software environment, a separate concern from the data version and hyperparameters covered in Chapter 14.1.">Pinning dependency versions is the same thing as tracking data versions and hyperparameters.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -837,6 +984,7 @@
     initQuiz(document.getElementById('quiz-14-3'));
     initQuiz(document.getElementById('quiz-14-4'));
     initQuiz(document.getElementById('quiz-14-5'));
+    initQuiz(document.getElementById('quiz-14-6'));
     initProgressTracking();
   })();
 </script>

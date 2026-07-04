@@ -1,13 +1,13 @@
 # Progress
 
 ## Status
-In progress. 90 of 98 chapters written. Parts I-XIII are all complete.
-Part XIV is in progress (5 of 8 chapters done).
+In progress. 91 of 98 chapters written. Parts I-XIII are all complete.
+Part XIV is in progress (6 of 8 chapters done).
 
 ## Next chapter due
-Part XIV, Chapter 14.6 — Containers & Reproducibility
+Part XIV, Chapter 14.7 — Monitoring & Drift
 (parts/part-14-notebook-to-product.html already exists — insert the new
-<section> before </main> and flip 14.6's sidebar entry from unwritten to
+<section> before </main> and flip 14.7's sidebar entry from unwritten to
 live. Not an anchor chapter. No anchor chapters remain anywhere in the
 curriculum — the rest of Part XIV and all of Part XV can be batched
 normally per the 2-3-chapters-per-turn rule all the way to the end of
@@ -247,6 +247,7 @@ issues found.
 - 14.3 Hardware: CPU vs. GPU vs. TPU — parts/part-14-notebook-to-product.html
 - 14.4 Distributed & Parallel Training — parts/part-14-notebook-to-product.html
 - 14.5 Serving a Model — parts/part-14-notebook-to-product.html
+- 14.6 Containers & Reproducibility — parts/part-14-notebook-to-product.html
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in
