@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Part XII — Reinforcement Learning | AI/ML From Zero to Job-Ready</title>
+<link rel="stylesheet" href="../assets/styles.css">
+<script src="../assets/components.js"></script>
+</head>
+<body>
+<div class="book-shell">
+
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">AI/ML: Zero to Job-Ready</div>
+    </div>
+    <div class="progress-bar-track"><div class="progress-bar-fill"></div></div>
+
+    <div class="sidebar-part">Part XII — Reinforcement Learning</div>
+    <a class="nav-item" data-chapter-id="12-1" href="#chapter-12-1">
+      <span class="nav-dot"></span>12.1 Learning by Trial and Reward
+    </a>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>12.2 Q-Learning, Simply Explained</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>12.3 Policy Gradients &amp; Exploration/Exploitation</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>12.4 Deep RL &amp; RLHF Revisited</div>
+  </nav>
+
+  <main>
+
+    <section id="chapter-12-1">
+      <div class="chapter-eyebrow">Part XII · Chapter 12.1</div>
+      <h1 class="chapter-title">Learning by Trial and Reward</h1>
+
+      <p class="lede">
+        Every model so far has learned from labeled examples (Chapter
+        1.2's supervised learning) or from patterns in unlabeled data.
+        Reinforcement learning is different from both: nobody ever hands
+        the learner a correct answer. It just tries things, sees what
+        happens, and gradually gets better at getting more of whatever
+        counts as "good."
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🐕 Frame of reference</div>
+        <p>
+          Nobody trains a dog to sit by showing it a labeled dataset of
+          "correct sitting" photos. Instead, the dog tries something,
+          and if it happens to sit, it gets a treat; if it wanders off,
+          it doesn't. Repeat that enough times, across enough attempts,
+          and the dog's behavior shifts toward whatever earns treats
+          more often — not because anyone described the "correct"
+          behavior in words, but purely because trying things and
+          noticing which ones paid off, over and over, was enough.
+        </p>
+      </div>
+
+      <h2>The trial-and-error setup</h2>
+      <script>initJargonBox("environment",
+        "Everything a reinforcement learning agent interacts with — whatever it takes actions in and receives feedback from. Could be a game, a simulated robot arm, a website, or anything else with a defined set of states, actions, and rewards.");</script>
+      <script>initJargonBox("state",
+        "A snapshot of the environment at a given moment — everything the agent currently knows or observes about its situation, used to decide what action to take next.");</script>
+      <script>initJargonBox("action",
+        "A choice the agent makes at a given state — a move, a decision, a response — which changes the environment and determines what reward and next state follow.");</script>
+      <script>initJargonBox("reward",
+        "A number the environment gives back after an action, saying how good or bad that action turned out to be right now. The agent never receives a correct-answer label (Chapter 1.2) — only this ongoing stream of reward numbers.");</script>
+      <script>initJargonBox("policy",
+        "The agent's strategy for choosing an action given a state — whatever rule or function currently determines its behavior. Reinforcement learning's whole goal is improving the policy so it earns more total reward over time.");</script>
+      <p>
+        Reinforcement learning's basic loop repeats forever: an
+        <span class="jargon-term">agent</span> (Chapter 1.1 already
+        introduced this word — Chapter 9.8's LLM agents borrowed their
+        name from this original, more general meaning) observes a
+        <span class="jargon-term">state</span> of the
+        <span class="jargon-term">environment</span>, picks an
+        <span class="jargon-term">action</span> according to its current
+        <span class="jargon-term">policy</span>, and receives a
+        <span class="jargon-term">reward</span> plus a new state.
+        Nothing in that loop ever tells the agent "the correct action
+        was X" — it only ever finds out how much reward an action it
+        actually took happened to earn. Reinforcement learning is the
+        problem of turning that stream of tried-actions-and-rewards into
+        a policy that earns more reward over time.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          Three slot-machine arms, each with a real (hidden) chance of
+          paying out 1 vs. 0. You don't get told the odds — pull arms and
+          watch each one's real running average, computed live from
+          actual random outcomes, gradually reveal which is best.
+        </p>
+        <div class="demo-actions">
+          <div class="quiz-option" id="bandit-a-btn">🎰 Pull Arm A</div>
+          <div class="quiz-option" id="bandit-b-btn">🎰 Pull Arm B</div>
+          <div class="quiz-option" id="bandit-c-btn">🎰 Pull Arm C</div>
+          <div class="quiz-option" id="bandit-reset-btn">↺ Reset</div>
+        </div>
+        <table class="data-table" id="bandit-table">
+          <thead><tr><th>Arm</th><th>Pulls so far</th><th>Total reward</th><th>Running average (estimated value)</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p id="bandit-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          // real hidden payout probabilities — the agent never sees these directly
+          var trueProbs = { A: 0.3, B: 0.7, C: 0.5 };
+          var stats;
+
+          function reset() {
+            stats = { A: { pulls: 0, total: 0 }, B: { pulls: 0, total: 0 }, C: { pulls: 0, total: 0 } };
+            render();
+            document.getElementById('bandit-readout').textContent = 'No pulls yet. Try each arm a few times and compare their running averages.';
+          }
+
+          function render() {
+            var tbody = document.querySelector('#bandit-table tbody');
+            tbody.innerHTML = '';
+            ['A', 'B', 'C'].forEach(function (arm) {
+              var s = stats[arm];
+              var avg = s.pulls === 0 ? 0 : s.total / s.pulls;
+              var tr = document.createElement('tr');
+              tr.innerHTML = '<td>' + arm + '</td><td>' + s.pulls + '</td><td>' + s.total + '</td><td>' +
+                (s.pulls === 0 ? '—' : avg.toFixed(3)) + '</td>';
+              tbody.appendChild(tr);
+            });
+          }
+
+          function pull(arm) {
+            var reward = Math.random() < trueProbs[arm] ? 1 : 0;
+            stats[arm].pulls++;
+            stats[arm].total += reward;
+            render();
+            var avg = stats[arm].total / stats[arm].pulls;
+            document.getElementById('bandit-readout').textContent =
+              'Pulled Arm ' + arm + ': reward = ' + reward + '. Arm ' + arm + '\'s running average is now ' +
+              avg.toFixed(3) + ' over ' + stats[arm].pulls + ' pull' + (stats[arm].pulls > 1 ? 's' : '') + '.';
+          }
+
+          document.getElementById('bandit-a-btn').addEventListener('click', function () { pull('A'); });
+          document.getElementById('bandit-b-btn').addEventListener('click', function () { pull('B'); });
+          document.getElementById('bandit-c-btn').addEventListener('click', function () { pull('C'); });
+          document.getElementById('bandit-reset-btn').addEventListener('click', reset);
+
+          reset();
+        })();
+      </script>
+
+      <p>
+        Pull each arm 10-15 times: no arm ever tells you its true odds
+        directly, but the running averages — computed from real,
+        genuinely random outcomes — drift toward revealing which arm
+        actually pays out more often (Arm B, with a hidden 70% chance,
+        versus Arm A's 30% and Arm C's 50%). That's the entire mechanism
+        of learning from trial and error: no labels, no correct answers
+        handed over — just accumulating evidence from your own actions'
+        real outcomes, and letting that evidence guide which action you'd
+        favor next.
+      </p>
+
+      <p>
+        This tiny setup — pick an action, get a reward, no state or
+        sequence involved at all — is called a "multi-armed bandit"
+        problem, the simplest possible reinforcement learning setting.
+        Real reinforcement learning problems add back everything this
+        demo left out: a changing state the agent must react to, and
+        actions whose consequences unfold over many future steps, not
+        just an immediate reward. Chapter 12.2 introduces the first real
+        algorithm for handling that fuller picture.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Reinforcement learning has no labeled correct answers (Chapter 1.2's supervised learning) — an agent only ever learns from the rewards its own actions actually earned.</li>
+          <li>The basic loop is: observe a state, pick an action according to a policy, receive a reward and a new state, repeat.</li>
+          <li>A policy is the agent's current strategy for choosing actions; the whole goal of reinforcement learning is improving that policy to earn more total reward over time.</li>
+          <li>Even the simplest setting — a multi-armed bandit, with no state or sequence at all — shows the core idea: real observed rewards, accumulated over repeated trials, reveal which actions are actually better.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-12-1">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What's the key difference between reinforcement learning and Chapter 1.2's supervised learning?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Reinforcement learning only ever gets a reward number for the action actually taken — never a labeled correct answer to compare against.">Reinforcement learning never receives a labeled correct answer — it only receives a reward reflecting how good the action it actually took turned out to be.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — reinforcement learning does involve numbers (rewards); the real difference is that those rewards aren't labeled correct answers for every possible action.">Reinforcement learning doesn't involve any numbers at all, only qualitative feedback.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — supervised learning is a real, widely used approach (Chapters 4-10 rely on it); the distinction is about what kind of feedback each approach receives, not which one is real.">Supervised learning and reinforcement learning are actually the exact same technique.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. In the demo, how does an arm's running average actually get computed?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Total reward divided by number of pulls — a real, live-updating average from actual random outcomes, not a hardcoded number.">By dividing the arm's total accumulated reward by the number of times it's actually been pulled — recomputed fresh after every real pull.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo never reveals the true hidden probabilities directly; only the running average of real, observed outcomes is shown.">The demo directly displays each arm's true hidden probability from the start.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — each pull generates a genuine random outcome (Math.random() compared against the arm's real hidden probability), not a fixed, predetermined result.">Every pull of a given arm always returns the exact same reward.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. What does a multi-armed bandit problem leave out, compared to a fuller reinforcement learning problem?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! A bandit is the simplest possible case — one-shot actions, no changing state, no delayed consequences — everything Chapter 12.2 builds back in.">A changing state the agent must react to, and actions whose consequences unfold over many future steps rather than just an immediate reward.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a multi-armed bandit is specifically a simplified special case of reinforcement learning, not something unrelated to it.">A multi-armed bandit isn't a reinforcement learning problem at all.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — a bandit problem still involves real rewards for each action; what it leaves out is state and delayed, multi-step consequences.">A multi-armed bandit has no rewards of any kind involved.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+</div>
+
+<script>
+  (function () {
+    initQuiz(document.getElementById('quiz-12-1'));
+    initProgressTracking();
+  })();
+</script>
+</body>
+</html>
