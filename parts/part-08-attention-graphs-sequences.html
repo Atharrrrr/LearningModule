@@ -23,7 +23,9 @@
     <a class="nav-item" data-chapter-id="8-2" href="#chapter-8-2">
       <span class="nav-dot"></span>8.2 RNNs &amp; Their Limits
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>8.3 Word Embeddings (word2vec)</div>
+    <a class="nav-item" data-chapter-id="8-3" href="#chapter-8-3">
+      <span class="nav-dot"></span>8.3 Word Embeddings (word2vec)
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>8.4 Attention</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>8.5 The Transformer, Piece by Piece</div>
     <div class="nav-item unwritten"><span class="nav-dot"></span>8.6 Meet SuperGlue</div>
@@ -400,6 +402,197 @@
 
     </section>
 
+    <section id="chapter-8-3">
+      <div class="chapter-eyebrow">Part VIII · Chapter 8.3</div>
+      <h1 class="chapter-title">Word Embeddings (word2vec)</h1>
+
+      <p class="lede">
+        Chapter 8.1's bag-of-words fixed nothing about a deeper problem:
+        one-hot encoding (Chapter 3.4) treats "cat" and "dog" as just as
+        unrelated as "cat" and "airplane." Every word is equally distant
+        from every other word — no notion of meaning at all.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🗺️ Frame of reference</div>
+        <p>
+          A list of city names carries no sense of geography — "Paris"
+          and "Berlin" are just two strings, no closer to each other
+          than "Paris" and "Tokyo." Put those same cities on an actual
+          map, though, and distance becomes meaningful: Paris and
+          Berlin land near each other, Tokyo lands far away, and the
+          map even encodes relationships — the direction from Paris to
+          France's other cities looks similar to the direction from
+          Berlin to Germany's. Word embeddings are exactly this kind of
+          map, built for words instead of cities.
+        </p>
+      </div>
+
+      <h2>From arbitrary symbols to a meaningful map</h2>
+      <script>initJargonBox("word embedding",
+        "A dense vector representing a word, learned from data so that words appearing in similar contexts end up with similar vectors — close together in the vector space, unlike one-hot encoding, where every word is equally distant from every other.");</script>
+      <script>initJargonBox("word2vec",
+        "A method for learning word embeddings by training a model to predict a word from its surrounding context (or vice versa) across a huge amount of text — words that tend to appear in similar contexts end up nearby in the resulting vector space.");</script>
+      <p>
+        A <span class="jargon-term">word embedding</span> replaces
+        one-hot encoding's giant, meaningless sparse vector with a
+        short, dense one — typically 50 to 300 numbers — positioned so
+        that words used in similar contexts land near each other.
+        <span class="jargon-term">word2vec</span> is the classic way to
+        learn these: train a model to predict a word from its
+        neighbors across huge amounts of real text, and words that keep
+        similar company end up with similar vectors, entirely from
+        that training signal — nobody hand-labels "cat is similar to
+        dog."
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          6 words with illustrative 2D embeddings (real word2vec uses
+          hundreds of dimensions; 2 is just enough to plot). Notice the
+          clusters before touching anything.
+        </p>
+
+        <svg id="we-svg" viewBox="0 0 400 320" overflow="hidden" role="img" aria-label="Scatter plot of word embeddings showing king, queen, man, woman, dog, and cat">
+          <line x1="60" y1="160" x2="340" y2="160" stroke="#30363d" stroke-width="1"></line>
+          <line x1="200" y1="20" x2="200" y2="300" stroke="#30363d" stroke-width="1"></line>
+          <g id="we-points"></g>
+          <line id="we-arrow" x1="0" y1="0" x2="0" y2="0" stroke="var(--orange)" stroke-width="2" stroke-dasharray="5,3" style="display:none;"></line>
+          <circle id="we-result-dot" r="6" fill="none" stroke="var(--orange)" stroke-width="2" style="display:none;"></circle>
+        </svg>
+
+        <div class="demo-actions">
+          <div class="quiz-option" id="we-analogy-btn">➕ Compute king − man + woman</div>
+        </div>
+        <p id="we-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var words = {
+            king: [5, 5], queen: [5, 1], man: [1, 5], woman: [1, 1],
+            dog: [-4, -4], cat: [-4.5, -3.5]
+          };
+
+          var xMin = -6, xMax = 6, yMin = -6, yMax = 6;
+          var left = 60, right = 340, top = 20, bottom = 300;
+          function xScale(x) { return left + (x - xMin) / (xMax - xMin) * (right - left); }
+          function yScale(y) { return bottom - (y - yMin) / (yMax - yMin) * (bottom - top); }
+
+          var pointsG = document.getElementById('we-points');
+          Object.keys(words).forEach(function (w) {
+            var xy = words[w];
+            var isRoyalty = (w === 'king' || w === 'queen' || w === 'man' || w === 'woman');
+            var color = isRoyalty ? 'var(--blue)' : 'var(--green)';
+            pointsG.innerHTML += '<circle cx="' + xScale(xy[0]) + '" cy="' + yScale(xy[1]) + '" r="6" fill="' + color + '"></circle>' +
+              '<text x="' + (xScale(xy[0]) + 10) + '" y="' + (yScale(xy[1]) + 4) + '" fill="#e6edf3" font-size="13">' + w + '</text>';
+          });
+
+          function dist(a, b) { return Math.sqrt(Math.pow(a[0] - b[0], 2) + Math.pow(a[1] - b[1], 2)); }
+
+          document.getElementById('we-analogy-btn').addEventListener('click', function () {
+            var result = [
+              words.king[0] - words.man[0] + words.woman[0],
+              words.king[1] - words.man[1] + words.woman[1]
+            ];
+
+            var arrow = document.getElementById('we-arrow');
+            arrow.setAttribute('x1', xScale(words.king[0]));
+            arrow.setAttribute('y1', yScale(words.king[1]));
+            arrow.setAttribute('x2', xScale(result[0]));
+            arrow.setAttribute('y2', yScale(result[1]));
+            arrow.style.display = 'block';
+
+            var resultDot = document.getElementById('we-result-dot');
+            resultDot.setAttribute('cx', xScale(result[0]));
+            resultDot.setAttribute('cy', yScale(result[1]));
+            resultDot.style.display = 'block';
+
+            var nearest = null, nearestDist = Infinity;
+            var distances = {};
+            Object.keys(words).forEach(function (w) {
+              var d = dist(words[w], result);
+              distances[w] = d;
+              if (d < nearestDist) { nearestDist = d; nearest = w; }
+            });
+
+            document.getElementById('we-readout').textContent = 'king − man + woman = (' + result[0].toFixed(1) + ', ' + result[1].toFixed(1) +
+              ').  Nearest real word: "' + nearest + '" (distance ' + nearestDist.toFixed(3) + ') — vs. king (' + distances.king.toFixed(2) +
+              '), dog (' + distances.dog.toFixed(2) + ').';
+          });
+        })();
+      </script>
+
+      <p>
+        The arithmetic lands exactly on queen's real coordinates — this
+        toy example was built to make that exact, but the same kind of
+        relationship shows up reliably in real word2vec embeddings
+        trained on ordinary text, with nobody ever telling the model
+        "gender" or "royalty" are meaningful directions. It's also worth
+        noticing the dog/cat cluster sits far from the king/queen/man/woman
+        cluster — distance in embedding space tracks meaning, exactly
+        the property one-hot encoding never had.
+      </p>
+
+      <h2>Why this fixes bag-of-words too</h2>
+      <p>
+        Chapter 8.1's bag-of-words problem was about losing
+        <em>order</em>; one-hot's problem is about losing
+        <em>similarity</em>. Embeddings solve the second one directly,
+        and set up everything from here on: instead of feeding one-hot
+        vectors into a sequence model, feed each word's embedding —
+        letting the model reason with "close in meaning" as an actual
+        geometric fact, not something it has to rediscover from scratch
+        every time.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>One-hot encoding treats every word as equally distant from every other — no notion of meaning.</li>
+          <li>A word embedding is a dense, learned vector positioned so semantically similar words land close together.</li>
+          <li>word2vec learns embeddings by training on predicting words from their context across huge amounts of text, with no manual similarity labeling.</li>
+          <li>Embedding arithmetic (king − man + woman ≈ queen) reveals that meaningful relationships can become consistent directions in the vector space.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-8-3">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What's the main problem with one-hot encoding for words?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Every pair of distinct one-hot vectors is equally far apart, no matter how related the words actually are.">Every word ends up equally distant from every other word, with no way to represent that some words are more similar than others.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — one-hot vectors are typically huge (one entry per vocabulary word), not small.">One-hot vectors are too small to represent a large vocabulary.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — one-hot encoding is about representing individual words, not sequence order (that was Chapter 8.1's issue).">One-hot encoding can't represent more than one word at a time.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. How does word2vec learn which words are similar, without human-labeled similarity data?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Words used in similar contexts naturally end up with similar learned vectors.">By training a model to predict a word from its surrounding context across huge amounts of text — words appearing in similar contexts end up with similar vectors.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — word2vec's whole point is learning similarity automatically, without a hand-built dictionary of synonyms.">A human manually labels which word pairs are synonyms ahead of time.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the vectors come from real training on real text, not arbitrary random values.">Every word is assigned a completely random vector with no training involved.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. What did the "king − man + woman" demo actually demonstrate?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! A meaningful relationship (gender) turned into consistent vector arithmetic.">That vector arithmetic on word embeddings can capture meaningful relationships, landing near a semantically related word ("queen").</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo's coordinates were illustrative, built to make the point clearly, though the same pattern shows up in real trained embeddings too.">That every possible word embedding arithmetic problem always produces an exact match.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the computed result landed dramatically closer to queen than to dog or cat, a real measured difference.">That embedding distance has no real relationship to word meaning.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -407,6 +600,7 @@
   (function () {
     initQuiz(document.getElementById('quiz-8-1'));
     initQuiz(document.getElementById('quiz-8-2'));
+    initQuiz(document.getElementById('quiz-8-3'));
     initProgressTracking();
   })();
 </script>
