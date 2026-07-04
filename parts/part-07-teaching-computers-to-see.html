@@ -35,7 +35,9 @@
     <a class="nav-item" data-chapter-id="7-6" href="#chapter-7-6">
       <span class="nav-dot"></span>7.6 Evaluating Vision Models (IoU/mAP)
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>7.7 Meet YOLO</div>
+    <a class="nav-item" data-chapter-id="7-7" href="#chapter-7-7">
+      <span class="nav-dot"></span>7.7 Meet YOLO
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>7.8 Meet SuperPoint</div>
   </nav>
 
@@ -1495,6 +1497,313 @@
 
     </section>
 
+    <section id="chapter-7-7">
+      <div class="chapter-eyebrow">Part VII · Chapter 7.7</div>
+      <h1 class="chapter-title">Meet YOLO</h1>
+
+      <p class="lede">
+        Chapter 7.4 defined what detection outputs — boxes and labels.
+        Chapter 7.6 defined how to grade it — IoU and mAP. This chapter
+        meets a real detector that's actually used in production:
+        YOLO, built around one genuinely clever trick for getting boxes
+        out of an image fast.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">📸 Frame of reference</div>
+        <p>
+          Two ways to find every friend's face in a packed party photo.
+          The slow way: circle a bunch of candidate regions first, then
+          go back and examine each circled region individually — two
+          separate passes over the photo. The fast way: glance at the
+          whole photo exactly once, and while looking, simultaneously
+          mark down where every face is and who it belongs to, all in
+          that one glance. YOLO — "You Only Look Once" — is named for
+          doing exactly the second thing.
+        </p>
+      </div>
+
+      <h2>One grid, one pass, every box at once</h2>
+      <script>initJargonBox("YOLO (You Only Look Once)",
+        "A real-time object detector that divides an image into a grid and has every grid cell predict bounding boxes, confidence, and class probabilities simultaneously, in a single forward pass — instead of first proposing candidate regions and then classifying each one separately.");</script>
+      <p>
+        <span class="jargon-term">YOLO (You Only Look Once)</span>
+        divides the image into an S×S grid. Every cell predicts, all at
+        once, in one forward pass: whether an object's <em>center</em>
+        falls inside it, a bounding box for that object, and which
+        class it is. Older detectors ran two separate stages — propose
+        regions, then classify each — costing multiple passes through
+        the network. YOLO's entire output comes from one pass, which is
+        exactly why it's fast enough for real-time video.
+      </p>
+      <p>
+        The rule for which cell "owns" an object is simple and exact:
+        whichever grid cell contains that object's center is
+        responsible for predicting it — not every cell the object's box
+        happens to overlap, just the one holding its center point.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          Chapter 7.4's exact scene — a square and a diamond — with a
+          2×3 YOLO-style grid overlaid. Each object's center is computed
+          for real from its actual pixels.
+        </p>
+        <div class="demo-actions">
+          <div class="quiz-option" id="yolo-assign-btn">🎯 Find each object's responsible cell</div>
+        </div>
+        <div style="position:relative; display:inline-block; margin-top:12px;">
+          <div id="yolo-grid" style="display:grid; grid-template-columns:repeat(12, 28px); gap:1px;"></div>
+          <svg id="yolo-overlay" style="position:absolute; top:0; left:0; pointer-events:none;" width="356" height="290"></svg>
+        </div>
+        <p id="yolo-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var rows = 10, cols = 12;
+          var grid = [];
+          for (var r = 0; r < rows; r++) grid.push(new Array(cols).fill(0));
+          for (var r = 1; r <= 3; r++) for (var c = 1; c <= 3; c++) grid[r][c] = 1;
+          [[4, 8], [5, 7], [5, 8], [5, 9], [6, 6], [6, 7], [6, 8], [6, 9], [6, 10],
+            [7, 7], [7, 8], [7, 9], [8, 8]].forEach(function (p) { grid[p[0]][p[1]] = 2; });
+
+          function boundingBox(label) {
+            var minR = Infinity, maxR = -Infinity, minC = Infinity, maxC = -Infinity;
+            for (var r = 0; r < rows; r++) for (var c = 0; c < cols; c++) if (grid[r][c] === label) {
+              minR = Math.min(minR, r); maxR = Math.max(maxR, r);
+              minC = Math.min(minC, c); maxC = Math.max(maxC, c);
+            }
+            return { minR: minR, maxR: maxR, minC: minC, maxC: maxC };
+          }
+
+          var cellSize = 29;
+          var gridEl = document.getElementById('yolo-grid');
+          var overlay = document.getElementById('yolo-overlay');
+          var readout = document.getElementById('yolo-readout');
+
+          var cellEls = [];
+          for (var r = 0; r < rows; r++) {
+            for (var c = 0; c < cols; c++) {
+              var cell = document.createElement('div');
+              cell.style.width = '28px'; cell.style.height = '28px';
+              cell.style.background = grid[r][c] === 0 ? '#161b22' : (grid[r][c] === 1 ? 'var(--blue)' : 'var(--orange)');
+              gridEl.appendChild(cell);
+              cellEls.push(cell);
+            }
+          }
+
+          // YOLO grid: 2 rows x 3 cols of macro-cells, each 5 rows x 4 cols
+          var macroRows = 2, macroCols = 3;
+          var macroH = rows / macroRows, macroW = cols / macroCols;
+
+          document.getElementById('yolo-assign-btn').addEventListener('click', function () {
+            overlay.innerHTML = '';
+            // draw macro grid lines
+            for (var mr = 0; mr <= macroRows; mr++) {
+              var y = mr * macroH * cellSize;
+              overlay.innerHTML += '<line x1="0" y1="' + y + '" x2="' + (cols * cellSize) + '" y2="' + y + '" stroke="#e6edf3" stroke-width="1.5" stroke-dasharray="4,3"></line>';
+            }
+            for (var mc = 0; mc <= macroCols; mc++) {
+              var x = mc * macroW * cellSize;
+              overlay.innerHTML += '<line x1="' + x + '" y1="0" x2="' + x + '" y2="' + (rows * cellSize) + '" stroke="#e6edf3" stroke-width="1.5" stroke-dasharray="4,3"></line>';
+            }
+
+            var boxA = boundingBox(1), boxB = boundingBox(2);
+            var centerA = { r: (boxA.minR + boxA.maxR) / 2, c: (boxA.minC + boxA.maxC) / 2 };
+            var centerB = { r: (boxB.minR + boxB.maxR) / 2, c: (boxB.minC + boxB.maxC) / 2 };
+
+            function macroCellOf(center) {
+              return { mr: Math.floor(center.r / macroH), mc: Math.floor(center.c / macroW) };
+            }
+            var cellA = macroCellOf(centerA), cellB = macroCellOf(centerB);
+
+            function highlightMacro(cellIdx, color) {
+              var x = cellIdx.mc * macroW * cellSize, y = cellIdx.mr * macroH * cellSize;
+              var w = macroW * cellSize, h = macroH * cellSize;
+              overlay.innerHTML += '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h +
+                '" fill="none" stroke="' + color + '" stroke-width="3"></rect>';
+            }
+            highlightMacro(cellA, '#e6edf3');
+            highlightMacro(cellB, '#e6edf3');
+
+            function dot(center, color) {
+              overlay.innerHTML += '<circle cx="' + (center.c * cellSize + cellSize / 2) + '" cy="' + (center.r * cellSize + cellSize / 2) +
+                '" r="5" fill="' + color + '"></circle>';
+            }
+            dot(centerA, '#fff');
+            dot(centerB, '#fff');
+
+            readout.textContent = 'Shape A center = (row ' + centerA.r + ', col ' + centerA.c + ') → macro-cell (' + cellA.mr + ',' + cellA.mc +
+              ').  Shape B center = (row ' + centerB.r + ', col ' + centerB.c + ') → macro-cell (' + cellB.mr + ',' + cellB.mc +
+              ').  Two different cells, each responsible for one object.';
+          });
+        })();
+      </script>
+
+      <p>
+        Notice Shape B's bounding box actually spans parts of two
+        macro-cell columns, but only the cell holding its exact center
+        gets assigned responsibility — every other cell that box merely
+        overlaps predicts "no object here" instead.
+      </p>
+
+      <h2>Cleaning up: non-max suppression</h2>
+      <script>initJargonBox("non-max suppression (NMS)",
+        "A cleanup step that removes duplicate detections: sort all candidate boxes by confidence, keep the highest-confidence one, discard every remaining box that overlaps it above an IoU threshold (Chapter 7.6), then repeat with whatever's left.");</script>
+      <p>
+        In practice, nearby cells often all fire somewhat for the same
+        real object, producing several overlapping boxes instead of
+        one. <span class="jargon-term">Non-max suppression (NMS)</span>
+        cleans this up: sort every candidate box by confidence, keep the
+        top one, throw out any remaining box whose IoU with it clears a
+        threshold (Chapter 7.6), then repeat with whatever boxes are
+        left.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          4 candidate boxes and their confidence scores — really only 2
+          distinct objects. Adjust the IoU threshold and watch real
+          greedy NMS decide what survives.
+        </p>
+
+        <div class="demo-controls">
+          <label class="demo-slider-label">IoU suppression threshold: <span id="nms-thresh-value">0.50</span>
+            <input type="range" id="nms-thresh-slider" min="0.10" max="0.90" step="0.05" value="0.50">
+          </label>
+        </div>
+        <table class="data-table" id="nms-table">
+          <thead><tr><th>Box</th><th>Confidence</th><th>Location (rows, cols)</th><th>Result</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p id="nms-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var boxes = [
+            { name: 'A', r0: 2, r1: 5, c0: 3, c1: 6, conf: 0.95 },
+            { name: 'B', r0: 2, r1: 5, c0: 4, c1: 7, conf: 0.80 },
+            { name: 'C', r0: 3, r1: 6, c0: 3, c1: 6, conf: 0.60 },
+            { name: 'D', r0: 0, r1: 2, c0: 8, c1: 10, conf: 0.75 }
+          ];
+
+          function iou(b1, b2) {
+            var interR0 = Math.max(b1.r0, b2.r0), interR1 = Math.min(b1.r1, b2.r1);
+            var interH = Math.max(0, interR1 - interR0 + 1);
+            var interC0 = Math.max(b1.c0, b2.c0), interC1 = Math.min(b1.c1, b2.c1);
+            var interW = Math.max(0, interC1 - interC0 + 1);
+            var inter = interH * interW;
+            var area1 = (b1.r1 - b1.r0 + 1) * (b1.c1 - b1.c0 + 1);
+            var area2 = (b2.r1 - b2.r0 + 1) * (b2.c1 - b2.c0 + 1);
+            var union = area1 + area2 - inter;
+            return union > 0 ? inter / union : 0;
+          }
+
+          function runNMS(threshold) {
+            var sorted = boxes.slice().sort(function (a, b) { return b.conf - a.conf; });
+            var suppressed = {};
+            var kept = [];
+            for (var i = 0; i < sorted.length; i++) {
+              if (suppressed[sorted[i].name]) continue;
+              kept.push(sorted[i].name);
+              for (var j = i + 1; j < sorted.length; j++) {
+                if (suppressed[sorted[j].name]) continue;
+                if (iou(sorted[i], sorted[j]) >= threshold) suppressed[sorted[j].name] = true;
+              }
+            }
+            return { kept: kept, sorted: sorted };
+          }
+
+          var slider = document.getElementById('nms-thresh-slider');
+          var threshValue = document.getElementById('nms-thresh-value');
+          var readout = document.getElementById('nms-readout');
+          var tbody = document.querySelector('#nms-table tbody');
+
+          function render() {
+            var threshold = parseFloat(slider.value);
+            threshValue.textContent = threshold.toFixed(2);
+            var result = runNMS(threshold);
+
+            tbody.innerHTML = '';
+            result.sorted.forEach(function (b) {
+              var kept = result.kept.indexOf(b.name) !== -1;
+              var tr = document.createElement('tr');
+              tr.innerHTML = '<td>' + b.name + '</td><td>' + b.conf.toFixed(2) + '</td><td>rows ' + b.r0 + '-' + b.r1 +
+                ', cols ' + b.c0 + '-' + b.c1 + '</td><td>' + (kept ? '✓ kept' : '✗ suppressed') + '</td>';
+              tbody.appendChild(tr);
+            });
+
+            var verdict = result.kept.length === 2 ? ' — exactly matching the 2 real objects in the scene.' :
+              (result.kept.length > 2 ? ' — looser than 2: some duplicate boxes for the same object are surviving.' :
+                ' — tighter than 2: distinct objects are being merged together.');
+            readout.textContent = result.kept.length + ' of 4 boxes survive: ' + result.kept.join(', ') + verdict;
+          }
+
+          slider.addEventListener('input', render);
+          render();
+        })();
+      </script>
+
+      <p>
+        At the standard 0.5 threshold, boxes A and D survive — the two
+        boxes that actually correspond to distinct real objects — while
+        B and C, both heavily overlapping A around the same object, get
+        suppressed. Loosen the threshold enough and even genuine
+        duplicates stop getting merged; tighten it and distinct nearby
+        objects can wrongly get merged into one. NMS's threshold is
+        exactly this trade-off, tunable like any other.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>YOLO divides an image into a grid and predicts every box, confidence, and class in a single forward pass, instead of proposing regions and classifying them separately.</li>
+          <li>Only the grid cell containing an object's center is responsible for predicting it — not every cell its box overlaps.</li>
+          <li>Non-max suppression removes duplicate, heavily-overlapping detections, keeping the highest-confidence box per real object.</li>
+          <li>NMS's IoU threshold controls a trade-off: too loose keeps duplicates, too tight can merge genuinely distinct objects.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-7-7">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. What does "You Only Look Once" refer to?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! One forward pass predicts every box, confidence, and class at once.">Predicting every bounding box, confidence, and class in a single forward pass through the network, instead of two separate stages.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — YOLO can be run repeatedly on video frames; the name refers to its single-pass design per image, not a one-time-only restriction.">A rule that a detector can only ever be run once per image, forever.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — YOLO's grid can and does contain multiple objects across different cells.">Detecting exactly one object per image, no matter how many are present.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. Which grid cell is responsible for detecting a given object?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Only the cell holding the object's exact center — not every cell its box overlaps.">Only the single cell that contains the object's center point.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo showed Shape B's box spanning multiple cells, with only the center's cell taking responsibility.">Every cell that the object's bounding box overlaps, even slightly.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the responsible cell is fixed by the object's actual center location, not chosen randomly.">A randomly chosen cell, different every time the image is processed.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. What does non-max suppression do?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Keep the highest-confidence box, discard heavily-overlapping duplicates, repeat.">Removes duplicate, heavily-overlapping boxes, keeping only the highest-confidence detection per real object.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — NMS runs after the network's forward pass, cleaning up its raw output rather than changing the pass itself.">Runs the network an additional time to double-check every prediction.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the demo showed NMS keeping the single highest-confidence box per object, not simply the largest box.">Keeps every box regardless of overlap, as long as it's large enough.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -1506,6 +1815,7 @@
     initQuiz(document.getElementById('quiz-7-4'));
     initQuiz(document.getElementById('quiz-7-5'));
     initQuiz(document.getElementById('quiz-7-6'));
+    initQuiz(document.getElementById('quiz-7-7'));
     initProgressTracking();
   })();
 </script>

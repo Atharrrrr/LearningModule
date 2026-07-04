@@ -1,17 +1,17 @@
 # Progress
 
 ## Status
-In progress. 53 of 98 chapters written. Parts I, II, III, IV, V, and VI
+In progress. 54 of 98 chapters written. Parts I, II, III, IV, V, and VI
 are all complete.
 
 ## Next chapter due
-Part VII, Chapter 7.7 — Meet YOLO
+Part VII, Chapter 7.8 — Meet SuperPoint
 (parts/part-07-teaching-computers-to-see.html already exists — insert the
-new <section> before </main> and flip 7.7's sidebar entry from unwritten
-to live. IMPORTANT: 7.7 is an anchor chapter (see CLAUDE.md) — must be
-written ALONE, one per turn, no matter what batch size is requested.
-Chapter 7.8 (Meet SuperPoint) right after it is ALSO an anchor chapter —
-write it alone too, on its own separate turn.)
+new <section> before </main> and flip 7.8's sidebar entry from unwritten
+to live. IMPORTANT: 7.8 is an anchor chapter (see CLAUDE.md) — must be
+written ALONE, one per turn. This is also the LAST chapter of Part VII —
+completing it finishes the Part, so do the write-book-chapter skill
+self-check afterward per the resumable-autonomous-loop rule.)
 
 ## Completed chapters
 - 0.1 How This Book Works — parts/part-00-before-we-begin.html
@@ -67,6 +67,7 @@ write it alone too, on its own separate turn.)
 - 7.4 Classification vs. Detection vs. Segmentation — parts/part-07-teaching-computers-to-see.html
 - 7.5 Famous Architectures & Transfer Learning — parts/part-07-teaching-computers-to-see.html
 - 7.6 Evaluating Vision Models (IoU/mAP) — parts/part-07-teaching-computers-to-see.html
+- 7.7 Meet YOLO — parts/part-07-teaching-computers-to-see.html
 
 ## Open issues / flags for review
 - Reminder for future chapters: assets/components.js must be included in
