@@ -35,7 +35,9 @@
     <a class="nav-item" data-chapter-id="14-6" href="#chapter-14-6">
       <span class="nav-dot"></span>14.6 Containers &amp; Reproducibility
     </a>
-    <div class="nav-item unwritten"><span class="nav-dot"></span>14.7 Monitoring &amp; Drift</div>
+    <a class="nav-item" data-chapter-id="14-7" href="#chapter-14-7">
+      <span class="nav-dot"></span>14.7 Monitoring &amp; Drift
+    </a>
     <div class="nav-item unwritten"><span class="nav-dot"></span>14.8 A Real Pipeline, Start to Finish</div>
   </nav>
 
@@ -974,6 +976,170 @@
 
     </section>
 
+    <section id="chapter-14-7">
+      <div class="chapter-eyebrow">Part XIV · Chapter 14.7</div>
+      <h1 class="chapter-title">Monitoring &amp; Drift</h1>
+
+      <p class="lede">
+        Chapter 14.5 got a model serving live predictions. Chapter 5.1 and
+        5.2 made a quiet but crucial assumption underneath every model
+        trained so far: that the data the model sees after deployment
+        looks statistically like the data it was trained on. That
+        assumption can quietly stop being true — and unlike training,
+        where every prediction can be checked against a known correct
+        label, production usually has no immediate ground truth to check
+        against. Something has to actively watch for the assumption
+        breaking.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🧵 Frame of reference</div>
+        <p>
+          A tailor makes a suit that fits a customer perfectly. Five years
+          later the suit still fits exactly the same way it did the day it
+          was made — not a stitch has changed. But the customer's body has
+          changed over those five years, and the suit no longer fits well
+          at all. Nothing is wrong with the suit; it is doing precisely
+          what it was built to do. What changed is what it's being applied
+          to. A deployed model is the same: the weights don't drift on
+          their own, but the real-world data flowing into the model can
+          drift away from what it was fitted to.
+        </p>
+      </div>
+
+      <h2>When the input data moves, the model doesn't know</h2>
+      <script>initJargonBox("data drift",
+        "The statistical distribution of live, real-world input data gradually shifting away from the distribution of the data a model was trained on, breaking the Chapter 5.1/5.2 assumption that training data and future data look statistically alike.");</script>
+      <p>
+        <span class="jargon-term">Data drift</span> is exactly the
+        tailor's problem. A model trained on customers aged in their late
+        twenties keeps making predictions with total confidence even after
+        its real user base has quietly shifted to customers in their late
+        forties — the model has no built-in way to notice that its input
+        world has changed, because nothing about *it* changed. It just
+        keeps applying the same fitted function to whatever numbers arrive.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          Ten training-time ages the model was fitted on, versus ten live
+          ages it's actually seeing right now in production.
+        </p>
+        <div class="demo-actions">
+          <div class="quiz-option" id="drift-run-btn">▶ Compare training vs. live data</div>
+        </div>
+        <p id="drift-readout" class="demo-readout"></p>
+      </div>
+
+      <script>
+        (function () {
+          var training = [25, 28, 22, 30, 26, 24, 29, 27, 23, 31];
+          var live = [45, 48, 42, 50, 46, 44, 49, 47, 43, 51];
+
+          function mean(arr) {
+            var sum = 0;
+            for (var i = 0; i < arr.length; i++) sum += arr[i];
+            return sum / arr.length;
+          }
+          function std(arr) {
+            var m = mean(arr);
+            var variance = 0;
+            for (var i = 0; i < arr.length; i++) variance += Math.pow(arr[i] - m, 2);
+            variance = variance / arr.length;
+            return Math.sqrt(variance);
+          }
+
+          document.getElementById('drift-run-btn').addEventListener('click', function () {
+            var trainMean = mean(training), trainStd = std(training);
+            var liveMean = mean(live), liveStd = std(live);
+            var shift = (liveMean - trainMean) / trainStd;
+
+            document.getElementById('drift-readout').textContent =
+              'Training data: mean = ' + trainMean.toFixed(2) + ', std = ' + trainStd.toFixed(2) + '. ' +
+              'Live data: mean = ' + liveMean.toFixed(2) + ', std = ' + liveStd.toFixed(2) + '. ' +
+              'Shift = ' + shift.toFixed(2) + ' training-standard-deviations. ' +
+              (Math.abs(shift) > 2
+                ? 'That is a large, real shift — this input distribution has drifted far from what the model was trained on.'
+                : 'That shift is small — this input distribution still looks close to what the model was trained on.');
+          });
+        })();
+      </script>
+
+      <p>
+        Run it: the live mean sits nearly seven training-standard-deviations
+        away from the training mean — computed live in your browser from
+        the actual numbers above, not a scripted result. A model trained
+        on the first group has never seen ages like the second group in
+        any of its training data. Its predictions on that live group are
+        extrapolations into territory it was never fitted on, and it will
+        still return a confident-looking number, because nothing about the
+        model's own weights tells it that its input has moved this far.
+      </p>
+
+      <h2>Watching for it after deployment</h2>
+      <script>initJargonBox("monitoring",
+        "Continuously tracking statistics about a deployed model's live inputs and predictions after deployment, specifically to catch data drift or other problems early — since production typically lacks the immediate ground-truth labels available during training.");</script>
+      <p>
+        <span class="jargon-term">Monitoring</span> is the practice of
+        running exactly the kind of comparison the demo above just ran —
+        continuously, automatically, on live traffic — rather than only
+        once at deployment time. Training has an obvious feedback signal:
+        the loss function, computed against known correct labels
+        (Chapter 4.1). Production usually doesn't have that luxury; the
+        correct label for a live prediction may not be known for days,
+        weeks, or ever. Monitoring fills that gap by watching input
+        statistics themselves — means, standard deviations, value ranges —
+        as an early-warning signal that something has shifted, long before
+        anyone could measure a drop in actual accuracy directly.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Data drift is the live input distribution gradually shifting away from the training distribution — the model's weights don't change, but what they're being applied to does.</li>
+          <li>This breaks the Chapter 5.1/5.2 assumption that training data and future data share the same distribution, and the model has no built-in way to notice on its own.</li>
+          <li>The demo showed a real, computed ~7-standard-deviation mean shift between training and live data for the exact same feature.</li>
+          <li>Monitoring means continuously tracking live input and prediction statistics after deployment, since production usually lacks immediate ground-truth labels to check against directly.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-14-7">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. In the tailor analogy, what actually changes to cause the problem?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the whole point of the analogy is that the suit itself never changes.">The suit itself changes shape over the five years.</div>
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! The suit (the model) stays exactly the same; what it's being applied to (the customer's body, or the live input data) is what changes.">The customer's body changes over time, while the suit stays exactly the same.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the analogy has nothing to do with the tailor's skill; it's about what the finished, unchanging suit is later applied to.">The tailor becomes a worse tailor over the five years.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. Why can't a deployed model just notice on its own that data drift is happening?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! The model's weights are fixed after training; it has no built-in mechanism comparing its current inputs to its training distribution, so it keeps confidently applying the same fitted function regardless.">The model's weights are fixed after training and it has no built-in way to compare current inputs against the training distribution — it just keeps applying the same fitted function.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the chapter's whole point is that a deployed model has no automatic mechanism for this; that's exactly why monitoring has to be added separately.">Models automatically check every incoming input against their training data before making a prediction.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the loss function measured during training against known labels; the problem is that production inputs usually don't come with immediate known labels to check against.">The model recomputes its own loss function on every live prediction, the same way it did during training.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. Why does monitoring typically track input statistics rather than waiting to measure a drop in accuracy directly?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Production usually lacks the immediate ground-truth labels needed to compute accuracy directly, so tracking input statistics (mean, std, ranges) gives an earlier warning signal.">Production usually doesn't have immediate ground-truth labels available, so tracking input statistics gives an earlier warning signal before accuracy could even be measured.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — input statistics are typically cheaper and available immediately, whereas true labels for live predictions are often delayed or unavailable, not the other way around.">Input statistics are harder to compute than accuracy, so they're used as a stronger signal.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the chapter's demo shows a real, meaningful, computed ~7-standard-deviation shift, not something negligible.">Accuracy and input statistics always tell you exactly the same thing, so it doesn't matter which one is tracked.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </div>
 
@@ -985,6 +1151,7 @@
     initQuiz(document.getElementById('quiz-14-4'));
     initQuiz(document.getElementById('quiz-14-5'));
     initQuiz(document.getElementById('quiz-14-6'));
+    initQuiz(document.getElementById('quiz-14-7'));
     initProgressTracking();
   })();
 </script>
