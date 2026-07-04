@@ -1,21 +1,20 @@
 # Progress
 
 ## Status
-In progress. 93 of 98 chapters written. Parts I-XIV are all complete.
-Only Part XV remains (0 of 5 chapters done).
+In progress. 94 of 98 chapters written. Parts I-XIV are all complete.
+Part XV is in progress (1 of 5 chapters done) — this is the FINAL Part
+of the book.
 
 ## Next chapter due
-Part XV — Becoming an ML Engineer, Chapter 15.1 — How to Read a Research
-Paper (worked example: the SuperPoint paper, Chapter 7.8). This is the
-FIRST chapter of the FINAL Part of the book — parts/part-15-becoming-ml-
-engineer.html does not exist yet. Create it with a full sidebar TOC for
-all 5 chapters of Part XV (15.1 How to Read a Research Paper, 15.2
-Choosing a Specialization, 15.3 Portfolio Projects Mapped to Every Part,
-15.4 The Job Search, 15.5 Glossary), from CURRICULUM.md. Not an anchor
-chapter. No anchor chapters remain anywhere in the curriculum — all 5
-remaining chapters can be batched normally per the 2-3-chapters-per-turn
-rule all the way to the end of the book. After 15.5, the entire 98-
-chapter book is complete.
+Part XV, Chapter 15.2 — Choosing a Specialization.
+(parts/part-15-becoming-ml-engineer.html already exists — insert the new
+<section> before </main> and flip 15.2's sidebar entry from unwritten to
+live.) Not an anchor chapter. No anchor chapters remain anywhere in the
+curriculum — 15.2, 15.3, and 15.4 can be batched normally per the
+2-3-chapters-per-turn rule. 15.5 (Glossary) is the LAST chapter of the
+entire 98-chapter book — after it verifies and commits cleanly, the book
+is complete; do a final whole-book self-check at that point rather than
+just a Part XV self-check.
 
 ## Part XIII self-check (write-book-chapter skill compliance)
 Reviewed all 3 chapters (13.1–13.3) against the required rhythm: every
@@ -254,6 +253,7 @@ issues found.
 - 14.6 Containers & Reproducibility — parts/part-14-notebook-to-product.html
 - 14.7 Monitoring & Drift — parts/part-14-notebook-to-product.html
 - 14.8 A Real Pipeline, Start to Finish — parts/part-14-notebook-to-product.html
+- 15.1 How to Read a Research Paper — parts/part-15-becoming-ml-engineer.html
 
 ## Part XIV self-check (write-book-chapter skill compliance)
 Reviewed all 8 chapters (14.1–14.8) against the required rhythm: every

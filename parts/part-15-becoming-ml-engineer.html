@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Part XV — Becoming an ML Engineer | AI/ML From Zero to Job-Ready</title>
+<link rel="stylesheet" href="../assets/styles.css">
+<script src="../assets/components.js"></script>
+</head>
+<body>
+<div class="book-shell">
+
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">AI/ML: Zero to Job-Ready</div>
+    </div>
+    <div class="progress-bar-track"><div class="progress-bar-fill"></div></div>
+
+    <div class="sidebar-part">Part XV — Becoming an ML Engineer</div>
+    <a class="nav-item" data-chapter-id="15-1" href="#chapter-15-1">
+      <span class="nav-dot"></span>15.1 How to Read a Research Paper
+    </a>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>15.2 Choosing a Specialization</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>15.3 Portfolio Projects Mapped to Every Part</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>15.4 The Job Search</div>
+    <div class="nav-item unwritten"><span class="nav-dot"></span>15.5 Glossary</div>
+  </nav>
+
+  <main>
+
+    <section id="chapter-15-1">
+      <div class="chapter-eyebrow">Part XV · Chapter 15.1</div>
+      <h1 class="chapter-title">How to Read a Research Paper</h1>
+
+      <p class="lede">
+        Every "Meet X" chapter in this book (Chapter 7.7's YOLO, 7.8's
+        SuperPoint, 8.6's SuperGlue) has been a summary of a real research
+        paper, written to be readable with zero prerequisites. The real
+        papers behind them are not written that way — they're written by
+        researchers, for other researchers, under real length limits. This
+        chapter is about closing that gap: a concrete strategy for reading
+        one directly, using a paper this book has already summarized for
+        you as the worked example, so you can check every claim yourself.
+      </p>
+
+      <div class="frame-of-reference">
+        <div class="label">🪑 Frame of reference</div>
+        <p>
+          Nobody assembles flat-pack furniture by reading the instruction
+          booklet word one to word last, front to back. They look at the
+          finished-product photo on the box first — what am I even
+          building? Then the parts diagram — what pieces do I have to
+          work with? Only then do they open the numbered text
+          instructions, and usually only closely for the one step where
+          they're actually stuck. A research paper rewards exactly that
+          same out-of-order, purpose-driven reading — not a novel, read
+          start to finish.
+        </p>
+      </div>
+
+      <h2>A paper's anatomy is predictable — use that</h2>
+      <script>initJargonBox("abstract",
+        "A short paragraph at the very start of a paper, written by its own authors, summarizing the problem, the approach, and the headline result in a few sentences — the paper's own answer to \"what is this and why should I keep reading?\"");</script>
+      <p>
+        Nearly every ML research paper follows the same skeleton: Title,
+        <span class="jargon-term">abstract</span>, Introduction, Related
+        Work, Method, Experiments, Conclusion, References. That
+        predictability is the whole advantage — once you know what each
+        section is <em>for</em>, you can read strategically instead of
+        linearly: title and abstract first (what is this?), then the
+        figures and conclusion (what did they find?), then the
+        introduction (why does it matter?), and only then the method in
+        full, slowly, often twice (how does it actually work?) — with
+        related work and the fine print of experiments read on demand,
+        not by default.
+      </p>
+
+      <div class="panel demo-panel">
+        <div class="panel-label demo">● Interactive demo — try it</div>
+        <p style="margin-top:0; color:#8b949e; font-size:14px;">
+          Click any section below to see what it's generally for, and
+          what that section actually contains in the real SuperPoint
+          paper (DeTone, Malisiewicz &amp; Rabinovich, 2018) — the same
+          paper summarized back in Chapter 7.8.
+        </p>
+        <div class="demo-actions" id="paper-section-buttons">
+          <div class="quiz-option" data-part="title">Title</div>
+          <div class="quiz-option" data-part="abstract">Abstract</div>
+          <div class="quiz-option" data-part="intro">Introduction</div>
+          <div class="quiz-option" data-part="related">Related Work</div>
+          <div class="quiz-option" data-part="method">Method</div>
+          <div class="quiz-option" data-part="experiments">Experiments</div>
+          <div class="quiz-option" data-part="conclusion">Conclusion</div>
+          <div class="quiz-option" data-part="references">References</div>
+        </div>
+        <p id="paper-explain-readout" class="demo-readout">Click a section above.</p>
+      </div>
+
+      <script>
+        (function () {
+          var purposes = {
+            title: 'Purpose: names the contribution as precisely as space allows.',
+            abstract: 'Purpose: a self-contained summary — problem, approach, headline result — written last but read first.',
+            intro: 'Purpose: motivates why the problem matters and previews the approach, in prose, before any technical detail.',
+            related: 'Purpose: positions the work against prior approaches — what already existed, and what specifically is new here.',
+            method: 'Purpose: the actual technical contribution, precise enough that someone else could reimplement it.',
+            experiments: 'Purpose: the evidence — what was measured, against what baselines, on what data.',
+            conclusion: 'Purpose: restates the headline result and its implications, usually in plainer language than the method section.',
+            references: 'Purpose: the bibliography — every prior work the paper builds on or compares against.'
+          };
+          var superpoint = {
+            title: '"SuperPoint: Self-Supervised Interest Point Detection and Description" — the title alone already tells you two things: self-supervised (Chapter 9\'s LLM pretraining used the same idea — learn from unlabeled data via a designed task, not human labels) and that it does both jobs (detection and description) at once.',
+            abstract: 'States the paper trains a single network to jointly detect keypoints and compute descriptors, introduces "homographic adaptation" to generate training labels without humans, and runs fast enough for real-time use.',
+            intro: 'Points out that hand-labeling "correct" keypoints is expensive and genuinely ambiguous — two annotators rarely circle the same corner — motivating a self-supervised approach instead (exactly the problem Chapter 7.8\'s recap named).',
+            related: 'Contrasts SuperPoint against hand-engineered detectors and descriptors like SIFT and ORB (Chapter 7.3), and against earlier learned approaches that only solved detection or description separately, not both jointly.',
+            method: 'Describes exactly the two pieces Chapter 7.8 covered: a base detector ("MagicPoint") trained on simple synthetic shapes with unambiguous corners, then homographic adaptation to self-label real photos, then one shared CNN backbone with two output heads — one per-pixel keypoint head, one descriptor head.',
+            experiments: 'Evaluates on HPatches, a dataset of real image pairs under viewpoint and lighting changes, measuring how consistently keypoints get redetected and how accurately matched keypoints recover the true image transformation.',
+            conclusion: 'Argues that a single self-supervised network can match or beat hand-engineered detectors and descriptors, especially under lighting change, without ever needing human-labeled keypoints — and suggests this matters for downstream systems like visual SLAM.',
+            references: 'Includes SIFT, ORB, and earlier learned-detector papers — exactly the lineage Chapter 7.3 and 7.8 already placed SuperPoint in.'
+          };
+
+          var buttons = document.querySelectorAll('#paper-section-buttons .quiz-option');
+          var explain = document.getElementById('paper-explain-readout');
+
+          buttons.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+              var part = btn.getAttribute('data-part');
+              buttons.forEach(function (b) { b.classList.remove('correct'); });
+              btn.classList.add('correct');
+              explain.innerHTML = purposes[part] + '<br><br><strong>In the real SuperPoint paper:</strong> ' + superpoint[part];
+            });
+          });
+        })();
+      </script>
+
+      <p>
+        Notice how little of that was new information — Chapter 7.8
+        already taught you the base detector, homographic adaptation, and
+        the shared-backbone-plus-two-heads architecture. Reading the real
+        paper's Method section now would mean recognizing familiar ideas
+        described more tersely and formally, not learning them from
+        scratch. That's the actual payoff of everything this book built:
+        real papers stop being opaque.
+      </p>
+
+      <h2>Reading Experiments sections: know what an ablation study is</h2>
+      <script>initJargonBox("ablation study",
+        "An experiment where researchers deliberately remove or disable one piece of their own method, then re-measure performance — isolating exactly how much that one piece actually contributed, rather than just reporting the full system's final score.");</script>
+      <p>
+        One recurring pattern worth recognizing on sight: an
+        <span class="jargon-term">ablation study</span>. If SuperPoint's
+        paper reports results with and without homographic adaptation, or
+        with a shared backbone versus two separate networks, that's an
+        ablation — evidence for <em>which specific design choice</em>
+        mattered, not just a claim that the final system works. A results
+        table with only one row for "our method" is weaker evidence than
+        one showing what happens when a specific piece is removed.
+      </p>
+
+      <div class="recap">
+        <div class="label">✓ What you can now explain to someone else</div>
+        <ul>
+          <li>Research papers share a predictable anatomy (title, abstract, introduction, related work, method, experiments, conclusion, references), which supports reading strategically and out of order instead of front to back.</li>
+          <li>A useful reading order is: title and abstract, then figures and conclusion, then introduction, then a slow (often repeated) read of the method — with related work and experiment details read on demand.</li>
+          <li>The real SuperPoint paper's Method section maps directly onto Chapter 7.8's base detector, homographic adaptation, and shared-backbone-plus-two-heads architecture — this book's summaries are not a substitute for the real thing, but a way in.</li>
+          <li>An ablation study isolates how much one specific design choice contributed, by removing it and re-measuring — stronger evidence than a single final-system score alone.</li>
+        </ul>
+      </div>
+
+      <div class="quiz" id="quiz-15-1">
+        <div class="quiz-header">Quick check</div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">1. Why is reading a paper's abstract and conclusion before its full method section a good strategy?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Knowing the destination and headline result first makes the dense technical detail in the method section far easier to follow, since you already know what it's building toward.">They tell you what the paper claims to have found before you invest time in the dense technical detail — the same way looking at a furniture box's finished-product photo tells you what you're building before opening the instructions.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the chapter's whole point is that these sections are worth reading strategically, not skipped; they just come before the method section, not instead of it.">The abstract and conclusion are the only sections worth reading at all.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — the abstract and conclusion are usually shorter and less technical than the method section, not the reverse.">The abstract and conclusion always contain more technical detail than the method section.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">2. In the real SuperPoint paper, what problem does homographic adaptation solve, according to the Introduction?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! Human-labeled keypoints are both expensive and genuinely ambiguous, since different annotators rarely agree on the exact same corner — homographic adaptation sidesteps needing them at all.">Human-labeled keypoints are expensive to collect and genuinely ambiguous between annotators, so homographic adaptation generates trustworthy training labels without any human labeling.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — Chapter 7.8 covered this: homographic adaptation is specifically about generating labels for real photos, not about the synthetic-shapes stage.">It solves the problem of rendering the synthetic training shapes.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — homographic adaptation is a training-time labeling technique, unrelated to inference speed.">It makes the trained network run faster at inference time.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-question-text">3. What makes an ablation study more informative than a results table with only one row for "our full method"?</div>
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="true" data-feedback="Correct! An ablation isolates the specific contribution of one design choice by removing it and re-measuring, rather than just reporting one final combined score.">An ablation study removes one specific piece of the method and re-measures performance, showing how much that particular piece actually contributed rather than just the combined final result.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — an ablation study is defined by deliberately removing a piece of the method, not by using a larger dataset.">An ablation study always uses a larger test dataset than the main results.</div>
+            <div class="quiz-option" data-correct="false" data-feedback="Not quite — an ablation study is a real, standard experimental technique for isolating one component's contribution, not a synonym for the full results table.">An ablation study and a full results table always report exactly the same information.</div>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+</div>
+
+<script>
+  (function () {
+    initQuiz(document.getElementById('quiz-15-1'));
+    initProgressTracking();
+  })();
+</script>
+</body>
+</html>
